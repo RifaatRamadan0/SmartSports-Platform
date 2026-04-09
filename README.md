@@ -37,7 +37,7 @@ The system also aims to introduce **AI-powered slot recommendations and demand f
 ### Realtime Communication
 - SignalR
 
-### AI Microservice (planned)
+### AI Microservice
 - Python
 
 ### Deployment
@@ -66,5 +66,3 @@ SmartSports aims to **digitize and optimize the entire booking experience**.
 ## 📄 License
 
 MIT
-
-## Project Structure
