@@ -107,7 +107,7 @@ CREATE TABLE bookings (
     total_price  NUMERIC(10,2)  NOT NULL,
     status        booking_status  NOT NULL DEFAULT 'pending',
     UNIQUE (pitch_id, booking_date, start_time),   -- double-booking prevention
-    CONSTRAINT chk_booking_price CHECK (total_price >= 0)
+    CONSTRAINT chk_booking_price CHECK (total_price >= 0),
     CONSTRAINT chk_booking_times CHECK (start_time < end_time)
 );
 
