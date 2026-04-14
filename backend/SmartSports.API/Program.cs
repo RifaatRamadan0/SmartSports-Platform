@@ -1,4 +1,7 @@
 
+using SmartSports.API.Extensions;
+using SmartSports.DAL.Data;
+
 namespace SmartSports.API
 {
     public class Program
@@ -7,16 +10,16 @@ namespace SmartSports.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddDataAccess(builder.Configuration);
+
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            app.Services.GetRequiredService<MigrationRunner>().Run();
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -26,7 +29,6 @@ namespace SmartSports.API
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
 
             app.MapControllers();
 
