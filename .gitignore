@@ -373,3 +373,6 @@ healthchecksdb
 
 # Migration backup
 MigrationBackup/
+
+
+.claude/
