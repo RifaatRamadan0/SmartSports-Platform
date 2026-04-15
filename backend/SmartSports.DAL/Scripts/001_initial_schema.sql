@@ -15,7 +15,8 @@ CREATE TABLE regions (
 CREATE TABLE cities (
     id         SERIAL PRIMARY KEY,
     name       TEXT   NOT NULL,
-    region_id  INT    NOT NULL REFERENCES regions(id) ON DELETE RESTRICT
+    region_id  INT    NOT NULL REFERENCES regions(id) ON DELETE RESTRICT,
+    UNIQUE (name, region_id)
 );
 
 CREATE TABLE sport_types (
@@ -39,7 +40,8 @@ CREATE TABLE users (
     password_hash       TEXT          NOT NULL,
     phone_number        TEXT          UNIQUE,
     profile_picture     TEXT,
-    skill_level         NUMERIC(3,1),
+    skill_level         SMALLINT      CHECK (skill_level BETWEEN 1 AND 4),
+                                      -- 1 Beginner | 2 Intermediate | 3 Advanced | 4 Pro
     preferred_position  TEXT,
     created_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
@@ -124,12 +126,14 @@ CREATE TABLE matches (
     CONSTRAINT chk_match_maxplayers CHECK (max_players > 0)
 );
 
+CREATE TYPE participant_status AS ENUM ('pending', 'accepted', 'rejected');
+
 CREATE TABLE match_participants (
-    id                    SERIAL   PRIMARY KEY,
-    match_id              INT      NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
-    user_id               INT      NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
-    status                TEXT     NOT NULL DEFAULT 'pending',
-    attendance_confirmed  BOOLEAN  NOT NULL DEFAULT FALSE,
+    id                    SERIAL             PRIMARY KEY,
+    match_id              INT                NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    user_id               INT                NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
+    status                participant_status NOT NULL DEFAULT 'pending',
+    attendance_confirmed  BOOLEAN            NOT NULL DEFAULT FALSE,
     UNIQUE (match_id, user_id)
 );
 
@@ -137,14 +141,16 @@ CREATE TABLE match_participants (
 -- Social & Communication
 -- ----------------------------------------------------------------
 
+CREATE TYPE invitation_status AS ENUM ('pending', 'accepted', 'declined', 'expired');
+
 CREATE TABLE invitations (
-    id               SERIAL      PRIMARY KEY,
-    match_id         INT         NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
-    invited_by_id    INT         NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
-    invited_user_id  INT         REFERENCES users(id)            ON DELETE SET NULL,  -- nullable: shareable link
+    id               SERIAL            PRIMARY KEY,
+    match_id         INT               NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    invited_by_id    INT               NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
+    invited_user_id  INT               REFERENCES users(id)            ON DELETE SET NULL,  -- nullable: shareable link
     expires_at       TIMESTAMPTZ,
-    token            TEXT        NOT NULL UNIQUE,
-    status           TEXT        NOT NULL DEFAULT 'pending'
+    token            TEXT              NOT NULL UNIQUE,
+    status           invitation_status NOT NULL DEFAULT 'pending'
 );
 
 CREATE TABLE chat_messages (
@@ -167,14 +173,23 @@ CREATE TABLE reviews (
     CONSTRAINT chk_review_rating CHECK (rating BETWEEN 1 AND 5)
 );
 
+CREATE TYPE notification_type AS ENUM (
+    'booking_confirmed',
+    'booking_cancelled',
+    'match_invitation',
+    'match_joined',
+    'match_cancelled',
+    'review_received'
+);
+
 CREATE TABLE notifications (
-    id                 SERIAL      PRIMARY KEY,
-    user_id            INT         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    related_entity_id  INT,        -- nullable per proposal
-    message            TEXT        NOT NULL,
-    type               TEXT        NOT NULL,
-    is_read            BOOLEAN     NOT NULL DEFAULT FALSE,
-    created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id                 SERIAL            PRIMARY KEY,
+    user_id            INT               NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    related_entity_id  INT,              -- nullable per proposal
+    message            TEXT              NOT NULL,
+    type               notification_type NOT NULL,
+    is_read            BOOLEAN           NOT NULL DEFAULT FALSE,
+    created_at         TIMESTAMPTZ       NOT NULL DEFAULT NOW()
 );
 
 -- ----------------------------------------------------------------
