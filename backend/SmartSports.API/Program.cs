@@ -1,38 +1,49 @@
-
-using SmartSports.API.Extensions;
+﻿using SmartSports.API.Extensions;
+using SmartSports.API.Middleware;
 using SmartSports.DAL.Data;
 
-namespace SmartSports.API
+namespace SmartSports.API;
+
+public class Program
 {
-    public class Program
+    public static void Main(string[] args)
     {
-        public static void Main(string[] args)
+        var builder = WebApplication.CreateBuilder(args);
+
+        // ── Services ────────────────────────────────────────────
+        builder.Services.AddControllers();
+        builder.Services.AddEndpointsApiExplorer();
+
+        builder.Services.AddSwaggerConfiguration();
+        builder.Services.AddCorsConfiguration(builder.Configuration);
+        builder.Services.AddJwtAuthentication(builder.Configuration);
+        builder.Services.AddApplicationServices();
+        builder.Services.AddDataAccess(builder.Configuration);
+
+        // ── Build ────────────────────────────────────────────────
+        var app = builder.Build();
+
+        // ── Middleware Pipeline ──────────────────────────────────
+        if (app.Environment.IsDevelopment())
         {
-            var builder = WebApplication.CreateBuilder(args);
-
-            builder.Services.AddControllers();
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-
-            builder.Services.AddDataAccess(builder.Configuration);
-
-            var app = builder.Build();
-
-            app.Services.GetRequiredService<MigrationRunner>().Run();
-
-            if (app.Environment.IsDevelopment())
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
             {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-            app.MapControllers();
-
-            app.Run();
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "SmartSports API v1");
+            });
         }
+
+        app.UseHttpsRedirection();
+
+        app.UseCors("SmartSportsCorsPolicy");
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+        app.MapControllers();
+
+        app.Run();
     }
 }

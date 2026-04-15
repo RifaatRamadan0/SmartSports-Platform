@@ -1,21 +1,137 @@
-using SmartSports.DAL.Data;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 
 namespace SmartSports.API.Extensions;
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection AddDataAccess(
+    public static IServiceCollection AddSwaggerConfiguration(this IServiceCollection services)
+    {
+        services.AddSwaggerGen(options =>
+        {
+            options.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "SmartSports API",
+                Version = "v1",
+                Description = "Smart Sports Pitch Discovery, Booking & Team Coordination Platform"
+            });
+
+            // Allow JWT input in Swagger UI
+            options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "Bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Enter your JWT token. Example: Bearer {token}"
+            });
+
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddCorsConfiguration(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException(
-                "Connection string 'DefaultConnection' is not configured.");
+        var allowedOrigins = configuration["Cors:AllowedOrigins"];
 
-        services.AddSingleton<IDbConnectionFactory>(_ =>
-            new DbConnectionFactory(connectionString));
+        services.AddCors(options =>
+        {
+            options.AddPolicy("SmartSportsCorsPolicy", policy =>
+            {
+                policy
+                    .WithOrigins(allowedOrigins ?? "http://localhost:5173")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials(); // needed for SignalR
+            });
+        });
 
-        services.AddSingleton<MigrationRunner>();
+        return services;
+    }
+
+    public static IServiceCollection AddJwtAuthentication(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var secret = configuration["Jwt:Secret"];
+        var issuer = configuration["Jwt:Issuer"];
+        var audience = configuration["Jwt:Audience"];
+
+        if (string.IsNullOrWhiteSpace(secret))
+            throw new InvalidOperationException("JWT Secret is not configured.");
+
+        var key = Encoding.UTF8.GetBytes(secret);
+
+        services
+            .AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = issuer,
+                    ValidAudience = audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ClockSkew = TimeSpan.Zero // no grace period on expiry
+                };
+
+                // Allow SignalR to read token from query string
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
+            });
+
+        return services;
+    }
+
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    {
+        // Services and repositories will be registered here
+        // as they get implemented throughout the project
+        // Example:
+        // services.AddScoped<IAuthService, AuthService>();
+        // services.AddScoped<IUserRepository, UserRepository>();
 
         return services;
     }
