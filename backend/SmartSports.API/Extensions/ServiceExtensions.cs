@@ -3,11 +3,25 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
+using SmartSports.DAL.Data;
 
 namespace SmartSports.API.Extensions;
 
 public static class ServiceExtensions
 {
+    public static IServiceCollection AddDataAccess(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException(
+                "Connection string 'DefaultConnection' is not configured.");
+        services.AddSingleton<IDbConnectionFactory>(_ =>
+            new DbConnectionFactory(connectionString));
+        services.AddSingleton<MigrationRunner>();
+        return services;
+    }
+
     public static IServiceCollection AddSwaggerConfiguration(this IServiceCollection services)
     {
         services.AddSwaggerGen(options =>
@@ -19,7 +33,6 @@ public static class ServiceExtensions
                 Description = "Smart Sports Pitch Discovery, Booking & Team Coordination Platform"
             });
 
-            // Allow JWT input in Swagger UI
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Name = "Authorization",
@@ -63,7 +76,7 @@ public static class ServiceExtensions
                     .WithOrigins(allowedOrigins ?? "http://localhost:5173")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
-                    .AllowCredentials(); // needed for SignalR
+                    .AllowCredentials();
             });
         });
 
@@ -100,10 +113,9 @@ public static class ServiceExtensions
                     ValidIssuer = issuer,
                     ValidAudience = audience,
                     IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ClockSkew = TimeSpan.Zero // no grace period on expiry
+                    ClockSkew = TimeSpan.Zero
                 };
 
-                // Allow SignalR to read token from query string
                 options.Events = new JwtBearerEvents
                 {
                     OnMessageReceived = context =>
@@ -128,11 +140,6 @@ public static class ServiceExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         // Services and repositories will be registered here
-        // as they get implemented throughout the project
-        // Example:
-        // services.AddScoped<IAuthService, AuthService>();
-        // services.AddScoped<IUserRepository, UserRepository>();
-
         return services;
     }
 }
