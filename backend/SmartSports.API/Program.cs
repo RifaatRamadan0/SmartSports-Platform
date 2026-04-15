@@ -23,7 +23,11 @@ public class Program
         // ── Build ────────────────────────────────────────────────
         var app = builder.Build();
 
+        app.Services.GetRequiredService<MigrationRunner>().Run();
+
         // ── Middleware Pipeline ──────────────────────────────────
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -39,8 +43,6 @@ public class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
-
-        app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         app.MapControllers();
 

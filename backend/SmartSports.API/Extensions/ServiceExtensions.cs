@@ -73,7 +73,7 @@ public static class ServiceExtensions
             options.AddPolicy("SmartSportsCorsPolicy", policy =>
             {
                 policy
-                    .WithOrigins(allowedOrigins ?? "http://localhost:5173")
+                    .WithOrigins(string.IsNullOrEmpty(allowedOrigins) ? "http://localhost:5173" : allowedOrigins)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
