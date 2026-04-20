@@ -1,0 +1,50 @@
+services:
+  postgres:
+    # Official PostgreSQL image version 16
+    image: postgres:16
+    
+    # Name of the container
+    container_name: smartsports-db
+    
+    # Always restart the container if it stops unexpectedly
+    restart: unless-stopped
+    
+    # Database credentials and name
+    # These must match your appsettings.Development.json connection string
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: SmartSportsDb
+    
+    # Expose PostgreSQL port to your local machine
+    ports:
+      - "5432:5432"
+    
+    # Persist data so it survives docker compose down
+    volumes:
+      - smartsports-db-data:/var/lib/postgresql/data
+
+  pgadmin:
+    # pgAdmin - browser-based UI to view and manage your database
+    image: dpage/pgadmin4
+    
+    container_name: smartsports-pgadmin
+    
+    restart: unless-stopped
+    
+    environment:
+      # Login credentials for pgAdmin UI
+      PGADMIN_DEFAULT_EMAIL: admin@smartsports.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    
+    # pgAdmin will be accessible at http://localhost:5050
+    ports:
+      - "5050:80"
+    
+    # pgAdmin depends on postgres being up first
+    depends_on:
+      - postgres
+
+# Named volume to persist database data
+volumes:
+  smartsports-db-data:

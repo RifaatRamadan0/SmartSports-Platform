@@ -374,5 +374,6 @@ healthchecksdb
 # Migration backup
 MigrationBackup/
 
-
+# CLAUDE Code
 .claude/
+CLAUDE.md
