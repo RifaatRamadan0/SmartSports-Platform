@@ -4,12 +4,9 @@ import NotFoundPage from './pages/NotFound/NotFoundPage'
 
 function App() {
   return (
-    // BrowserRouter enables client-side routing
     <BrowserRouter>
       <Routes>
-        {/* Each Route maps a URL path to a page component */}
         <Route path="/" element={<HomePage />} />
-        {/* Catch-all route for any unknown URLs */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
