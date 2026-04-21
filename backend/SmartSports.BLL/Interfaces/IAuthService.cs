@@ -9,5 +9,5 @@ public interface IAuthService
 
     // -- Login & Authentication --
     Task<AuthResponse?> LoginAsync(LoginRequest request);
-    Task<AuthResponse?> RefreshTokenAsync(RefreshTokenRequest token);
+    Task<AuthResponse?> RefreshTokenAsync(string refreshToken);
 }

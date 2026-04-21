@@ -114,9 +114,9 @@ public class AuthService : IAuthService
 
     // -- Refresh Token --
 
-    public async Task<AuthResponse?> RefreshTokenAsync(RefreshTokenRequest request)
+    public async Task<AuthResponse?> RefreshTokenAsync(string refreshToken)
     {
-        var storedToken = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken);
+        var storedToken = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
 
         if(storedToken is null || !storedToken.IsValid)
             return null;
@@ -126,7 +126,7 @@ public class AuthService : IAuthService
         if (user == null)
             return null;
 
-        await _refreshTokenRepository.RevokeAsync(request.RefreshToken);
+        await _refreshTokenRepository.RevokeAsync(refreshToken);
 
         var expiryMinutes = GetAccessTokenExpiryMinutes();
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
