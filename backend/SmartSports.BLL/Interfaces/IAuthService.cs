@@ -1,4 +1,3 @@
-using SmartSports.BLL.DTOs;
 using SmartSports.BLL.DTOs.Auth;
 
 namespace SmartSports.BLL.Interfaces;

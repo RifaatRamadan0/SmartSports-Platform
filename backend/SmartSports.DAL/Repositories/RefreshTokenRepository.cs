@@ -65,7 +65,7 @@ namespace SmartSports.DAL.Repositories
                 """
                 update refresh_tokens
                 set is_revoked = True
-                where userId = @UserId
+                where user_id = @UserId
                 """,
                 new { UserId = userId });
         }

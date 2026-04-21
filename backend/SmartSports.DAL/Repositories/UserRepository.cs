@@ -1,4 +1,5 @@
 using Dapper;
+using Npgsql;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces;
 using SmartSports.Domain.Entities;
@@ -35,12 +36,19 @@ public class UserRepository : IUserRepository
     public async Task<int> CreateAsync(User user)
     {
         using var connection = _connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<int>("""
-            INSERT INTO users (username, email, password_hash, phone_number, profile_picture, skill_level, preferred_position)
-            VALUES (@Username, @Email, @PasswordHash, @PhoneNumber, @ProfilePicture, @SkillLevel, @PreferredPosition)
-            RETURNING id
-            """,
-            user);
+        try
+        {
+            return await connection.ExecuteScalarAsync<int>("""
+                INSERT INTO users (username, email, password_hash, phone_number, profile_picture, skill_level, preferred_position)
+                VALUES (@Username, @Email, @PasswordHash, @PhoneNumber, @ProfilePicture, @SkillLevel, @PreferredPosition)
+                RETURNING id
+                """,
+                user);
+        }
+        catch (PostgresException ex) when (ex.SqlState == "23505")
+        {
+            throw new ArgumentException("Email or username is already in use.");
+        }
     }
 
     public async Task<Role?> GetRoleByNameAsync(string roleName)

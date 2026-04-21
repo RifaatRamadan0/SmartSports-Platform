@@ -4,7 +4,6 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using SmartSports.BLL.DTOs;
 using SmartSports.BLL.DTOs.Auth;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces;
@@ -123,12 +122,12 @@ public class AuthService : IAuthService
         if(storedToken is null || !storedToken.IsValid)
             return null;
 
-        await _refreshTokenRepository.RevokeAsync(request.RefreshToken);
-
         var user = await _userRepository.GetByIdAsync(storedToken.UserId);
 
         if (user == null)
             return null;
+
+        await _refreshTokenRepository.RevokeAsync(request.RefreshToken);
 
         var expiryMinutes = GetAccessTokenExpiryMinutes();
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
