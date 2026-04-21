@@ -33,24 +33,6 @@ public class UserRepository : IUserRepository
             new { Username = username });
     }
 
-    public async Task<int> CreateAsync(User user)
-    {
-        using var connection = _connectionFactory.CreateConnection();
-        try
-        {
-            return await connection.ExecuteScalarAsync<int>("""
-                INSERT INTO users (username, email, password_hash, phone_number, profile_picture, skill_level, preferred_position)
-                VALUES (@Username, @Email, @PasswordHash, @PhoneNumber, @ProfilePicture, @SkillLevel, @PreferredPosition)
-                RETURNING id
-                """,
-                user);
-        }
-        catch (PostgresException ex) when (ex.SqlState == "23505")
-        {
-            throw new ArgumentException("Email or username is already in use.");
-        }
-    }
-
     public async Task<Role?> GetRoleByNameAsync(string roleName)
     {
         using var connection = _connectionFactory.CreateConnection();
@@ -59,12 +41,32 @@ public class UserRepository : IUserRepository
             new { Name = roleName });
     }
 
-    public async Task AssignRoleAsync(int userId, int roleId)
+    public async Task<int> CreateWithRoleAsync(User user, int roleId)
     {
         using var connection = _connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(
-            "INSERT INTO user_roles (user_id, role_id) VALUES (@UserId, @RoleId)",
-            new { UserId = userId, RoleId = roleId });
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
+        try
+        {
+            var userId = await connection.ExecuteScalarAsync<int>("""
+                INSERT INTO users (username, email, password_hash, phone_number, profile_picture, skill_level, preferred_position)
+                VALUES (@Username, @Email, @PasswordHash, @PhoneNumber, @ProfilePicture, @SkillLevel, @PreferredPosition)
+                RETURNING id
+                """,
+                user, transaction);
+
+            await connection.ExecuteAsync(
+                "INSERT INTO user_roles (user_id, role_id) VALUES (@UserId, @RoleId)",
+                new { UserId = userId, RoleId = roleId }, transaction);
+
+            transaction.Commit();
+            return userId;
+        }
+        catch (PostgresException ex) when (ex.SqlState == "23505")
+        {
+            transaction.Rollback();
+            throw new ArgumentException("Email or username is already in use.");
+        }
     }
 
     // -- Login & Authentication methods --
@@ -85,7 +87,6 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetByUsernameAsync(string username)
     {
         using var connection = _connectionFactory.CreateConnection();
-
         return await connection.QuerySingleOrDefaultAsync<User>(
             """
             SELECT id, username, email, password_hash, phone_number,
@@ -114,12 +115,12 @@ public class UserRepository : IUserRepository
         using var connection = _connectionFactory.CreateConnection();
         return await connection.ExecuteScalarAsync<string>(
             """
-        SELECT r.name 
-        FROM roles r
-        INNER JOIN user_roles ur ON ur.role_id = r.id
-        WHERE ur.user_id = @UserId
-        LIMIT 1
-        """,
+            SELECT r.name
+            FROM roles r
+            INNER JOIN user_roles ur ON ur.role_id = r.id
+            WHERE ur.user_id = @UserId
+            LIMIT 1
+            """,
             new { UserId = userId });
     }
 }
