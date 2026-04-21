@@ -14,5 +14,6 @@ public interface IUserRepository
     // -- Login & Authentication methods --
     Task<User?> GetByEmailAsync(string email);
     Task<User?> GetByUsernameAsync(string username);
-    Task<User?> GetByIdAsync(int userId);   
+    Task<User?> GetByIdAsync(int userId);
+    Task<string?> GetUserRoleAsync(int userId);
 }

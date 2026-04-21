@@ -57,11 +57,23 @@ public class AuthService : IAuthService
         var userId = await _userRepository.CreateAsync(user);
         await _userRepository.AssignRoleAsync(userId, role.Id);
 
-        var expiryMinutes = int.TryParse(_configuration["Jwt:AccessTokenExpiryMinutes"], out var parsed) ? parsed : 15;
+        var expiryMinutes = GetAccessTokenExpiryMinutes();
+        var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
+
+        var refreshTokenValue = GenerateRefreshToken();
+        await _refreshTokenRepository.CreateAsync(new RefreshToken
+        {
+            UserId = userId,
+            Token = refreshTokenValue,
+            ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays),
+            IsRevoked = false
+        });
+
 
         return new AuthResponse
         {
             AccessToken = GenerateJwtToken(userId, request.Username, request.Email, request.Role, expiryMinutes),
+            RefreshToken = refreshTokenValue,
             ExpiresIn = expiryMinutes * 60
         };
     }
@@ -70,8 +82,8 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse?> LoginAsync(LoginRequest request)
     {
-        var user = await _userRepository.GetByEmailAsync(request.EmailorUsername)
-            ?? await _userRepository.GetByUsernameAsync(request.EmailorUsername);
+        var user = await _userRepository.GetByEmailAsync(request.EmailOrUsername)
+            ?? await _userRepository.GetByUsernameAsync(request.EmailOrUsername);
 
         if (user == null)
             return null;
@@ -92,9 +104,11 @@ public class AuthService : IAuthService
             IsRevoked = false
         });
 
+        var userRole = await _userRepository.GetUserRoleAsync(user.Id) ?? "Player";
+
         return new AuthResponse
         {
-            AccessToken = GenerateJwtToken(user.Id, user.Username, user.Email,"Player", expiryMinutes),
+            AccessToken = GenerateJwtToken(user.Id, user.Username, user.Email, userRole, expiryMinutes),
             ExpiresIn = expiryMinutes * 60,
             RefreshToken = refreshTokenValue
         };
@@ -106,7 +120,7 @@ public class AuthService : IAuthService
     {
         var storedToken = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken);
 
-        if(storedToken is null || !storedToken.isValid)
+        if(storedToken is null || !storedToken.IsValid)
             return null;
 
         await _refreshTokenRepository.RevokeAsync(request.RefreshToken);
@@ -129,9 +143,11 @@ public class AuthService : IAuthService
             IsRevoked = false
         });
 
+        var userRole = await _userRepository.GetUserRoleAsync(user.Id) ?? "Player";
+
         return new AuthResponse
         {
-            AccessToken = GenerateJwtToken(user.Id, user.Username, user.Email,"Player", expiryMinutes),
+            AccessToken = GenerateJwtToken(user.Id, user.Username, user.Email, userRole, expiryMinutes),
             ExpiresIn = expiryMinutes * 60,
             RefreshToken = newRefreshTokenValue
         };

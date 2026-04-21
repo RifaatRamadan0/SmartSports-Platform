@@ -17,6 +17,6 @@ namespace SmartSports.Domain.Entities
 
         // Convenience property — not stored in DB, computed on the fly
         // Returns true if the token is expired OR has been revoked
-        public bool isValid => !IsRevoked && DateTime.UtcNow < ExpiresAt;
+        public bool IsValid => !IsRevoked && DateTime.UtcNow < ExpiresAt;
     }
 }
