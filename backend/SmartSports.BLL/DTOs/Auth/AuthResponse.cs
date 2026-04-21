@@ -6,4 +6,5 @@ public class AuthResponse
     public int ExpiresIn { get; set; } // seconds
 
     public string RefreshToken { get; set; } = string.Empty;
+    public DateTime RefreshTokenExpiresAt { get; set; }
 }

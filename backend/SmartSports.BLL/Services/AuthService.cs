@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SmartSports.BLL.DTOs.Auth;
 using SmartSports.BLL.Interfaces;
-using SmartSports.DAL.Interfaces;
 using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.Domain.Entities;
 
@@ -59,19 +58,20 @@ public class AuthService : IAuthService
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
 
         var refreshTokenValue = GenerateRefreshToken();
+        var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
         await _refreshTokenRepository.CreateAsync(new RefreshToken
         {
             UserId = userId,
             Token = refreshTokenValue,
-            ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays),
+            ExpiresAt = refreshTokenExpiresAt,
             IsRevoked = false
         });
-
 
         return new AuthResponse
         {
             AccessToken = GenerateJwtToken(userId, request.Username, request.Email, request.Role, expiryMinutes),
             RefreshToken = refreshTokenValue,
+            RefreshTokenExpiresAt = refreshTokenExpiresAt,
             ExpiresIn = expiryMinutes * 60
         };
     }
@@ -93,12 +93,13 @@ public class AuthService : IAuthService
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
 
         var refreshTokenValue = GenerateRefreshToken();
+        var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
 
         await _refreshTokenRepository.CreateAsync(new RefreshToken
         {
             UserId = user.Id,
             Token = refreshTokenValue,
-            ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays),
+            ExpiresAt = refreshTokenExpiresAt,
             IsRevoked = false
         });
 
@@ -108,7 +109,8 @@ public class AuthService : IAuthService
         {
             AccessToken = GenerateJwtToken(user.Id, user.Username, user.Email, userRole, expiryMinutes),
             ExpiresIn = expiryMinutes * 60,
-            RefreshToken = refreshTokenValue
+            RefreshToken = refreshTokenValue,
+            RefreshTokenExpiresAt = refreshTokenExpiresAt
         };
     }
 
@@ -132,12 +134,13 @@ public class AuthService : IAuthService
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
 
         var newRefreshTokenValue = GenerateRefreshToken();
+        var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
 
         await _refreshTokenRepository.CreateAsync(new RefreshToken
         {
             UserId = user.Id,
             Token = newRefreshTokenValue,
-            ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays),
+            ExpiresAt = refreshTokenExpiresAt,
             IsRevoked = false
         });
 
@@ -147,7 +150,8 @@ public class AuthService : IAuthService
         {
             AccessToken = GenerateJwtToken(user.Id, user.Username, user.Email, userRole, expiryMinutes),
             ExpiresIn = expiryMinutes * 60,
-            RefreshToken = newRefreshTokenValue
+            RefreshToken = newRefreshTokenValue,
+            RefreshTokenExpiresAt = refreshTokenExpiresAt
         };
     }
 

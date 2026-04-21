@@ -1,6 +1,6 @@
 using SmartSports.Domain.Entities;
 
-namespace SmartSports.DAL.Interfaces;
+namespace SmartSports.DAL.Interfaces.Auth;
 
 public interface IUserRepository
 {

@@ -5,7 +5,6 @@ using Microsoft.OpenApi.Models;
 using SmartSports.BLL.Interfaces;
 using SmartSports.BLL.Services;
 using SmartSports.DAL.Data;
-using SmartSports.DAL.Interfaces;
 using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.DAL.Repositories;
 

@@ -1,7 +1,7 @@
 using Dapper;
 using Npgsql;
 using SmartSports.DAL.Data;
-using SmartSports.DAL.Interfaces;
+using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.Domain.Entities;
 
 namespace SmartSports.DAL.Repositories;

@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using SmartSports.BLL.DTOs.Auth;
 using SmartSports.BLL.Interfaces;
 
@@ -10,14 +9,12 @@ namespace SmartSports.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly IConfiguration _configuration;
 
     private const string RefreshTokenCookieName = "refreshToken";
 
-    public AuthController(IAuthService authService, IConfiguration configuration)
+    public AuthController(IAuthService authService)
     {
         _authService = authService;
-        _configuration = configuration;
     }
 
     // POST api/auth/register
@@ -28,7 +25,7 @@ public class AuthController : ControllerBase
     {
         var response = await _authService.RegisterAsync(request);
 
-        SetRefreshTokenCookie(response.RefreshToken);
+        SetRefreshTokenCookie(response.RefreshToken, response.RefreshTokenExpiresAt);
 
         response.RefreshToken = string.Empty;
 
@@ -46,7 +43,7 @@ public class AuthController : ControllerBase
         if (response is null)
             return Unauthorized(new { Message = "Invalid credentials." });
 
-        SetRefreshTokenCookie(response.RefreshToken);
+        SetRefreshTokenCookie(response.RefreshToken, response.RefreshTokenExpiresAt);
 
         response.RefreshToken = string.Empty;
 
@@ -69,7 +66,7 @@ public class AuthController : ControllerBase
         if (response is null)
             return Unauthorized(new { Message = "Invalid or expired refresh token." });
 
-        SetRefreshTokenCookie(response.RefreshToken);
+        SetRefreshTokenCookie(response.RefreshToken, response.RefreshTokenExpiresAt);
 
         response.RefreshToken = string.Empty;
 
@@ -78,16 +75,14 @@ public class AuthController : ControllerBase
 
     // -- Private Helpers --
 
-    private void SetRefreshTokenCookie(string refreshToken)
+    private void SetRefreshTokenCookie(string refreshToken, DateTime expiresAt)
     {
-        var expiryDays = int.TryParse(_configuration["Jwt:RefreshTokenExpiryDays"], out var parsed) ? parsed : 7;
-
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddDays(expiryDays),
+            Expires = expiresAt,
             Path = "/api/auth"
         };
         Response.Cookies.Append(RefreshTokenCookieName, refreshToken, cookieOptions);
