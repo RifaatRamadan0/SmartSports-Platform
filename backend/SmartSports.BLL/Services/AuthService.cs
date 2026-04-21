@@ -47,8 +47,7 @@ public class AuthService : IAuthService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
         };
 
-        var userId = await _userRepository.CreateAsync(user);
-        await _userRepository.AssignRoleAsync(userId, role.Id);
+        var userId = await _userRepository.CreateWithRoleAsync(user, role.Id);
 
         var expiryMinutes = int.TryParse(_configuration["Jwt:AccessTokenExpiryMinutes"], out var parsed) ? parsed : 15;
 

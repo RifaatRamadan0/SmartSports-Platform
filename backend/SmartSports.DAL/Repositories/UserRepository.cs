@@ -30,17 +30,6 @@ public class UserRepository : IUserRepository
             new { Username = username });
     }
 
-    public async Task<int> CreateAsync(User user)
-    {
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<int>("""
-            INSERT INTO users (username, email, password_hash, phone_number, profile_picture, skill_level, preferred_position)
-            VALUES (@Username, @Email, @PasswordHash, @PhoneNumber, @ProfilePicture, @SkillLevel, @PreferredPosition)
-            RETURNING id
-            """,
-            user);
-    }
-
     public async Task<Role?> GetRoleByNameAsync(string roleName)
     {
         using var connection = _connectionFactory.CreateConnection();
@@ -49,11 +38,25 @@ public class UserRepository : IUserRepository
             new { Name = roleName });
     }
 
-    public async Task AssignRoleAsync(int userId, int roleId)
+    public async Task<int> CreateWithRoleAsync(User user, int roleId)
     {
         using var connection = _connectionFactory.CreateConnection();
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
+
+        var userId = await connection.ExecuteScalarAsync<int>("""
+            INSERT INTO users (username, email, password_hash, phone_number, profile_picture, skill_level, preferred_position)
+            VALUES (@Username, @Email, @PasswordHash, @PhoneNumber, @ProfilePicture, @SkillLevel, @PreferredPosition)
+            RETURNING id
+            """,
+            user, transaction);
+
         await connection.ExecuteAsync(
             "INSERT INTO user_roles (user_id, role_id) VALUES (@UserId, @RoleId)",
-            new { UserId = userId, RoleId = roleId });
+            new { UserId = userId, RoleId = roleId }, transaction);
+
+        transaction.Commit();
+        return userId;
     }
+
 }
