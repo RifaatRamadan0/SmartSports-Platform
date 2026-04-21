@@ -14,6 +14,8 @@ public class UserRepository : IUserRepository
         _connectionFactory = connectionFactory;
     }
 
+    // -- Registration methods --
+
     public async Task<bool> ExistsByEmailAsync(string email)
     {
         using var connection = _connectionFactory.CreateConnection();
@@ -55,5 +57,47 @@ public class UserRepository : IUserRepository
         await connection.ExecuteAsync(
             "INSERT INTO user_roles (user_id, role_id) VALUES (@UserId, @RoleId)",
             new { UserId = userId, RoleId = roleId });
+    }
+
+    // -- Login & Authentication methods --
+
+    public async Task<User?> GetByEmailAsync(string email)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<User>(
+            """
+            SELECT id, username, email, password_hash, phone_number,
+                   profile_picture, skill_level, preferred_position, created_at
+            FROM users
+            WHERE email = @Email
+            """,
+            new { Email = email });
+    }
+
+    public async Task<User?> GetByUsernameAsync(string username)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        return await connection.QuerySingleOrDefaultAsync<User>(
+            """
+            SELECT id, username, email, password_hash, phone_number,
+                   profile_picture, skill_level, preferred_position, created_at
+            FROM users
+            WHERE username = @Username
+            """,
+            new { Username = username });
+    }
+
+    public async Task<User?> GetByIdAsync(int userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<User>(
+            """
+            SELECT id, username, email, password_hash, phone_number,
+                   profile_picture, skill_level, preferred_position, created_at
+            FROM users
+            WHERE id = @UserId
+            """,
+            new { UserId = userId });
     }
 }
