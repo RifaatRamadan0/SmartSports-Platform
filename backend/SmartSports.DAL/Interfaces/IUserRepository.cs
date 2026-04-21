@@ -6,7 +6,6 @@ public interface IUserRepository
 {
     Task<bool> ExistsByEmailAsync(string email);
     Task<bool> ExistsByUsernameAsync(string username);
-    Task<int> CreateAsync(User user);
+    Task<int> CreateWithRoleAsync(User user, int roleId);
     Task<Role?> GetRoleByNameAsync(string roleName);
-    Task AssignRoleAsync(int userId, int roleId);
 }
