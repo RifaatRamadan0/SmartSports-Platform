@@ -30,7 +30,7 @@ CREATE TABLE sport_types (
 
 CREATE TABLE roles (
     id    SERIAL PRIMARY KEY,
-    name  TEXT   NOT NULL UNIQUE   -- 'player', 'owner', 'admin'
+    name  TEXT   NOT NULL UNIQUE   -- 'Player', 'PitchOwner', 'Admin'
 );
 
 CREATE TABLE users (
@@ -191,6 +191,16 @@ CREATE TABLE notifications (
     is_read            BOOLEAN           NOT NULL DEFAULT FALSE,
     created_at         TIMESTAMPTZ       NOT NULL DEFAULT NOW()
 );
+
+-- ----------------------------------------------------------------
+-- Seed Data
+-- ----------------------------------------------------------------
+
+INSERT INTO roles (name) VALUES
+    ('Player'),
+    ('PitchOwner'),
+    ('Admin')
+ON CONFLICT (name) DO NOTHING;
 
 -- ----------------------------------------------------------------
 -- Indexes
