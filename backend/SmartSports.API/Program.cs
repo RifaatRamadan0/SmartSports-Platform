@@ -23,6 +23,10 @@ public class Program
         // ── Build ────────────────────────────────────────────────
         var app = builder.Build();
 
+        // Tell Dapper to map snake_case column names to PascalCase properties
+        // e.g. password_hash → PasswordHash, created_at → CreatedAt
+        Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+
         app.Services.GetRequiredService<MigrationRunner>().Run();
 
         // ── Middleware Pipeline ──────────────────────────────────

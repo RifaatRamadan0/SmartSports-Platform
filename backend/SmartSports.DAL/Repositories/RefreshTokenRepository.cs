@@ -19,10 +19,16 @@ namespace SmartSports.DAL.Repositories
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
                 """
-                Insert into refresh_tokens (UserId, Token, ExpiresAt, CreatedAt, IsRevoked)
-                Values (@UserId, @Token, @ExpiresAt, @CreatedAt, @IsRevoked)
+                Insert into refresh_tokens (user_id, token, expires_at, is_revoked)
+                Values (@UserId, @Token, @ExpiresAt, @IsRevoked)
                 """,
-                refreshToken);
+                new
+                {
+                    UserId = refreshToken.UserId,
+                    Token = refreshToken.Token,
+                    ExpiresAt = refreshToken.ExpiresAt,
+                    IsRevoked = refreshToken.IsRevoked
+                });
         }
 
         public async Task<RefreshToken?> GetByTokenAsync(string token)
