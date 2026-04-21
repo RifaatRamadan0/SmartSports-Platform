@@ -196,11 +196,6 @@ CREATE TABLE notifications (
 -- Seed Data
 -- ----------------------------------------------------------------
 
-INSERT INTO roles (name) VALUES
-    ('Player'),
-    ('PitchOwner'),
-    ('Admin')
-ON CONFLICT (name) DO NOTHING;
 
 -- ----------------------------------------------------------------
 -- Indexes

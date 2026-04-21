@@ -1,11 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using SmartSports.BLL.DTOs;
+using SmartSports.BLL.DTOs.Auth;
 using SmartSports.BLL.Interfaces;
-using SmartSports.DAL.Interfaces;
+using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.Domain.Entities;
 
 namespace SmartSports.BLL.Services;
@@ -14,17 +15,21 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IConfiguration _configuration;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
 
     private static readonly HashSet<string> AllowedRoles = new(StringComparer.Ordinal)
     {
         "Player", "PitchOwner"
     };
 
-    public AuthService(IUserRepository userRepository, IConfiguration configuration)
+    public AuthService(IUserRepository userRepository, IConfiguration configuration, IRefreshTokenRepository refreshTokenRepository)
     {
         _userRepository = userRepository;
         _configuration = configuration;
+        _refreshTokenRepository = refreshTokenRepository;
     }
+
+    // -- Registration --
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
@@ -49,13 +54,125 @@ public class AuthService : IAuthService
 
         var userId = await _userRepository.CreateWithRoleAsync(user, role.Id);
 
-        var expiryMinutes = int.TryParse(_configuration["Jwt:AccessTokenExpiryMinutes"], out var parsed) ? parsed : 15;
+        var expiryMinutes = GetAccessTokenExpiryMinutes();
+        var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
+
+        var refreshTokenValue = GenerateRefreshToken();
+        var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
+        await _refreshTokenRepository.CreateAsync(new RefreshToken
+        {
+            UserId = userId,
+            Token = refreshTokenValue,
+            ExpiresAt = refreshTokenExpiresAt,
+            IsRevoked = false
+        });
 
         return new AuthResponse
         {
             AccessToken = GenerateJwtToken(userId, request.Username, request.Email, request.Role, expiryMinutes),
+            RefreshToken = refreshTokenValue,
+            RefreshTokenExpiresAt = refreshTokenExpiresAt,
             ExpiresIn = expiryMinutes * 60
         };
+    }
+
+    // -- Login --
+
+    public async Task<AuthResponse?> LoginAsync(LoginRequest request)
+    {
+        var user = await _userRepository.GetByEmailAsync(request.EmailOrUsername)
+            ?? await _userRepository.GetByUsernameAsync(request.EmailOrUsername);
+
+        if (user == null)
+            return null;
+
+        if(!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            return null;
+    
+        var expiryMinutes = GetAccessTokenExpiryMinutes();
+        var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
+
+        var refreshTokenValue = GenerateRefreshToken();
+        var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
+
+        await _refreshTokenRepository.CreateAsync(new RefreshToken
+        {
+            UserId = user.Id,
+            Token = refreshTokenValue,
+            ExpiresAt = refreshTokenExpiresAt,
+            IsRevoked = false
+        });
+
+        var userRole = await _userRepository.GetUserRoleAsync(user.Id) ?? "Player";
+
+        return new AuthResponse
+        {
+            AccessToken = GenerateJwtToken(user.Id, user.Username, user.Email, userRole, expiryMinutes),
+            ExpiresIn = expiryMinutes * 60,
+            RefreshToken = refreshTokenValue,
+            RefreshTokenExpiresAt = refreshTokenExpiresAt
+        };
+    }
+
+    // -- Refresh Token --
+
+    public async Task<AuthResponse?> RefreshTokenAsync(string refreshToken)
+    {
+        var storedToken = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+
+        if(storedToken is null || !storedToken.IsValid)
+            return null;
+
+        var user = await _userRepository.GetByIdAsync(storedToken.UserId);
+
+        if (user == null)
+            return null;
+
+        await _refreshTokenRepository.RevokeAsync(refreshToken);
+
+        var expiryMinutes = GetAccessTokenExpiryMinutes();
+        var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
+
+        var newRefreshTokenValue = GenerateRefreshToken();
+        var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
+
+        await _refreshTokenRepository.CreateAsync(new RefreshToken
+        {
+            UserId = user.Id,
+            Token = newRefreshTokenValue,
+            ExpiresAt = refreshTokenExpiresAt,
+            IsRevoked = false
+        });
+
+        var userRole = await _userRepository.GetUserRoleAsync(user.Id) ?? "Player";
+
+        return new AuthResponse
+        {
+            AccessToken = GenerateJwtToken(user.Id, user.Username, user.Email, userRole, expiryMinutes),
+            ExpiresIn = expiryMinutes * 60,
+            RefreshToken = newRefreshTokenValue,
+            RefreshTokenExpiresAt = refreshTokenExpiresAt
+        };
+    }
+
+    // -- Private Helpers --
+
+    private static string GenerateRefreshToken()
+    {
+        var randomBytes = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+        return Convert.ToBase64String(randomBytes);
+    }
+
+    private int GetAccessTokenExpiryMinutes()
+    {
+        return int.TryParse(_configuration["Jwt:AccessTokenExpiryMinutes"], out var parsed) ? parsed : 15;
+    }
+
+    private int GetRefreshTokenExpiryDays()
+    {
+        return int.TryParse(_configuration["Jwt:RefreshTokenExpiryDays"], out var parsed) ? parsed : 7;
     }
 
     private string GenerateJwtToken(int userId, string username, string email, string role, int expiryMinutes)

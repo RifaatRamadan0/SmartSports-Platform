@@ -1,12 +1,11 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using SmartSports.BLL.Interfaces;
 using SmartSports.BLL.Services;
 using SmartSports.DAL.Data;
-using SmartSports.DAL.Interfaces;
+using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.DAL.Repositories;
 
 namespace SmartSports.API.Extensions;
@@ -144,6 +143,7 @@ public static class ServiceExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAuthService, AuthService>();
         return services;
     }

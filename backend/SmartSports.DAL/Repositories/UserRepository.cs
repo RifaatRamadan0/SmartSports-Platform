@@ -1,6 +1,7 @@
 using Dapper;
+using Npgsql;
 using SmartSports.DAL.Data;
-using SmartSports.DAL.Interfaces;
+using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.Domain.Entities;
 
 namespace SmartSports.DAL.Repositories;
@@ -13,6 +14,8 @@ public class UserRepository : IUserRepository
     {
         _connectionFactory = connectionFactory;
     }
+
+    // -- Registration methods --
 
     public async Task<bool> ExistsByEmailAsync(string email)
     {
@@ -43,20 +46,81 @@ public class UserRepository : IUserRepository
         using var connection = _connectionFactory.CreateConnection();
         connection.Open();
         using var transaction = connection.BeginTransaction();
+        try
+        {
+            var userId = await connection.ExecuteScalarAsync<int>("""
+                INSERT INTO users (username, email, password_hash, phone_number, profile_picture, skill_level, preferred_position)
+                VALUES (@Username, @Email, @PasswordHash, @PhoneNumber, @ProfilePicture, @SkillLevel, @PreferredPosition)
+                RETURNING id
+                """,
+                user, transaction);
 
-        var userId = await connection.ExecuteScalarAsync<int>("""
-            INSERT INTO users (username, email, password_hash, phone_number, profile_picture, skill_level, preferred_position)
-            VALUES (@Username, @Email, @PasswordHash, @PhoneNumber, @ProfilePicture, @SkillLevel, @PreferredPosition)
-            RETURNING id
-            """,
-            user, transaction);
+            await connection.ExecuteAsync(
+                "INSERT INTO user_roles (user_id, role_id) VALUES (@UserId, @RoleId)",
+                new { UserId = userId, RoleId = roleId }, transaction);
 
-        await connection.ExecuteAsync(
-            "INSERT INTO user_roles (user_id, role_id) VALUES (@UserId, @RoleId)",
-            new { UserId = userId, RoleId = roleId }, transaction);
-
-        transaction.Commit();
-        return userId;
+            transaction.Commit();
+            return userId;
+        }
+        catch (PostgresException ex) when (ex.SqlState == "23505")
+        {
+            transaction.Rollback();
+            throw new ArgumentException("Email or username is already in use.");
+        }
     }
 
+    // -- Login & Authentication methods --
+
+    public async Task<User?> GetByEmailAsync(string email)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<User>(
+            """
+            SELECT id, username, email, password_hash, phone_number,
+                   profile_picture, skill_level, preferred_position, created_at
+            FROM users
+            WHERE email = @Email
+            """,
+            new { Email = email });
+    }
+
+    public async Task<User?> GetByUsernameAsync(string username)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<User>(
+            """
+            SELECT id, username, email, password_hash, phone_number,
+                   profile_picture, skill_level, preferred_position, created_at
+            FROM users
+            WHERE username = @Username
+            """,
+            new { Username = username });
+    }
+
+    public async Task<User?> GetByIdAsync(int userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<User>(
+            """
+            SELECT id, username, email, password_hash, phone_number,
+                   profile_picture, skill_level, preferred_position, created_at
+            FROM users
+            WHERE id = @UserId
+            """,
+            new { UserId = userId });
+    }
+
+    public async Task<string?> GetUserRoleAsync(int userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<string>(
+            """
+            SELECT r.name
+            FROM roles r
+            INNER JOIN user_roles ur ON ur.role_id = r.id
+            WHERE ur.user_id = @UserId
+            LIMIT 1
+            """,
+            new { UserId = userId });
+    }
 }

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace SmartSports.BLL.DTOs;
+namespace SmartSports.BLL.DTOs.Auth;
 
 public class RegisterRequest
 {
