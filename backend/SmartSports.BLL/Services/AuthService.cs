@@ -67,12 +67,14 @@ public class AuthService : IAuthService
             IsRevoked = false
         });
 
+        var roles = new[] { request.Role };
         return new AuthResponse
         {
-            AccessToken = GenerateJwtToken(userId, request.Username, request.Email, request.Role, expiryMinutes),
+            AccessToken = GenerateJwtToken(userId, request.Username, request.Email, roles, expiryMinutes),
             RefreshToken = refreshTokenValue,
             RefreshTokenExpiresAt = refreshTokenExpiresAt,
-            ExpiresIn = expiryMinutes * 60
+            ExpiresIn = expiryMinutes * 60,
+            Roles = roles
         };
     }
 
@@ -103,14 +105,16 @@ public class AuthService : IAuthService
             IsRevoked = false
         });
 
-        var userRole = await _userRepository.GetUserRoleAsync(user.Id) ?? "Player";
+        var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();
+        if (userRoles.Count == 0) userRoles.Add("Player");
 
         return new AuthResponse
         {
-            AccessToken = GenerateJwtToken(user.Id, user.Username, user.Email, userRole, expiryMinutes),
+            AccessToken = GenerateJwtToken(user.Id, user.Username, user.Email, userRoles, expiryMinutes),
             ExpiresIn = expiryMinutes * 60,
             RefreshToken = refreshTokenValue,
-            RefreshTokenExpiresAt = refreshTokenExpiresAt
+            RefreshTokenExpiresAt = refreshTokenExpiresAt,
+            Roles = userRoles
         };
     }
 
@@ -144,14 +148,16 @@ public class AuthService : IAuthService
             IsRevoked = false
         });
 
-        var userRole = await _userRepository.GetUserRoleAsync(user.Id) ?? "Player";
+        var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();
+        if (userRoles.Count == 0) userRoles.Add("Player");
 
         return new AuthResponse
         {
-            AccessToken = GenerateJwtToken(user.Id, user.Username, user.Email, userRole, expiryMinutes),
+            AccessToken = GenerateJwtToken(user.Id, user.Username, user.Email, userRoles, expiryMinutes),
             ExpiresIn = expiryMinutes * 60,
             RefreshToken = newRefreshTokenValue,
-            RefreshTokenExpiresAt = refreshTokenExpiresAt
+            RefreshTokenExpiresAt = refreshTokenExpiresAt,
+            Roles = userRoles
         };
     }
 
@@ -175,7 +181,7 @@ public class AuthService : IAuthService
         return int.TryParse(_configuration["Jwt:RefreshTokenExpiryDays"], out var parsed) ? parsed : 7;
     }
 
-    private string GenerateJwtToken(int userId, string username, string email, string role, int expiryMinutes)
+    private string GenerateJwtToken(int userId, string username, string email, IEnumerable<string> roles, int expiryMinutes)
     {
         var secret = _configuration["Jwt:Secret"]
             ?? throw new InvalidOperationException("JWT Secret is not configured.");
@@ -183,14 +189,14 @@ public class AuthService : IAuthService
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, email),
             new Claim(JwtRegisteredClaimNames.UniqueName, username),
-            new Claim(ClaimTypes.Role, role),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
         var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],

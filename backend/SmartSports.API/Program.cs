@@ -17,6 +17,7 @@ public class Program
         builder.Services.AddSwaggerConfiguration();
         builder.Services.AddCorsConfiguration(builder.Configuration);
         builder.Services.AddJwtAuthentication(builder.Configuration);
+        builder.Services.AddRoleBasedAuthorization();
         builder.Services.AddApplicationServices();
         builder.Services.AddDataAccess(builder.Configuration);
 

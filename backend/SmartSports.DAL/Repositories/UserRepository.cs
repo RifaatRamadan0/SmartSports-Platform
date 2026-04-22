@@ -110,16 +110,15 @@ public class UserRepository : IUserRepository
             new { UserId = userId });
     }
 
-    public async Task<string?> GetUserRoleAsync(int userId)
+    public async Task<IEnumerable<string>> GetUserRolesAsync(int userId)
     {
         using var connection = _connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<string>(
+        return await connection.QueryAsync<string>(
             """
             SELECT r.name
             FROM roles r
             INNER JOIN user_roles ur ON ur.role_id = r.id
             WHERE ur.user_id = @UserId
-            LIMIT 1
             """,
             new { UserId = userId });
     }
