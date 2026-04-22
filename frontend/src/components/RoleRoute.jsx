@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-function RoleRoute({ allowedRoles }) {
+function RoleRoute({ allowedRoles = [] }) {
   const { token, roles } = useAuth()
 
   if (!token) return <Navigate to="/login" replace />
