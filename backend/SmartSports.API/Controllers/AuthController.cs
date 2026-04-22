@@ -73,6 +73,27 @@ public class AuthController : ControllerBase
         return Ok(response);
     }
 
+    // POST api/auth/logout
+    [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Logout()
+    {
+        var refreshToken = Request.Cookies[RefreshTokenCookieName];
+
+        if (!string.IsNullOrEmpty(refreshToken))
+            await _authService.LogoutAsync(refreshToken);
+
+        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Path = "/api/auth"
+        });
+
+        return Ok(new { Message = "Logged out successfully." });
+    }
+
     // -- Private Helpers --
 
     private void SetRefreshTokenCookie(string refreshToken, DateTime expiresAt)
