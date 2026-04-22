@@ -28,11 +28,9 @@ api.interceptors.response.use(
   // If response is successful just return it
   (response) => response,
   (error) => {
-    // If server returns 401 (Unauthorized) token has expired
     if (error.response?.status === 401) {
-      // Clear the stored token
       localStorage.removeItem('token')
-      // Redirect to login page
+      localStorage.removeItem('roles')
       window.location.href = '/login'
     }
     return Promise.reject(error)
