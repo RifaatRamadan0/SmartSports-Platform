@@ -107,7 +107,7 @@ public class AuthService : IAuthService
 
         var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();
         if (userRoles.Count == 0)
-            throw new InvalidOperationException($"User {user.Id} has no roles assigned.");
+            throw new UnauthorizedAccessException("User account has no roles assigned.");
 
         return new AuthResponse
         {
@@ -151,7 +151,7 @@ public class AuthService : IAuthService
 
         var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();
         if (userRoles.Count == 0)
-            throw new InvalidOperationException($"User {user.Id} has no roles assigned.");
+            throw new UnauthorizedAccessException("User account has no roles assigned.");
 
         return new AuthResponse
         {
