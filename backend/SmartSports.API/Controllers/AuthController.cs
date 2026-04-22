@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartSports.BLL.DTOs.Auth;
 using SmartSports.BLL.Interfaces;
@@ -75,15 +74,14 @@ public class AuthController : ControllerBase
     }
 
     // POST api/auth/logout
-    [Authorize]
     [HttpPost("logout")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Logout()
     {
         var refreshToken = Request.Cookies[RefreshTokenCookieName];
 
-        if(!string.IsNullOrEmpty(refreshToken))
-           await _authService.LogoutAsync(refreshToken);
+        if (!string.IsNullOrEmpty(refreshToken))
+            await _authService.LogoutAsync(refreshToken);
 
         Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
         {
