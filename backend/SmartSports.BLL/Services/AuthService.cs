@@ -163,6 +163,12 @@ public class AuthService : IAuthService
         };
     }
 
+    // -- Logout --
+    public async Task LogoutAsync(string refreshToken)
+    {
+        await _refreshTokenRepository.RevokeAsync(refreshToken);
+    }
+
     // -- Private Helpers --
 
     private static string GenerateRefreshToken()
