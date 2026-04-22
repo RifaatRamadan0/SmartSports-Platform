@@ -140,6 +140,18 @@ public static class ServiceExtensions
         return services;
     }
 
+    public static IServiceCollection AddRoleBasedAuthorization(this IServiceCollection services)
+    {
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("PlayerOnly",         p => p.RequireRole("Player"));
+            options.AddPolicy("PitchOwnerOnly",     p => p.RequireRole("PitchOwner"));
+            options.AddPolicy("AdminOnly",          p => p.RequireRole("Admin"));
+            options.AddPolicy("PlayerOrPitchOwner", p => p.RequireRole("Player", "PitchOwner"));
+        });
+        return services;
+    }
+
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IUserRepository, UserRepository>();
