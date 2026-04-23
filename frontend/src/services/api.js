@@ -43,7 +43,7 @@ api.interceptors.response.use(
     const originalRequest = error.config
 
     // only attempt refresh if we get 401 and we haven't already tried to refresh for this request
-    if(error.response?.status === 401 && !originalRequest._retry) {
+    if(error.response?.status !== 401 || originalRequest._retry) {
       return Promise.reject(error)
     }
 
@@ -63,7 +63,7 @@ api.interceptors.response.use(
     isRefreshing = true
 
     try{
-      const { data } = await api.post('/auth/refresh')
+      const { data } = await api.post('/api/auth/refresh')
       setAccessToken(data.accessToken)
       processQueue(null, data.accessToken)
       originalRequest.headers['Authorization'] = 'Bearer ' + data.accessToken

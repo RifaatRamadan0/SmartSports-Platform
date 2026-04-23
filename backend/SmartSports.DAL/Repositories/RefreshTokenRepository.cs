@@ -66,4 +66,14 @@ public class RefreshTokenRepository : IRefreshTokenRepository
             """,
             new { UserId = userId });
     }
+
+    public async Task DeleteExpiredAsync()
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        await connection.ExecuteAsync(
+            """
+            DELETE FROM refresh_tokens
+            WHERE is_revoked = TRUE OR expires_at < NOW()
+            """);
+    }
 }

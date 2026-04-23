@@ -4,6 +4,7 @@ import PrivateRoute from './components/PrivateRoute'
 import RoleRoute from './components/RoleRoute'
 import HomePage from './pages/Home/HomePage'
 import LoginPage from './pages/Login/LoginPage'
+import RegisterPage from './pages/Register/RegisterPage'
 import ForbiddenPage from './pages/Forbidden/ForbiddenPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
 
@@ -13,6 +14,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/forbidden" element={<ForbiddenPage />} />
 
           {/* Protected: any authenticated user */}

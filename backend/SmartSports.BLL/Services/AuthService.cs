@@ -107,7 +107,7 @@ public class AuthService : IAuthService
 
         var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();
         if (userRoles.Count == 0)
-            throw new UnauthorizedAccessException("User account has no roles assigned.");
+            return null;
 
         return new AuthResponse
         {
@@ -134,6 +134,7 @@ public class AuthService : IAuthService
             return null;
 
         await _refreshTokenRepository.RevokeAsync(refreshToken);
+        await _refreshTokenRepository.DeleteExpiredAsync();
 
         var expiryMinutes = GetAccessTokenExpiryMinutes();
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
@@ -151,7 +152,7 @@ public class AuthService : IAuthService
 
         var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();
         if (userRoles.Count == 0)
-            throw new UnauthorizedAccessException("User account has no roles assigned.");
+            return null;
 
         return new AuthResponse
         {

@@ -18,6 +18,7 @@ public class Program
         builder.Services.AddCorsConfiguration(builder.Configuration);
         builder.Services.AddJwtAuthentication(builder.Configuration);
         builder.Services.AddRoleBasedAuthorization();
+        builder.Services.AddAuthRateLimiting();
         builder.Services.AddApplicationServices();
         builder.Services.AddDataAccess(builder.Configuration);
 
@@ -45,6 +46,8 @@ public class Program
         app.UseHttpsRedirection();
 
         app.UseCors("SmartSportsCorsPolicy");
+
+        app.UseRateLimiter();
 
         app.UseAuthentication();
         app.UseAuthorization();
