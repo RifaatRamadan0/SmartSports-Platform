@@ -90,7 +90,11 @@ public class AuthService : IAuthService
 
         if(!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             return null;
-    
+
+        var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();
+        if (userRoles.Count == 0)
+            return null;
+
         var expiryMinutes = GetAccessTokenExpiryMinutes();
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
 
@@ -104,10 +108,6 @@ public class AuthService : IAuthService
             ExpiresAt = refreshTokenExpiresAt,
             IsRevoked = false
         });
-
-        var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();
-        if (userRoles.Count == 0)
-            return null;
 
         return new AuthResponse
         {
@@ -133,6 +133,10 @@ public class AuthService : IAuthService
         if (user == null)
             return null;
 
+        var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();
+        if (userRoles.Count == 0)
+            return null;
+
         await _refreshTokenRepository.RevokeAsync(refreshToken);
 
         var expiryMinutes = GetAccessTokenExpiryMinutes();
@@ -148,10 +152,6 @@ public class AuthService : IAuthService
             ExpiresAt = refreshTokenExpiresAt,
             IsRevoked = false
         });
-
-        var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();
-        if (userRoles.Count == 0)
-            return null;
 
         return new AuthResponse
         {

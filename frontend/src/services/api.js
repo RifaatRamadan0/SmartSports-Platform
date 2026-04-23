@@ -31,6 +31,15 @@ api.interceptors.request.use(
 let isRefreshing = false
 let failedQueue = [] // requests that failed while token is being refreshed
 
+// Auth endpoints whose 401s represent a real failure, not an expired access token.
+// These must never trigger the refresh-and-retry flow.
+const authEndpointsSkipRefresh = [
+  '/api/auth/refresh',
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/logout',
+]
+
 function processQueue(error, token = null) {
   failedQueue.forEach((prom) => {error ? prom.reject(error) : prom.resolve(token)})
   failedQueue = []
@@ -42,8 +51,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // only attempt refresh if we get 401, haven't already retried, and the failing request is not the refresh endpoint itself
-    if(error.response?.status !== 401 || originalRequest._retry || originalRequest.url?.includes('/api/auth/refresh')) {
+    // only attempt refresh if we get 401, haven't already retried, and the failing request is not an auth endpoint
+    if(
+      error.response?.status !== 401 ||
+      originalRequest._retry ||
+      authEndpointsSkipRefresh.some(path => originalRequest.url?.includes(path))
+    ) {
       return Promise.reject(error)
     }
 
