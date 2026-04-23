@@ -2,7 +2,7 @@ import axios from 'axios'
 
 let accessToken = null
 
-// in-memory token token store
+// in-memory token store
 export const setAccessToken = (token) => {
   accessToken = token
 }
@@ -19,7 +19,7 @@ const api = axios.create({
 // Request interceptor — attaches JWT token to every request automatically
 api.interceptors.request.use(
   (config) => {
-    if (accessToken) {  
+    if (accessToken) {
       config.headers['Authorization'] = `Bearer ${accessToken}`
     }
     return config
@@ -42,8 +42,8 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // only attempt refresh if we get 401 and we haven't already tried to refresh for this request
-    if(error.response?.status !== 401 || originalRequest._retry) {
+    // only attempt refresh if we get 401, haven't already retried, and the failing request is not the refresh endpoint itself
+    if(error.response?.status !== 401 || originalRequest._retry || originalRequest.url?.includes('/api/auth/refresh')) {
       return Promise.reject(error)
     }
 
