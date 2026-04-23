@@ -19,7 +19,7 @@ export function useLoginForm() {
   async function handleSubmit(e) {
     e.preventDefault()
     setIsSubmitting(true)
-    setError('')
+    setError(null)
 
     try {
       const { data } = await api.post('/api/auth/login', form)

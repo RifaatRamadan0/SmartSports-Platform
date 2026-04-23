@@ -2,6 +2,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using SmartSports.API.BackgroundServices;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartSports.BLL.Interfaces;
@@ -159,7 +160,7 @@ public static class ServiceExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAuthService, AuthService>();
-        services.AddHostedService<SmartSports.API.BackgroundServices.ExpiredTokenCleanupService>();
+        services.AddHostedService<ExpiredTokenCleanupService>();
         return services;
     }
 

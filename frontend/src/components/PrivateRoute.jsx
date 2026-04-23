@@ -4,8 +4,11 @@ import { useAuth } from '../context/useAuth'
 function PrivateRoute() {
   const { token, isLoading } = useAuth()
 
-  // Wait for silent refresh to finish before deciding — prevents flash-redirect
-  if (isLoading) return null
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
 
   if (!token) return <Navigate to="/login" replace />
 

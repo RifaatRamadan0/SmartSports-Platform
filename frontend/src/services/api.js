@@ -48,7 +48,7 @@ api.interceptors.response.use(
     }
 
     if(isRefreshing) {
-      // anoter request is already refreshing the token, queue this one up to retry once it's done
+      // another request is already refreshing the token, queue this one up to retry once it's done
       return new Promise((resolve, reject) => {
         failedQueue.push({resolve, reject})
       })

@@ -1,10 +1,10 @@
-import { Link } from "react-router-dom";
-import { useLoginForm } from "./useLoginForm";
+import { Link } from 'react-router-dom'
+import { useLoginForm } from './useLoginForm'
 
 function LoginPage() {
-    const { form, error, isSubmitting, handleChange, handleSubmit } = useLoginForm()
+  const { form, error, isSubmitting, handleChange, handleSubmit } = useLoginForm()
 
-    return (
+  return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
@@ -72,9 +72,9 @@ function LoginPage() {
             </Link>
           </p>
         </div>
-        </div>
+      </div>
     </div>
-    )
+  )
 }
 
 export default LoginPage
