@@ -17,10 +17,11 @@ function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="emailOrUsername" className="block text-sm font-medium text-gray-700 mb-1">
                 Email or Username
               </label>
               <input
+                id="emailOrUsername"
                 type="text"
                 name="emailOrUsername"
                 value={form.emailOrUsername}
@@ -33,10 +34,11 @@ function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </label>
               <input
+                id="password"
                 type="password"
                 name="password"
                 value={form.password}
