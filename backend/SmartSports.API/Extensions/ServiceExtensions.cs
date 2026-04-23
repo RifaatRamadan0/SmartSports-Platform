@@ -159,6 +159,7 @@ public static class ServiceExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddHostedService<SmartSports.API.BackgroundServices.ExpiredTokenCleanupService>();
         return services;
     }
 
@@ -166,13 +167,16 @@ public static class ServiceExtensions
     {
         services.AddRateLimiter(options =>
         {
-            options.AddFixedWindowLimiter("auth", limiter =>
-            {
-                limiter.PermitLimit = 10;
-                limiter.Window = TimeSpan.FromMinutes(1);
-                limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                limiter.QueueLimit = 0;
-            });
+            options.AddPolicy("auth", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
 
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
         });

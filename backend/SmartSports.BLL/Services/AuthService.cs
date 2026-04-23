@@ -134,7 +134,6 @@ public class AuthService : IAuthService
             return null;
 
         await _refreshTokenRepository.RevokeAsync(refreshToken);
-        await _refreshTokenRepository.DeleteExpiredAsync();
 
         var expiryMinutes = GetAccessTokenExpiryMinutes();
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
