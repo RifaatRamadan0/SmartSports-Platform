@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'
+import { AuthProvider } from './context/AuthProvider'
 import PrivateRoute from './components/PrivateRoute'
 import RoleRoute from './components/RoleRoute'
 import HomePage from './pages/Home/HomePage'
+import LoginPage from './pages/Login/LoginPage'
 import ForbiddenPage from './pages/Forbidden/ForbiddenPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
 
@@ -11,11 +12,12 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/forbidden" element={<ForbiddenPage />} />
 
           {/* Protected: any authenticated user */}
           <Route element={<PrivateRoute />}>
+            <Route path="/" element={<HomePage />} />
             <Route path="/dashboard" element={<HomePage />} />
           </Route>
 
