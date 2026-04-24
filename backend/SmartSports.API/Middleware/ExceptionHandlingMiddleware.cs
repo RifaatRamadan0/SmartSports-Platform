@@ -39,10 +39,14 @@ public class ExceptionHandlingMiddleware
             _ => HttpStatusCode.InternalServerError
         };
 
+        var message = statusCode == HttpStatusCode.InternalServerError
+            ? "An unexpected error occurred."
+            : exception.Message;
+
         var response = new
         {
             status = (int)statusCode,
-            message = exception.Message
+            message
         };
 
         context.Response.ContentType = "application/json";

@@ -1,5 +1,8 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
+using SmartSports.API.BackgroundServices;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartSports.BLL.Interfaces;
@@ -69,14 +72,17 @@ public static class ServiceExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var allowedOrigins = configuration["Cors:AllowedOrigins"];
+        var configuredOrigins = configuration["Cors:AllowedOrigins"];
+        var allowedOrigins = string.IsNullOrWhiteSpace(configuredOrigins)
+            ? new[] { "http://localhost:5173" }
+            : configuredOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         services.AddCors(options =>
         {
             options.AddPolicy("SmartSportsCorsPolicy", policy =>
             {
                 policy
-                    .WithOrigins(string.IsNullOrEmpty(allowedOrigins) ? "http://localhost:5173" : allowedOrigins)
+                    .WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
@@ -157,6 +163,34 @@ public static class ServiceExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddHostedService<ExpiredTokenCleanupService>();
+        return services;
+    }
+
+    public static IServiceCollection AddAuthRateLimiting(this IServiceCollection services)
+    {
+        services.AddRateLimiter(options =>
+        {
+            options.AddPolicy("auth", httpContext =>
+            {
+                var partitionKey = httpContext.Connection.RemoteIpAddress is not null
+                    ? $"ip:{httpContext.Connection.RemoteIpAddress}"
+                    : $"connection:{httpContext.Connection.Id}";
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: partitionKey,
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    });
+            });
+
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        });
+
         return services;
     }
 }

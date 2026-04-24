@@ -1,33 +1,44 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'
+import { AuthProvider } from './context/AuthProvider'
 import PrivateRoute from './components/PrivateRoute'
 import RoleRoute from './components/RoleRoute'
+import ErrorBoundary from './components/ErrorBoundary'
+import RootRedirect from './components/RootRedirect'
 import HomePage from './pages/Home/HomePage'
+import LoginPage from './pages/Login/LoginPage'
+import RegisterPage from './pages/Register/RegisterPage'
 import ForbiddenPage from './pages/Forbidden/ForbiddenPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
+import { ROLES } from './constants/roles'
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/forbidden" element={<ForbiddenPage />} />
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forbidden" element={<ForbiddenPage />} />
 
-          {/* Protected: any authenticated user */}
-          <Route element={<PrivateRoute />}>
-            <Route path="/dashboard" element={<HomePage />} />
-          </Route>
+            {/* Smart entry point */}
+            <Route path="/" element={<RootRedirect />} />
 
-          {/* Protected: PitchOwner or Admin only */}
-          <Route element={<RoleRoute allowedRoles={['PitchOwner', 'Admin']} />}>
-            <Route path="/pitches/manage" element={<HomePage />} />
-          </Route>
+            {/* Protected: any authenticated user */}
+            <Route element={<PrivateRoute />}>
+              <Route path="/dashboard" element={<HomePage />} />
+            </Route>
 
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+            {/* Protected: PitchOwner or Admin only */}
+            <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER, ROLES.ADMIN]} />}>
+              <Route path="/pitches/manage" element={<HomePage />} />
+            </Route>
+
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 
