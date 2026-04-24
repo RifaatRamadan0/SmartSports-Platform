@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -56,7 +57,16 @@ public class AuthService : IAuthService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
         };
 
-        var userId = await _userRepository.CreateWithRoleAsync(user, role.Id);
+        int userId;
+        try
+        {
+            userId = await _userRepository.CreateWithRoleAsync(user, role.Id);
+        }
+        catch (DbException ex) when (ex.SqlState == "23505")
+        {
+            // Concurrent registration won the unique-constraint race on email or username.
+            throw new ArgumentException("Email or username is already in use.");
+        }
 
         var expiryMinutes = GetAccessTokenExpiryMinutes();
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();

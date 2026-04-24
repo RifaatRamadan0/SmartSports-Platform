@@ -72,14 +72,17 @@ public static class ServiceExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var allowedOrigins = configuration["Cors:AllowedOrigins"];
+        var configuredOrigins = configuration["Cors:AllowedOrigins"];
+        var allowedOrigins = string.IsNullOrWhiteSpace(configuredOrigins)
+            ? new[] { "http://localhost:5173" }
+            : configuredOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         services.AddCors(options =>
         {
             options.AddPolicy("SmartSportsCorsPolicy", policy =>
             {
                 policy
-                    .WithOrigins(string.IsNullOrEmpty(allowedOrigins) ? "http://localhost:5173" : allowedOrigins)
+                    .WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
