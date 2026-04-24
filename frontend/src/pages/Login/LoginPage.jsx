@@ -1,10 +1,10 @@
-import { Link } from "react-router-dom";
-import { useLoginForm } from "./useLoginForm";
+import { Link } from 'react-router-dom'
+import { useLoginForm } from './useLoginForm'
 
 function LoginPage() {
-    const { form, error, isSubmitting, handleChange, handleSubmit } = useLoginForm()
+  const { form, error, isSubmitting, handleChange, handleSubmit } = useLoginForm()
 
-    return (
+  return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
@@ -17,10 +17,11 @@ function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="emailOrUsername" className="block text-sm font-medium text-gray-700 mb-1">
                 Email or Username
               </label>
               <input
+                id="emailOrUsername"
                 type="text"
                 name="emailOrUsername"
                 value={form.emailOrUsername}
@@ -33,10 +34,11 @@ function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </label>
               <input
+                id="password"
                 type="password"
                 name="password"
                 value={form.password}
@@ -72,9 +74,9 @@ function LoginPage() {
             </Link>
           </p>
         </div>
-        </div>
+      </div>
     </div>
-    )
+  )
 }
 
 export default LoginPage

@@ -2,6 +2,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using SmartSports.API.BackgroundServices;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartSports.BLL.Interfaces;
@@ -159,6 +160,7 @@ public static class ServiceExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddHostedService<ExpiredTokenCleanupService>();
         return services;
     }
 
@@ -166,12 +168,21 @@ public static class ServiceExtensions
     {
         services.AddRateLimiter(options =>
         {
-            options.AddFixedWindowLimiter("auth", limiter =>
+            options.AddPolicy("auth", httpContext =>
             {
-                limiter.PermitLimit = 10;
-                limiter.Window = TimeSpan.FromMinutes(1);
-                limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                limiter.QueueLimit = 0;
+                var partitionKey = httpContext.Connection.RemoteIpAddress is not null
+                    ? $"ip:{httpContext.Connection.RemoteIpAddress}"
+                    : $"connection:{httpContext.Connection.Id}";
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: partitionKey,
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    });
             });
 
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;

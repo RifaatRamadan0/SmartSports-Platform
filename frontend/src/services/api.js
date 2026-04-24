@@ -2,7 +2,7 @@ import axios from 'axios'
 
 let accessToken = null
 
-// in-memory token token store
+// in-memory token store
 export const setAccessToken = (token) => {
   accessToken = token
 }
@@ -19,7 +19,7 @@ const api = axios.create({
 // Request interceptor — attaches JWT token to every request automatically
 api.interceptors.request.use(
   (config) => {
-    if (accessToken) {  
+    if (accessToken) {
       config.headers['Authorization'] = `Bearer ${accessToken}`
     }
     return config
@@ -30,6 +30,15 @@ api.interceptors.request.use(
 // Response interceptor — silent refresh on 401
 let isRefreshing = false
 let failedQueue = [] // requests that failed while token is being refreshed
+
+// Auth endpoints whose 401s represent a real failure, not an expired access token.
+// These must never trigger the refresh-and-retry flow.
+const authEndpointsSkipRefresh = [
+  '/api/auth/refresh',
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/logout',
+]
 
 function processQueue(error, token = null) {
   failedQueue.forEach((prom) => {error ? prom.reject(error) : prom.resolve(token)})
@@ -42,17 +51,17 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // skip refresh for auth endpoints and already-retried requests
+    // only attempt refresh if we get 401, haven't already retried, and the failing request is not an auth endpoint
     if (
       error.response?.status !== 401 ||
       originalRequest._retry ||
-      originalRequest.url?.startsWith('/api/auth/')
+      authEndpointsSkipRefresh.some(path => originalRequest.url?.includes(path))
     ) {
       return Promise.reject(error)
     }
 
     if(isRefreshing) {
-      // anoter request is already refreshing the token, queue this one up to retry once it's done
+      // another request is already refreshing the token, queue this one up to retry once it's done
       return new Promise((resolve, reject) => {
         failedQueue.push({resolve, reject})
       })

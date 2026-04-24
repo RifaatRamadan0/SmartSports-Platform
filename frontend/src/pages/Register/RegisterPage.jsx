@@ -17,10 +17,11 @@ function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                 Username
               </label>
               <input
+                id="username"
                 type="text"
                 name="username"
                 value={form.username}
@@ -35,10 +36,11 @@ function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email
               </label>
               <input
+                id="email"
                 type="email"
                 name="email"
                 value={form.email}
@@ -51,10 +53,11 @@ function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </label>
               <input
+                id="password"
                 type="password"
                 name="password"
                 value={form.password}
@@ -68,10 +71,11 @@ function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
                 I am a…
               </label>
               <select
+                id="role"
                 name="role"
                 value={form.role}
                 onChange={handleChange}
