@@ -42,8 +42,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // only attempt refresh if we get 401 and we haven't already tried to refresh for this request
-    if(error.response?.status !== 401 || originalRequest._retry) {
+    // skip refresh for auth endpoints and already-retried requests
+    if (
+      error.response?.status !== 401 ||
+      originalRequest._retry ||
+      originalRequest.url?.startsWith('/api/auth/')
+    ) {
       return Promise.reject(error)
     }
 

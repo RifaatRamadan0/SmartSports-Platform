@@ -29,7 +29,7 @@ export function useRegisterForm() {
     try {
       const { data } = await api.post('/api/auth/register', form)
       login(data)
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.')
     } finally {

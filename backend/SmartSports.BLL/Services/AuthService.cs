@@ -85,10 +85,12 @@ public class AuthService : IAuthService
         var user = await _userRepository.GetByEmailAsync(request.EmailOrUsername)
             ?? await _userRepository.GetByUsernameAsync(request.EmailOrUsername);
 
-        if (user == null)
-            return null;
+        // Always run BCrypt regardless of whether the user exists to prevent
+        // timing-based username/email enumeration attacks.
+        var hashToVerify = user?.PasswordHash ?? "$2a$11$invalidhashusedtoblindtimingXXXXXXXXXXXXXXXXXXXXXXXXX";
+        var passwordValid = BCrypt.Net.BCrypt.Verify(request.Password, hashToVerify);
 
-        if(!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        if (user == null || !passwordValid)
             return null;
     
         var expiryMinutes = GetAccessTokenExpiryMinutes();
@@ -134,7 +136,6 @@ public class AuthService : IAuthService
             return null;
 
         await _refreshTokenRepository.RevokeAsync(refreshToken);
-        await _refreshTokenRepository.DeleteExpiredAsync();
 
         var expiryMinutes = GetAccessTokenExpiryMinutes();
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();

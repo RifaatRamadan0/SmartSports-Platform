@@ -1,10 +1,11 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
+import Spinner from './Spinner'
 
 function RoleRoute({ allowedRoles = [] }) {
   const { token, roles, isLoading } = useAuth()
 
-  if (isLoading) return null
+  if (isLoading) return <Spinner />
 
   if (!token) return <Navigate to="/login" replace />
 

@@ -21,40 +21,36 @@ public class AuthController : ControllerBase
 
     // POST api/auth/register
     [HttpPost("register")]
-    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ClientAuthResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        var response = await _authService.RegisterAsync(request);
+        var result = await _authService.RegisterAsync(request);
 
-        SetRefreshTokenCookie(response.RefreshToken, response.RefreshTokenExpiresAt);
+        SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAt);
 
-        response.RefreshToken = string.Empty;
-
-        return StatusCode(StatusCodes.Status201Created, response);
+        return StatusCode(StatusCodes.Status201Created, ToClientResponse(result));
     }
 
     // POST api/auth/login
     [HttpPost("login")]
-    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ClientAuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var response = await _authService.LoginAsync(request);
+        var result = await _authService.LoginAsync(request);
 
-        if (response is null)
+        if (result is null)
             return Unauthorized(new { Message = "Invalid credentials." });
 
-        SetRefreshTokenCookie(response.RefreshToken, response.RefreshTokenExpiresAt);
+        SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAt);
 
-        response.RefreshToken = string.Empty;
-
-        return Ok(response);
+        return Ok(ToClientResponse(result));
     }
 
     // POST api/auth/refresh
     [HttpPost("refresh")]
-    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ClientAuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh()
     {
@@ -63,16 +59,14 @@ public class AuthController : ControllerBase
         if (string.IsNullOrEmpty(refreshToken))
             return Unauthorized(new { Message = "Refresh token is missing." });
 
-        var response = await _authService.RefreshTokenAsync(refreshToken);
+        var result = await _authService.RefreshTokenAsync(refreshToken);
 
-        if (response is null)
+        if (result is null)
             return Unauthorized(new { Message = "Invalid or expired refresh token." });
 
-        SetRefreshTokenCookie(response.RefreshToken, response.RefreshTokenExpiresAt);
+        SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAt);
 
-        response.RefreshToken = string.Empty;
-
-        return Ok(response);
+        return Ok(ToClientResponse(result));
     }
 
     // POST api/auth/logout
@@ -97,6 +91,13 @@ public class AuthController : ControllerBase
     }
 
     // -- Private Helpers --
+
+    private static ClientAuthResponse ToClientResponse(AuthResponse r) => new()
+    {
+        AccessToken = r.AccessToken,
+        ExpiresIn   = r.ExpiresIn,
+        Roles        = r.Roles,
+    };
 
     private void SetRefreshTokenCookie(string refreshToken, DateTime expiresAt)
     {

@@ -24,7 +24,7 @@ export function useLoginForm() {
     try {
       const { data } = await api.post('/api/auth/login', form)
       login(data)
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid credentials. Please try again.')
     } finally {
