@@ -22,6 +22,10 @@ public class AuthService : IAuthService
         "Player", "PitchOwner"
     };
 
+    // Pre-computed valid BCrypt hash used to blind timing when the user does not exist.
+    // Generated at startup so the hash parser never fails on a malformed literal.
+    private static readonly string DummyPasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString());
+
     public AuthService(IUserRepository userRepository, IConfiguration configuration, IRefreshTokenRepository refreshTokenRepository)
     {
         _userRepository = userRepository;
@@ -62,7 +66,7 @@ public class AuthService : IAuthService
         await _refreshTokenRepository.CreateAsync(new RefreshToken
         {
             UserId = userId,
-            Token = refreshTokenValue,
+            Token = HashToken(refreshTokenValue),
             ExpiresAt = refreshTokenExpiresAt,
             IsRevoked = false
         });
@@ -87,7 +91,7 @@ public class AuthService : IAuthService
 
         // Always run BCrypt regardless of whether the user exists to prevent
         // timing-based username/email enumeration attacks.
-        var hashToVerify = user?.PasswordHash ?? "$2a$11$invalidhashusedtoblindtimingXXXXXXXXXXXXXXXXXXXXXXXXX";
+        var hashToVerify = user?.PasswordHash ?? DummyPasswordHash;
         var passwordValid = BCrypt.Net.BCrypt.Verify(request.Password, hashToVerify);
 
         if (user == null || !passwordValid)
@@ -106,7 +110,7 @@ public class AuthService : IAuthService
         await _refreshTokenRepository.CreateAsync(new RefreshToken
         {
             UserId = user.Id,
-            Token = refreshTokenValue,
+            Token = HashToken(refreshTokenValue),
             ExpiresAt = refreshTokenExpiresAt,
             IsRevoked = false
         });
@@ -125,7 +129,8 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse?> RefreshTokenAsync(string refreshToken)
     {
-        var storedToken = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+        var hashedIncoming = HashToken(refreshToken);
+        var storedToken = await _refreshTokenRepository.GetByTokenAsync(hashedIncoming);
 
         if(storedToken is null || !storedToken.IsValid)
             return null;
@@ -139,7 +144,11 @@ public class AuthService : IAuthService
         if (userRoles.Count == 0)
             return null;
 
-        await _refreshTokenRepository.RevokeAsync(refreshToken);
+        // Atomic revoke: only proceeds if this token hasn't already been revoked
+        // by a concurrent request. Prevents double-rotation on replay.
+        var revoked = await _refreshTokenRepository.RevokeAsync(hashedIncoming);
+        if (revoked == 0)
+            return null;
 
         var expiryMinutes = GetAccessTokenExpiryMinutes();
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
@@ -150,7 +159,7 @@ public class AuthService : IAuthService
         await _refreshTokenRepository.CreateAsync(new RefreshToken
         {
             UserId = user.Id,
-            Token = newRefreshTokenValue,
+            Token = HashToken(newRefreshTokenValue),
             ExpiresAt = refreshTokenExpiresAt,
             IsRevoked = false
         });
@@ -168,7 +177,7 @@ public class AuthService : IAuthService
     // -- Logout --
     public async Task LogoutAsync(string refreshToken)
     {
-        await _refreshTokenRepository.RevokeAsync(refreshToken);
+        await _refreshTokenRepository.RevokeAsync(HashToken(refreshToken));
     }
 
     // -- Private Helpers --
@@ -179,6 +188,14 @@ public class AuthService : IAuthService
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(randomBytes);
         return Convert.ToBase64String(randomBytes);
+    }
+
+    // SHA-256 is sufficient here: refresh tokens are 64 bytes of CSPRNG output,
+    // so they're not brute-forceable and don't need a slow KDF.
+    private static string HashToken(string token)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return Convert.ToBase64String(bytes);
     }
 
     private int GetAccessTokenExpiryMinutes()

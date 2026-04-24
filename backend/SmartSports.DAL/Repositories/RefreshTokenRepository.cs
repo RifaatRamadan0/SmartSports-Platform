@@ -43,14 +43,14 @@ public class RefreshTokenRepository : IRefreshTokenRepository
             new { Token = token });
     }
 
-    public async Task RevokeAsync(string token)
+    public async Task<int> RevokeAsync(string token)
     {
         using var connection = _connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(
+        return await connection.ExecuteAsync(
             """
             UPDATE refresh_tokens
             SET is_revoked = TRUE
-            WHERE token = @Token
+            WHERE token = @Token AND is_revoked = FALSE
             """,
             new { Token = token });
     }
