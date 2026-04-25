@@ -163,6 +163,7 @@ public static class ServiceExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IBookingService, BookingService>();
         services.AddHostedService<ExpiredTokenCleanupService>();
         return services;
     }
