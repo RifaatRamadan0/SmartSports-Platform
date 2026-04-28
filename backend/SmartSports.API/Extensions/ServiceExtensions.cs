@@ -2,13 +2,14 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
-using SmartSports.API.BackgroundServices;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SmartSports.API.BackgroundServices;
 using SmartSports.BLL.Interfaces;
 using SmartSports.BLL.Services;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Auth;
+using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Repositories;
 
 namespace SmartSports.API.Extensions;
@@ -165,6 +166,11 @@ public static class ServiceExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IBookingService, BookingService>();
         services.AddHostedService<ExpiredTokenCleanupService>();
+
+        //schedule
+        services.AddScoped<IPitchScheduleRepository, PitchScheduleRepository>();
+        services.AddScoped<IPitchScheduleService, PitchScheduleService>();
+
         return services;
     }
 

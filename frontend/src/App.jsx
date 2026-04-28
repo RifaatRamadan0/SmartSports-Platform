@@ -9,6 +9,7 @@ import LoginPage from './pages/Login/LoginPage'
 import RegisterPage from './pages/Register/RegisterPage'
 import ForbiddenPage from './pages/Forbidden/ForbiddenPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
+import OwnerSchedulePage from './pages/Owner/OwnerSchedulePage'
 import { ROLES } from './constants/roles'
 
 function App() {
@@ -32,6 +33,10 @@ function App() {
             {/* Protected: PitchOwner or Admin only */}
             <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER, ROLES.ADMIN]} />}>
               <Route path="/pitches/manage" element={<HomePage />} />
+            </Route>
+
+            <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER, ROLES.ADMIN]} />}>
+              <Route path="/dashboard/pitches/:pitchId/schedule" element={<OwnerSchedulePage />} />
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />

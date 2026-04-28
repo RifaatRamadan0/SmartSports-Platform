@@ -7,11 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Interfaces\" />
-    <Folder Include="Services\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\SmartSports.DAL\SmartSports.DAL.csproj" />
     <ProjectReference Include="..\SmartSports.Domain\SmartSports.Domain.csproj" />
   </ItemGroup>

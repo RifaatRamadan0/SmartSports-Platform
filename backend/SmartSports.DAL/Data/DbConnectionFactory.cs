@@ -1,12 +1,11 @@
 using Npgsql;
-using System.Data;
+using System.Data.Common;
 
 namespace SmartSports.DAL.Data;
 
-
 public interface IDbConnectionFactory
 {
-    IDbConnection CreateConnection();
+    DbConnection CreateConnection();
 }
 
 public class DbConnectionFactory : IDbConnectionFactory
@@ -18,7 +17,7 @@ public class DbConnectionFactory : IDbConnectionFactory
         _connectionString = connectionString;
     }
 
-    public IDbConnection CreateConnection()
+    public DbConnection CreateConnection()
     {
         return new NpgsqlConnection(_connectionString);
     }
