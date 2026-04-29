@@ -35,7 +35,7 @@ function App() {
               <Route path="/pitches/manage" element={<HomePage />} />
             </Route>
 
-            <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER, ROLES.ADMIN]} />}>
+            <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER]} />}>
               <Route path="/dashboard/pitches/:pitchId/schedule" element={<OwnerSchedulePage />} />
             </Route>
 
