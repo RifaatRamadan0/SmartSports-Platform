@@ -8,7 +8,6 @@ import { validateSchedule } from '../../utils/scheduleValidation';
 const buildDefaultSchedule = () =>
   Array.from({ length: 7 }, (_, i) => ({
     dayOfWeek: i,
-    dayName: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][i],
     openTime: '08:00:00',
     closeTime: '22:00:00',
     isActive: i !== 0,
@@ -23,7 +22,6 @@ const normalizeSchedule = (apiData) => {
     return match
       ? {
           dayOfWeek: match.dayOfWeek,
-          dayName: match.dayName,
           openTime: match.openTime,
           closeTime: match.closeTime,
           isActive: match.isActive,
