@@ -28,7 +28,6 @@ public class PitchScheduleService : IPitchScheduleService
         return rows.Select(r => new PitchScheduleResponse
         {
             DayOfWeek = r.DayOfWeek,
-            DayName = r.DayOfWeek.ToString(),
             OpenTime = r.OpenTime,
             CloseTime = r.CloseTime,
             IsActive = r.IsActive,
