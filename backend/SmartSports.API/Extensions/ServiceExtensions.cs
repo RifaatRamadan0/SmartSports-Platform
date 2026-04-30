@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
@@ -9,6 +9,7 @@ using SmartSports.BLL.Interfaces;
 using SmartSports.BLL.Services;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Auth;
+using SmartSports.DAL.Interfaces.Availability;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Repositories;
 
@@ -170,6 +171,10 @@ public static class ServiceExtensions
         //schedule
         services.AddScoped<IPitchScheduleRepository, PitchScheduleRepository>();
         services.AddScoped<IPitchScheduleService, PitchScheduleService>();
+
+        //Availability
+        services.AddScoped<IAvailabilityRepository, AvailabilityRepository>();
+        services.AddScoped<IAvailabilityService, AvailabilityService>();
 
         return services;
     }

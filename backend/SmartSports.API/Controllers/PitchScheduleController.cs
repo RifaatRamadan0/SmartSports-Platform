@@ -42,7 +42,7 @@ public class PitchScheduleController : ControllerBase
         [FromBody] UpsertScheduleRequest request)
     {
         if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
-            return Unauthorized();
+            return StatusCode(500, "User identity claim is missing or invalid.");
 
         await _scheduleService.UpsertScheduleAsync(ownerId, pitchId, request);
         return NoContent();

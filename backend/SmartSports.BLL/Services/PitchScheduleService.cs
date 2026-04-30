@@ -18,9 +18,7 @@ public class PitchScheduleService : IPitchScheduleService
     /// <inheritdoc/>
     public async Task<IEnumerable<PitchScheduleResponse>> GetScheduleAsync(int pitchId)
     {
-        var pitchOwnerId = await _scheduleRepository.GetPitchOwnerIdAsync(pitchId);
-
-        if (pitchOwnerId is null)
+        if (!await _scheduleRepository.PitchExistsAsync(pitchId))
             throw new KeyNotFoundException($"Pitch with ID {pitchId} was not found.");
 
         var rows = await _scheduleRepository.GetByPitchIdAsync(pitchId);
@@ -54,6 +52,8 @@ public class PitchScheduleService : IPitchScheduleService
 
         foreach (var day in request.Schedule)
         {
+            if (!day.IsActive) continue;
+
             if (day.CloseTime <= day.OpenTime)
                 throw new ArgumentException($"{(DayOfWeek)day.DayOfWeek}: CloseTime must be after OpenTime.");
         }

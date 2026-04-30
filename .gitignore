@@ -377,3 +377,5 @@ MigrationBackup/
 # CLAUDE Code
 .claude/
 CLAUDE.md
+
+.github/

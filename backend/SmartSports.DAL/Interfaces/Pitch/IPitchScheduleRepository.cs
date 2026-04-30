@@ -23,5 +23,11 @@ namespace SmartSports.DAL.Interfaces.Pitch
         /// Used to verify ownership before modifying the schedule.
         /// </summary>
         Task<int?> GetPitchOwnerIdAsync(int pitchId);
+
+        /// <summary>
+        /// Returns true if a pitch with the given id exists (regardless of active status).
+        /// Used to distinguish "pitch not found" from "caller doesn't own this pitch".
+        /// </summary>
+        Task<bool> PitchExistsAsync(int pitchId);
     }
 }
