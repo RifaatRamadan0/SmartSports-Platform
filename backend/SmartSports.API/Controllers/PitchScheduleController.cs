@@ -1,0 +1,50 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SmartSports.BLL.DTOs.Schedule;
+using SmartSports.BLL.Interfaces;
+
+namespace SmartSports.API.Controllers;
+
+[ApiController]
+[Route("api/pitches/{pitchId:int}/schedule")]
+public class PitchScheduleController : ControllerBase
+{
+    private readonly IPitchScheduleService _scheduleService;
+
+    public PitchScheduleController(IPitchScheduleService scheduleService)
+    {
+        _scheduleService = scheduleService;
+    }
+
+    /// <summary>
+    /// GET /api/pitches/{pitchId}/schedule
+    /// Returns the full 7-day weekly schedule for a pitch.
+    /// Public endpoint — no login required (players and visitors can view it).
+    /// </summary>
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetSchedule(int pitchId)
+    {
+        var schedule = await _scheduleService.GetScheduleAsync(pitchId);
+        return Ok(schedule);
+    }
+
+    /// <summary>
+    /// PUT /api/pitches/{pitchId}/schedule
+    /// Creates or replaces the weekly schedule for a pitch.
+    /// Restricted to PitchOwner role. The owner must own this specific pitch.
+    /// </summary>
+    [HttpPut]
+    [Authorize(Policy = "PitchOwnerOnly")]
+    public async Task<IActionResult> UpsertSchedule(
+        int pitchId,
+        [FromBody] UpsertScheduleRequest request)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
+            return Unauthorized();
+
+        await _scheduleService.UpsertScheduleAsync(ownerId, pitchId, request);
+        return NoContent();
+    }
+}

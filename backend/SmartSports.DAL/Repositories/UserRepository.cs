@@ -44,8 +44,8 @@ public class UserRepository : IUserRepository
     public async Task<int> CreateWithRoleAsync(User user, int roleId)
     {
         using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
-        using var transaction = connection.BeginTransaction();
+        await connection.OpenAsync();
+        using var transaction = await connection.BeginTransactionAsync();
         try
         {
             var userId = await connection.ExecuteScalarAsync<int>("""
@@ -59,12 +59,12 @@ public class UserRepository : IUserRepository
                 "INSERT INTO user_roles (user_id, role_id) VALUES (@UserId, @RoleId)",
                 new { UserId = userId, RoleId = roleId }, transaction);
 
-            transaction.Commit();
+            await transaction.CommitAsync();
             return userId;
         }
         catch (PostgresException ex) when (ex.SqlState == "23505")
         {
-            transaction.Rollback();
+            await transaction.RollbackAsync();
             throw new ArgumentException("Email or username is already in use.");
         }
     }

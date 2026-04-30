@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using SmartSports.Domain.Exceptions;
 
 namespace SmartSports.API.Middleware;
 
@@ -33,10 +34,11 @@ public class ExceptionHandlingMiddleware
     {
         var statusCode = exception switch
         {
+            ForbiddenException          => HttpStatusCode.Forbidden,
             UnauthorizedAccessException => HttpStatusCode.Unauthorized,
-            KeyNotFoundException => HttpStatusCode.NotFound,
-            ArgumentException => HttpStatusCode.BadRequest,
-            _ => HttpStatusCode.InternalServerError
+            KeyNotFoundException        => HttpStatusCode.NotFound,
+            ArgumentException           => HttpStatusCode.BadRequest,
+            _                           => HttpStatusCode.InternalServerError
         };
 
         var message = statusCode == HttpStatusCode.InternalServerError
