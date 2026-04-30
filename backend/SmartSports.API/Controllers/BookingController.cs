@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartSports.BLL.DTOs.Booking;
@@ -19,8 +20,16 @@ public class BookingController : ControllerBase
 
     // SPDBTCP-166 — Rifaat
     [HttpPost]
-    public Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest request)
-        => throw new NotImplementedException();
+    [ProducesResponseType(typeof(BookingResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest request)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var response = await _bookingService.CreateBookingAsync(userId, request);
+        return CreatedAtAction(nameof(GetBookingById), new { id = response.Id }, response);
+    }
 
     // SPDBTCP-168 — Rifaat
     [HttpPatch("{id}/cancel")]
