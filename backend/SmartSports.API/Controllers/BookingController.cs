@@ -9,6 +9,7 @@ namespace SmartSports.API.Controllers;
 [ApiController]
 [Route("api/bookings")]
 [Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class BookingController : ControllerBase
 {
     private readonly IBookingService _bookingService;
@@ -20,8 +21,10 @@ public class BookingController : ControllerBase
 
     // SPDBTCP-166 — Rifaat
     [HttpPost]
+    [Authorize(Policy = "PlayerOnly")]
     [ProducesResponseType(typeof(BookingResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest request)
