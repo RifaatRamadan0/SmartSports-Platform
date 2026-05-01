@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -143,13 +144,12 @@ function DayCard({ day, onChange, disabled }) {
 }
 
 function ScheduleGrid({ schedule, onChange, disabled = false }) {
-  const handleDayChange = (updatedDay) => {
-    // Replace only the changed day, keep the rest intact
+  const handleDayChange = useCallback((updatedDay) => {
     const updatedSchedule = schedule.map((day) =>
       day.dayOfWeek === updatedDay.dayOfWeek ? updatedDay : day
     );
     onChange(updatedSchedule);
-  };
+  }, [schedule, onChange]);
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">

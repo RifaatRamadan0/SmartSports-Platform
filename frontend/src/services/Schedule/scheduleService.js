@@ -1,4 +1,4 @@
-import api from './api'
+import api from '../api'
 
 export const getSchedule = async (pitchId) => {
   const response = await api.get(`/api/pitches/${pitchId}/schedule`)
