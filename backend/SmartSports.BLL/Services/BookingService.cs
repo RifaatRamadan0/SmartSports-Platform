@@ -42,7 +42,7 @@ public class BookingService : IBookingService
         var endTime = startTime.AddMinutes(request.DurationInMinutes);
 
         // 4. Booking date must not be in the past
-        if (bookingDate < DateOnly.FromDateTime(DateTime.UtcNow))
+        if (bookingDate < DateOnly.FromDateTime(DateTime.Today))
             throw new ArgumentException("Booking date cannot be in the past.");
 
         // 5. Pitch must exist and be active/approved
