@@ -378,4 +378,4 @@ MigrationBackup/
 .claude/
 CLAUDE.md
 
-.github/
+.github/copilot*
