@@ -45,12 +45,12 @@ public class BookingService : IBookingService
         if (bookingDate < DateOnly.FromDateTime(DateTime.Today))
             throw new ArgumentException("Booking date cannot be in the past.");
 
-        // 5. Pitch must exist and be active/approved
+        // 5. Pitch must exist (404) and be active/approved (400 — exists but in a non-bookable state)
         var pitch = await _pitchRepository.GetByIdAsync(request.PitchId)
             ?? throw new KeyNotFoundException($"Pitch {request.PitchId} was not found.");
 
         if (!pitch.IsActive || !pitch.IsApproved)
-            throw new KeyNotFoundException($"Pitch {request.PitchId} is not available for booking.");
+            throw new ArgumentException($"Pitch {request.PitchId} is not currently accepting bookings.");
 
         // 6. Duration must not exceed this pitch's configured maximum
         if (request.DurationInMinutes > pitch.MaxBookingDurationMinutes)
