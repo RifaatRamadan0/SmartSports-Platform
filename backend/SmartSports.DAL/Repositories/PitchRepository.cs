@@ -1,7 +1,6 @@
 using Dapper;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Pitch;
-using PitchEntity = SmartSports.Domain.Entities.Pitch;
 
 namespace SmartSports.DAL.Repositories;
 
@@ -14,10 +13,10 @@ public class PitchRepository : IPitchRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task<PitchEntity?> GetByIdAsync(int pitchId)
+    public async Task<PitchBookingInfo?> GetByIdAsync(int pitchId)
     {
         using var connection = _connectionFactory.CreateConnection();
-        return await connection.QuerySingleOrDefaultAsync<PitchEntity>(
+        return await connection.QuerySingleOrDefaultAsync<PitchBookingInfo>(
             """
             SELECT id, name, price_per_hour, is_active, is_approved, max_booking_duration_minutes
             FROM pitches

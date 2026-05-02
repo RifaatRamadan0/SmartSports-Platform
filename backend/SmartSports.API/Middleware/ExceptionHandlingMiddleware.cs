@@ -38,7 +38,7 @@ public class ExceptionHandlingMiddleware
             UnauthorizedAccessException => HttpStatusCode.Unauthorized,
             KeyNotFoundException        => HttpStatusCode.NotFound,
             ArgumentException           => HttpStatusCode.BadRequest,
-            InvalidOperationException   => HttpStatusCode.Conflict,
+            ConflictException           => HttpStatusCode.Conflict,
             _                           => HttpStatusCode.InternalServerError
         };
 

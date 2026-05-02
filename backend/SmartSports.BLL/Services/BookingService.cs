@@ -2,6 +2,7 @@ using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Booking;
 using SmartSports.DAL.Interfaces.Pitch;
+using SmartSports.Domain.Exceptions;
 
 namespace SmartSports.BLL.Services;
 
@@ -41,6 +42,12 @@ public class BookingService : IBookingService
         // 3. Derive end time — guaranteed to be on a half-hour boundary given rules 1 & 2
         var endTime = startTime.AddMinutes(request.DurationInMinutes);
 
+        // TimeOnly.AddMinutes wraps at midnight, so a booking starting at 23:30 for 120 min
+        // would yield endTime 01:30, which is earlier than startTime and passes the
+        // operating-hours check silently before hitting a DB constraint as a 500.
+        if (endTime <= startTime)
+            throw new ArgumentException("Booking cannot cross midnight. Choose an earlier start time or shorter duration.");
+
         // 4. Booking date must not be in the past
         if (bookingDate < DateOnly.FromDateTime(DateTime.Today))
             throw new ArgumentException("Booking date cannot be in the past.");
@@ -72,23 +79,17 @@ public class BookingService : IBookingService
                 $"Requested time is outside the pitch's operating hours " +
                 $"({schedule.OpenTime:HH\\:mm}–{schedule.CloseTime:HH\\:mm}).");
 
-        // 9. Phase-1 conflict check (interval overlap)
-        var hasConflict = await _bookingRepository.HasConflictAsync(
-            request.PitchId, bookingDate, startTime, endTime);
-
-        if (hasConflict)
-            throw new InvalidOperationException(
-                "This time slot conflicts with an existing booking.");
-
-        // 10. Calculate total price
+        // 9. Calculate total price
         var totalPrice = pitch.PricePerHour * (decimal)request.DurationInMinutes / 60;
 
-        // 11. Persist booking + match atomically (Phase-2 race protection inside repository)
+        // 10. Persist booking + match atomically.
+        // Conflict check, advisory lock, and insert all happen inside one transaction
+        // in the repository — see BookingRepository.CreateWithMatchAsync.
         var (bookingId, bookedAt) = await _bookingRepository.CreateWithMatchAsync(
             userId, request.PitchId, bookingDate,
             startTime, endTime, totalPrice);
 
-        // 12. Assemble response — no extra DB round-trip needed
+        // 11. Assemble response — no extra DB round-trip needed
         return new BookingResponse
         {
             Id          = bookingId,

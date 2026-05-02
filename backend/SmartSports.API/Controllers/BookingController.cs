@@ -29,7 +29,9 @@ public class BookingController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest request)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized();
+
         var response = await _bookingService.CreateBookingAsync(userId, request);
         return CreatedAtAction(nameof(GetBookingById), new { id = response.Id }, response);
     }
