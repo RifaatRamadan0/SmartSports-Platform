@@ -1,3 +1,4 @@
+
 -- ============================================================
 -- SmartSports – Per-Pitch Max Booking Duration
 -- Migration: 006_AddMaxBookingDurationToPitches.sql

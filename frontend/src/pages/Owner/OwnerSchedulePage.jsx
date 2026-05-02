@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { getSchedule, upsertSchedule } from '../../services/scheduleService';
+import { getSchedule, upsertSchedule } from '../../services/Schedule/scheduleService';
 import ScheduleGrid from '../../components/Schedule/ScheduleGrid';
 import { parseApiError } from '../../utils/errorUtils';
 import { validateSchedule } from '../../utils/scheduleValidation';

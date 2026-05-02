@@ -1,3 +1,4 @@
+
 -- ============================================================
 -- SmartSports – Universal Booking Duration Constraints
 -- Migration: 005_UpdateBookingDurationConstraints.sql

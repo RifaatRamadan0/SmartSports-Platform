@@ -30,5 +30,10 @@ namespace SmartSports.DAL.Interfaces.Pitch
         /// Used by the booking service to validate operating hours.
         /// </summary>
         Task<PitchWeeklySchedule?> GetForDayAsync(int pitchId, DayOfWeek dayOfWeek);
+
+        /// Returns true if a pitch with the given id exists (regardless of active status).
+        /// Used to distinguish "pitch not found" from "caller doesn't own this pitch".
+        /// </summary>
+        Task<bool> PitchExistsAsync(int pitchId);
     }
 }
