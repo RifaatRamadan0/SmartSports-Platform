@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using SmartSports.BLL.DTOs.Availability;
 using SmartSports.BLL.Interfaces;
 
 namespace SmartSports.API.Controllers
@@ -22,6 +23,9 @@ namespace SmartSports.API.Controllers
         /// </summary>
         [HttpGet("{id:int}/availability")]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<SlotResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAvailableSlots(int id, [FromQuery] DateOnly date)
         {
             var slots = await _availabilityService.GetAvailableSlotsAsync(id, date);

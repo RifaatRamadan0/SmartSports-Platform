@@ -24,6 +24,8 @@ public class PitchScheduleController : ControllerBase
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(IEnumerable<PitchScheduleResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSchedule(int pitchId)
     {
         var schedule = await _scheduleService.GetScheduleAsync(pitchId);
@@ -37,14 +39,26 @@ public class PitchScheduleController : ControllerBase
     /// </summary>
     [HttpPut]
     [Authorize(Policy = "PitchOwnerOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpsertSchedule(
         int pitchId,
         [FromBody] UpsertScheduleRequest request)
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
-            return StatusCode(500, "User identity claim is missing or invalid.");
+        var ownerId = GetUserId();
+        if (ownerId is null)
+            return StatusCode(500, new { message = "User identity claim is missing." });
 
-        await _scheduleService.UpsertScheduleAsync(ownerId, pitchId, request);
+        await _scheduleService.UpsertScheduleAsync(ownerId.Value, pitchId, request);
         return NoContent();
+    }
+
+    private int? GetUserId()
+    {
+        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(claim, out var id) ? id : null;
     }
 }
