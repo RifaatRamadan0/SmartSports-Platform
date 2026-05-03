@@ -29,6 +29,10 @@ public class Program
         // e.g. password_hash → PasswordHash, created_at → CreatedAt
         Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
+        // Dapper doesn't natively bind .NET 6 DateOnly/TimeOnly as parameters
+        Dapper.SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+        Dapper.SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
+
         app.Services.GetRequiredService<MigrationRunner>().Run();
 
         // ── Middleware Pipeline ──────────────────────────────────

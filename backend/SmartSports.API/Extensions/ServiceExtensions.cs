@@ -9,6 +9,7 @@ using SmartSports.BLL.Interfaces;
 using SmartSports.BLL.Services;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Auth;
+using SmartSports.DAL.Interfaces.Booking;
 using SmartSports.DAL.Interfaces.Availability;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Repositories;
@@ -172,9 +173,14 @@ public static class ServiceExtensions
         services.AddScoped<IPitchScheduleRepository, PitchScheduleRepository>();
         services.AddScoped<IPitchScheduleService, PitchScheduleService>();
 
+        // booking
+        services.AddScoped<IPitchRepository, PitchRepository>();
+        services.AddScoped<IBookingRepository, BookingRepository>();
+
         //Availability
         services.AddScoped<IAvailabilityRepository, AvailabilityRepository>();
         services.AddScoped<IAvailabilityService, AvailabilityService>();
+
 
         return services;
     }

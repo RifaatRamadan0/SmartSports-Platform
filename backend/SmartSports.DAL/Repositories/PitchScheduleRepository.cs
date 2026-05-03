@@ -80,6 +80,20 @@ public class PitchScheduleRepository : IPitchScheduleRepository
     }
 
     /// <inheritdoc />
+    public async Task<PitchWeeklySchedule?> GetForDayAsync(int pitchId, DayOfWeek dayOfWeek)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<PitchWeeklySchedule>(
+            """
+            SELECT id, pitch_id, day_of_week, open_time, close_time, is_active
+            FROM pitch_weekly_schedules
+            WHERE pitch_id    = @PitchId
+              AND day_of_week = @DayOfWeek
+              AND is_active   = TRUE
+            """,
+            new { PitchId = pitchId, DayOfWeek = dayOfWeek });
+    }
+
     public async Task<bool> PitchExistsAsync(int pitchId)
     {
         using var connection = _connectionFactory.CreateConnection();

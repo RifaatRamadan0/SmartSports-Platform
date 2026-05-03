@@ -2,6 +2,7 @@
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Availability;
 using SmartSports.Domain.Entities;
+using SmartSports.Domain.Entities.Projections;
 
 
 namespace SmartSports.BLL.Services

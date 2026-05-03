@@ -25,6 +25,12 @@ namespace SmartSports.DAL.Interfaces.Pitch
         Task<int?> GetPitchOwnerIdAsync(int pitchId);
 
         /// <summary>
+        /// Returns the active schedule entry for a specific pitch on a given day,
+        /// or null if the pitch has no active schedule for that day.
+        /// Used by the booking service to validate operating hours.
+        /// </summary>
+        Task<PitchWeeklySchedule?> GetForDayAsync(int pitchId, DayOfWeek dayOfWeek);
+
         /// Returns true if a pitch with the given id exists (regardless of active status).
         /// Used to distinguish "pitch not found" from "caller doesn't own this pitch".
         /// </summary>

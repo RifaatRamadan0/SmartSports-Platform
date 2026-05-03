@@ -1,4 +1,5 @@
 ﻿using SmartSports.Domain.Entities;
+using SmartSports.Domain.Entities.Projections;
 
 namespace SmartSports.DAL.Interfaces.Availability
 {

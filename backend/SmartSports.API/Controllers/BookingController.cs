@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartSports.BLL.DTOs.Booking;
@@ -8,6 +9,7 @@ namespace SmartSports.API.Controllers;
 [ApiController]
 [Route("api/bookings")]
 [Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class BookingController : ControllerBase
 {
     private readonly IBookingService _bookingService;
@@ -19,8 +21,20 @@ public class BookingController : ControllerBase
 
     // SPDBTCP-166 — Rifaat
     [HttpPost]
-    public Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest request)
-        => throw new NotImplementedException();
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(typeof(BookingResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest request)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized();
+
+        var response = await _bookingService.CreateBookingAsync(userId, request);
+        return CreatedAtAction(nameof(GetBookingById), new { id = response.Id }, response);
+    }
 
     // SPDBTCP-168 — Rifaat
     [HttpPatch("{id}/cancel")]
