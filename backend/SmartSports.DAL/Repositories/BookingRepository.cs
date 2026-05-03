@@ -15,30 +15,6 @@ public class BookingRepository : IBookingRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task<bool> HasConflictAsync(
-        int pitchId, DateOnly bookingDate, TimeOnly startTime, TimeOnly endTime)
-    {
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<bool>(
-            """
-            SELECT EXISTS (
-                SELECT 1 FROM bookings
-                WHERE pitch_id     = @PitchId
-                  AND booking_date = @BookingDate
-                  AND status      != 'cancelled'
-                  AND start_time  < @EndTime
-                  AND end_time    > @StartTime
-            )
-            """,
-            new
-            {
-                PitchId     = pitchId,
-                BookingDate = bookingDate,
-                StartTime   = startTime,
-                EndTime     = endTime
-            });
-    }
-
     public async Task<(int Id, DateTime BookedAt)> CreateWithMatchAsync(
         int userId, int pitchId, DateOnly bookingDate,
         TimeOnly startTime, TimeOnly endTime, decimal totalPrice)
@@ -110,7 +86,7 @@ public class BookingRepository : IBookingRepository
         catch (PostgresException ex) when (ex.SqlState == "23505")
         {
             await transaction.RollbackAsync();
-            throw new ConflictException("This time slot is already booked. Please choose a different time.");
+            throw new ConflictException("This time slot conflicts with an existing booking.");
         }
         catch
         {

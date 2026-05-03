@@ -1,4 +1,4 @@
-namespace SmartSports.DAL.Interfaces.Pitch;
+namespace SmartSports.Domain.Entities.Projections;
 
 public record PitchBookingInfo(
     int     Id,

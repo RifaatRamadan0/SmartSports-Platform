@@ -1,6 +1,7 @@
 using Dapper;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Pitch;
+using SmartSports.Domain.Entities.Projections;
 
 namespace SmartSports.DAL.Repositories;
 

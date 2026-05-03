@@ -2,7 +2,6 @@ using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Booking;
 using SmartSports.DAL.Interfaces.Pitch;
-using SmartSports.Domain.Exceptions;
 
 namespace SmartSports.BLL.Services;
 
