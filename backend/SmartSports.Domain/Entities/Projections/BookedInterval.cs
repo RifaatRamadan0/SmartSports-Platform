@@ -1,4 +1,4 @@
-namespace SmartSports.Domain.Entities;
+namespace SmartSports.Domain.Entities.Projections;
 
 /// <summary>
 /// Lightweight projection used by availability queries.

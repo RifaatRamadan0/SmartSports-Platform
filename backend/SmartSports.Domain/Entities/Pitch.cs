@@ -9,7 +9,7 @@ public class Pitch
     public string Name { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     public decimal PricePerHour { get; set; }
-    public decimal? Rating { get; set; }        // nullable — computed/updated by app layer
+    public decimal? Rating { get; set; }
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
     public bool IsActive { get; set; }

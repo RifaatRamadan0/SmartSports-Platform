@@ -1,4 +1,4 @@
-﻿using PitchEntity = SmartSports.Domain.Entities.Pitch;
+using PitchEntity = SmartSports.Domain.Entities.Pitch;
 
 namespace SmartSports.DAL.Interfaces.Pitch;
 

@@ -80,17 +80,6 @@ public class PitchScheduleRepository : IPitchScheduleRepository
     }
 
     /// <inheritdoc />
-    public async Task<bool> PitchExistsAsync(int pitchId)
-    {
-        using var connection = _connectionFactory.CreateConnection();
-
-        const string query = @"
-            SELECT EXISTS(SELECT 1 FROM pitches WHERE id = @PitchId)";
-
-        return await connection.ExecuteScalarAsync<bool>(query, new { PitchId = pitchId });
-    }
-
-    /// <inheritdoc />
     public async Task<PitchWeeklySchedule?> GetForDayAsync(int pitchId, DayOfWeek dayOfWeek)
     {
         using var connection = _connectionFactory.CreateConnection();
@@ -104,4 +93,15 @@ public class PitchScheduleRepository : IPitchScheduleRepository
             """,
             new { PitchId = pitchId, DayOfWeek = dayOfWeek });
     }
+
+    public async Task<bool> PitchExistsAsync(int pitchId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        const string query = @"
+            SELECT EXISTS(SELECT 1 FROM pitches WHERE id = @PitchId)";
+
+        return await connection.ExecuteScalarAsync<bool>(query, new { PitchId = pitchId });
+    }
+
 }

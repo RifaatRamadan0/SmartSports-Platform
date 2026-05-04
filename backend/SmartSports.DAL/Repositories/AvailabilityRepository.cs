@@ -2,6 +2,7 @@
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Availability;
 using SmartSports.Domain.Entities;
+using SmartSports.Domain.Entities.Projections;
 
 namespace SmartSports.DAL.Repositories
 {
