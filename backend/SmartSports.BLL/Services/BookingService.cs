@@ -118,7 +118,7 @@ public class BookingService : IBookingService
             throw new ArgumentException("Only confirmed bookings can be cancelled.");
 
         var bookingStart = booking.BookingDate.ToDateTime(booking.StartTime);
-        if (bookingStart <= DateTime.UtcNow.AddHours(1))
+        if (bookingStart <= DateTime.Now.AddHours(1))
             throw new ArgumentException("Bookings can only be cancelled more than 1 hour before the start time.");
 
         await _bookingRepository.CancelAsync(bookingId, cancellationReason);

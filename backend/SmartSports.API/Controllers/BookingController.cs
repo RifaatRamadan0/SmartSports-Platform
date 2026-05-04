@@ -43,12 +43,12 @@ public class BookingController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> CancelBooking(int id, [FromBody] CancelBookingRequest request)
+    public async Task<IActionResult> CancelBooking(int id, [FromBody] CancelBookingRequest? request)
     {
         if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
             return Unauthorized();
 
-        await _bookingService.CancelBookingAsync(userId, id, request.CancellationReason);
+        await _bookingService.CancelBookingAsync(userId, id, request?.CancellationReason);
         return NoContent();
     }
 
