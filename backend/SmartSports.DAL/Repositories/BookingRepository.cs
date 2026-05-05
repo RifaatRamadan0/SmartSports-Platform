@@ -112,7 +112,7 @@ public class BookingRepository : IBookingRepository
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.ExecuteAsync(
-            "UPDATE bookings SET status = 'cancelled', cancellation_reason = @Reason WHERE id = @Id AND status == 'confirmed'",
+            "UPDATE bookings SET status = 'cancelled', cancellation_reason = @Reason WHERE id = @Id AND status = 'confirmed'",
             new { Id = bookingId, Reason = cancellationReason });
     }
 
