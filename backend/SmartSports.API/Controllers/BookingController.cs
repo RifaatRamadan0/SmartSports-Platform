@@ -29,15 +29,16 @@ public class BookingController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest request)
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        var userId = GetUserId();
+        if (userId is null)
             return Unauthorized();
 
-        var response = await _bookingService.CreateBookingAsync(userId, request);
+        var response = await _bookingService.CreateBookingAsync(userId.Value, request);
         return CreatedAtAction(nameof(GetBookingById), new { id = response.Id }, response);
     }
 
     // SPDBTCP-168 — Rifaat
-    [HttpPatch("{id}/cancel")]
+    [HttpPatch("{id:int}/cancel")]
     [Authorize(Policy = "PlayerOnly")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -45,25 +46,75 @@ public class BookingController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CancelBooking(int id, [FromBody] CancelBookingRequest? request)
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        var userId = GetUserId();
+        if (userId is null)
             return Unauthorized();
 
-        await _bookingService.CancelBookingAsync(userId, id, request?.CancellationReason);
+        await _bookingService.CancelBookingAsync(userId.Value, id, request?.CancellationReason);
         return NoContent();
     }
 
     // SPDBTCP-223 — Rifaat
-    [HttpGet("{id}")]
-    public Task<IActionResult> GetBookingById(int id)
-        => throw new NotImplementedException();
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(BookingResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBookingById(int id)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var isAdmin = User.IsInRole("Admin");
+        var booking = await _bookingService.GetBookingByIdAsync(userId.Value, id, isAdmin);
+
+        if (booking is null)
+            return NotFound(new { message = $"Booking with ID {id} was not found." });
+
+        return Ok(booking);
+    }
+
 
     // SPDBTCP-170 — Saad
     [HttpGet("my")]
-    public Task<IActionResult> GetMyBookings([FromQuery] BookingQuery query)
-        => throw new NotImplementedException();
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(typeof(PagedResult<BookingResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetMyBookings([FromQuery] BookingQuery query)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await _bookingService.GetMyBookingsAsync(userId.Value, query);
+        return Ok(result);
+    }
 
     // SPDBTCP-170 — Saad
     [HttpGet("owner")]
-    public Task<IActionResult> GetOwnerBookings([FromQuery] BookingQuery query)
-        => throw new NotImplementedException();
+    [Authorize(Policy = "PitchOwnerOnly")]
+    [ProducesResponseType(typeof(PagedResult<BookingResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetOwnerBookings([FromQuery] BookingQuery query)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await _bookingService.GetOwnerBookingsAsync(userId.Value, query);
+        return Ok(result);
+    }
+
+    // private helpers
+    /// <summary>
+    /// Extracts the authenticated user's ID from JWT claims.
+    /// Returns null if the claim is missing (misconfigured token).
+    /// </summary>
+    private int? GetUserId()
+    {
+        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(claim, out var id) ? id : null;
+    }
 }

@@ -12,4 +12,9 @@ public class Booking
     public string Status { get; set; } = string.Empty;
     public DateTime BookedAt { get; set; }
     public string? CancellationReason { get; set; }
+
+    // joined fields
+    // Populated only when fetched with a JOIN on pitches.
+    // Empty string when fetched without the JOIN (e.g. availability queries).
+    public string PitchName { get; set; } = string.Empty;
 }
