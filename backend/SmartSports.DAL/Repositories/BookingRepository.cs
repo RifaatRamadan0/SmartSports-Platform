@@ -3,6 +3,7 @@ using Npgsql;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Booking;
 using SmartSports.Domain.Entities;
+using SmartSports.Domain.Entities.Projections;
 using SmartSports.Domain.Exceptions;
 
 namespace SmartSports.DAL.Repositories;
@@ -119,7 +120,6 @@ public class BookingRepository : IBookingRepository
             throw;
         }
     }
-
 
     /// <inheritdoc/>
     public async Task<Booking?> GetByIdAsync(int bookingId)
@@ -299,6 +299,26 @@ public class BookingRepository : IBookingRepository
         var totalCount = list.FirstOrDefault()?.TotalCount ?? 0;
 
         return (items, totalCount);
+    }
+
+    public async Task<BookingCancelInfo?> GetCancelInfoByIdAsync(int bookingId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<BookingCancelInfo>(
+            """
+            SELECT id, user_id, status, booking_date, start_time
+            FROM bookings
+            WHERE id = @Id
+            """,
+            new { Id = bookingId });
+    }
+
+    public async Task CancelAsync(int bookingId, string? cancellationReason)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        await connection.ExecuteAsync(
+            "UPDATE bookings SET status = 'cancelled', cancellation_reason = @Reason WHERE id = @Id AND status == 'confirmed'",
+            new { Id = bookingId, Reason = cancellationReason });
     }
 
     //  Private records

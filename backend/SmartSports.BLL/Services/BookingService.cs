@@ -3,6 +3,7 @@ using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Booking;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.Domain.Entities;
+using SmartSports.Domain.Exceptions;
 
 namespace SmartSports.BLL.Services;
 
@@ -106,8 +107,24 @@ public class BookingService : IBookingService
         };
     }
 
-    public Task CancelBookingAsync(int userId, int bookingId)
-        => throw new NotImplementedException();
+    // SPDBTCP-168 — Rifaat
+    public async Task CancelBookingAsync(int userId, int bookingId, string? cancellationReason)
+    {
+        var booking = await _bookingRepository.GetCancelInfoByIdAsync(bookingId)
+            ?? throw new KeyNotFoundException($"Booking {bookingId} not found.");
+
+        if (booking.UserId != userId)
+            throw new ForbiddenException("You are not allowed to cancel this booking.");
+
+        if (booking.Status != "confirmed")
+            throw new ArgumentException("Only confirmed bookings can be cancelled.");
+
+        var bookingStart = booking.BookingDate.ToDateTime(booking.StartTime);
+        if (bookingStart <= DateTime.Now.AddHours(1))
+            throw new ArgumentException("Bookings can only be cancelled more than 1 hour before the start time.");
+
+        await _bookingRepository.CancelAsync(bookingId, cancellationReason);
+    }
 
 
 

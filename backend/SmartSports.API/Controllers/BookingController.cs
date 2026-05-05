@@ -39,8 +39,20 @@ public class BookingController : ControllerBase
 
     // SPDBTCP-168 — Rifaat
     [HttpPatch("{id:int}/cancel")]
-    public Task<IActionResult> CancelBooking(int id)
-        => throw new NotImplementedException();
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CancelBooking(int id, [FromBody] CancelBookingRequest? request)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return StatusCode(500, new { message = "User identity claim is missing." });
+
+        await _bookingService.CancelBookingAsync(userId.Value, id, request?.CancellationReason);
+        return NoContent();
+    }
 
     // SPDBTCP-223 — Rifaat
     [HttpGet("{id:int}")]

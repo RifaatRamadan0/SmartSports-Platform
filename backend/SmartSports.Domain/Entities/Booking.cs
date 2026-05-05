@@ -11,6 +11,7 @@ public class Booking
     public decimal TotalPrice { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime BookedAt { get; set; }
+    public string? CancellationReason { get; set; }
 
     // joined fields
     // Populated only when fetched with a JOIN on pitches.

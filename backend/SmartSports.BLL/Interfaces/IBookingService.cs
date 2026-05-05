@@ -8,7 +8,7 @@ public interface IBookingService
     Task<BookingResponse> CreateBookingAsync(int userId, CreateBookingRequest request);
 
     // SPDBTCP-168 — Rifaat
-    Task CancelBookingAsync(int userId, int bookingId);
+    Task CancelBookingAsync(int userId, int bookingId, string? cancellationReason);
 
     // SPDBTCP-223 — Rifaat
     /// <summary>
