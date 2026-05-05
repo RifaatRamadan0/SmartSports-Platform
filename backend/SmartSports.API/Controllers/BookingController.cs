@@ -31,7 +31,7 @@ public class BookingController : ControllerBase
     {
         var userId = GetUserId();
         if (userId is null)
-            return StatusCode(500, new { message = "User identity claim is missing." });
+            return Unauthorized();
 
         var response = await _bookingService.CreateBookingAsync(userId.Value, request);
         return CreatedAtAction(nameof(GetBookingById), new { id = response.Id }, response);
@@ -48,7 +48,7 @@ public class BookingController : ControllerBase
     {
         var userId = GetUserId();
         if (userId is null)
-            return StatusCode(500, new { message = "User identity claim is missing." });
+            return Unauthorized();
 
         await _bookingService.CancelBookingAsync(userId.Value, id, request?.CancellationReason);
         return NoContent();
@@ -63,7 +63,7 @@ public class BookingController : ControllerBase
     {
         var userId = GetUserId();
         if (userId is null)
-            return StatusCode(500, new { message = "User identity claim is missing." });
+            return Unauthorized();
 
         var isAdmin = User.IsInRole("Admin");
         var booking = await _bookingService.GetBookingByIdAsync(userId.Value, id, isAdmin);
@@ -85,7 +85,7 @@ public class BookingController : ControllerBase
     {
         var userId = GetUserId();
         if (userId is null)
-            return StatusCode(500, new { message = "User identity claim is missing." });
+            return Unauthorized();
 
         var result = await _bookingService.GetMyBookingsAsync(userId.Value, query);
         return Ok(result);
@@ -101,7 +101,7 @@ public class BookingController : ControllerBase
     {
         var userId = GetUserId();
         if (userId is null)
-            return StatusCode(500, new { message = "User identity claim is missing." });
+            return Unauthorized();
 
         var result = await _bookingService.GetOwnerBookingsAsync(userId.Value, query);
         return Ok(result);

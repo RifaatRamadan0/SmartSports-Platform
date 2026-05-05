@@ -145,7 +145,7 @@ public class BookingService : IBookingService
         var isPitchOwner = pitch?.OwnerId == userId;
 
         if (!isAdmin && !isPlayer && !isPitchOwner)
-            throw new UnauthorizedAccessException(
+            throw new ForbiddenException(
                 "You do not have permission to view this booking.");
 
         return MapToResponse(booking);
@@ -154,17 +154,18 @@ public class BookingService : IBookingService
     /// <inheritdoc/>
     public async Task<PagedResult<BookingResponse>> GetMyBookingsAsync(int userId, BookingQuery query)
     {
-
-        if (!string.IsNullOrWhiteSpace(query.Status) &&
-            !ValidStatuses.Contains(query.Status.ToLower()))
+        string? status = null;
+        if (!string.IsNullOrWhiteSpace(query.Status))
         {
-            throw new ArgumentException(
-                "Invalid status. Must be one of: pending, confirmed, cancelled.");
+            status = query.Status.ToLowerInvariant();
+            if (!ValidStatuses.Contains(status))
+                throw new ArgumentException(
+                    "Invalid status. Must be one of: pending, confirmed, cancelled.");
         }
 
         var (items, totalCount) = await _bookingRepository.GetByUserIdAsync(
             userId,
-            query.Status,
+            status,
             query.From,
             query.To,
             query.Page,
@@ -182,16 +183,18 @@ public class BookingService : IBookingService
     /// <inheritdoc/>
     public async Task<PagedResult<BookingResponse>> GetOwnerBookingsAsync(int ownerId, BookingQuery query)
     {
-        if (!string.IsNullOrWhiteSpace(query.Status) &&
-            !ValidStatuses.Contains(query.Status.ToLower()))
+        string? status = null;
+        if (!string.IsNullOrWhiteSpace(query.Status))
         {
-            throw new ArgumentException(
-                "Invalid status. Must be one of: pending, confirmed, cancelled.");
+            status = query.Status.ToLowerInvariant();
+            if (!ValidStatuses.Contains(status))
+                throw new ArgumentException(
+                    "Invalid status. Must be one of: pending, confirmed, cancelled.");
         }
 
         var (items, totalCount) = await _bookingRepository.GetByOwnerIdAsync(
             ownerId,
-            query.Status,
+            status,
             query.From,
             query.To,
             query.Page,
