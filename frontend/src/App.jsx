@@ -10,6 +10,8 @@ import RegisterPage from './pages/Register/RegisterPage'
 import ForbiddenPage from './pages/Forbidden/ForbiddenPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
 import OwnerSchedulePage from './pages/Owner/OwnerSchedulePage'
+import OwnerBookingsPage from './pages/Owner/OwnerBookingsPage'
+import PlayerBookingsPage from './pages/Player/PlayerBookingsPage'
 import { ROLES } from './constants/roles'
 
 function App() {
@@ -35,8 +37,15 @@ function App() {
               <Route path="/pitches/manage" element={<HomePage />} />
             </Route>
 
+            {/* Protected: PitchOwner only */}
             <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER]} />}>
               <Route path="/dashboard/pitches/:pitchId/schedule" element={<OwnerSchedulePage />} />
+              <Route path="/dashboard/bookings" element={<OwnerBookingsPage />} />
+            </Route>
+
+            {/* Protected: Player only */}
+            <Route element={<RoleRoute allowedRoles={[ROLES.PLAYER]} />}>
+              <Route path="/my-bookings" element={<PlayerBookingsPage />} />
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />

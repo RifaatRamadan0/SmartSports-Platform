@@ -11,11 +11,19 @@ public interface IBookingService
     Task CancelBookingAsync(int userId, int bookingId, string? cancellationReason);
 
     // SPDBTCP-223 — Rifaat
-    Task<BookingResponse?> GetBookingByIdAsync(int userId, int bookingId);
+    /// <summary>
+    /// Returns a booking by ID.
+    /// Caller must be the player, the pitch owner, or an Admin.
+    /// Returns null if not found.
+    /// </summary>
+    Task<BookingResponse?> GetBookingByIdAsync(int userId, int bookingId, bool isAdmin = false);
 
     // SPDBTCP-170 — Saad
-    Task<IEnumerable<BookingResponse>> GetMyBookingsAsync(int userId, BookingQuery query);
+    /// <summary>
+    /// Returns a paginated list of bookings for the calling player.
+    /// </summary>
+    Task<PagedResult<BookingResponse>> GetMyBookingsAsync(int userId, BookingQuery query);
 
     // SPDBTCP-170 — Saad
-    Task<IEnumerable<BookingResponse>> GetOwnerBookingsAsync(int ownerId, BookingQuery query);
+    Task<PagedResult<BookingResponse>> GetOwnerBookingsAsync(int ownerId, BookingQuery query);
 }

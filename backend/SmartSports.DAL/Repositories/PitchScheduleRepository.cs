@@ -103,4 +103,5 @@ public class PitchScheduleRepository : IPitchScheduleRepository
 
         return await connection.ExecuteScalarAsync<bool>(query, new { PitchId = pitchId });
     }
+
 }

@@ -2,6 +2,7 @@ using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Booking;
 using SmartSports.DAL.Interfaces.Pitch;
+using SmartSports.Domain.Entities;
 using SmartSports.Domain.Exceptions;
 
 namespace SmartSports.BLL.Services;
@@ -11,6 +12,7 @@ public class BookingService : IBookingService
     private readonly IPitchRepository _pitchRepository;
     private readonly IPitchScheduleRepository _pitchScheduleRepository;
     private readonly IBookingRepository _bookingRepository;
+    private static readonly string[] ValidStatuses = { "pending", "confirmed", "cancelled" };
 
     public BookingService(
         IPitchRepository pitchRepository,
@@ -124,15 +126,103 @@ public class BookingService : IBookingService
         await _bookingRepository.CancelAsync(bookingId, cancellationReason);
     }
 
-    // SPDBTCP-223 — Rifaat
-    public Task<BookingResponse?> GetBookingByIdAsync(int userId, int bookingId)
-        => throw new NotImplementedException();
 
-    // SPDBTCP-170 — Saad
-    public Task<IEnumerable<BookingResponse>> GetMyBookingsAsync(int userId, BookingQuery query)
-        => throw new NotImplementedException();
 
-    // SPDBTCP-170 — Saad
-    public Task<IEnumerable<BookingResponse>> GetOwnerBookingsAsync(int ownerId, BookingQuery query)
-        => throw new NotImplementedException();
+    /// <inheritdoc/>
+    public async Task<BookingResponse?> GetBookingByIdAsync(int userId, int bookingId, bool isAdmin = false)
+    {
+        var booking = await _bookingRepository.GetByIdAsync(bookingId);
+
+        if (booking is null)
+            return null;
+
+        // Authorization check:
+        // Caller must be the player who made the booking, the pitch owner, or an Admin.
+        // Role-level auth is handled in the controller — here we check resource-level ownership.
+        var pitch = await _pitchRepository.GetByIdAsync(booking.PitchId);
+
+        var isPlayer = booking.UserId == userId;
+        var isPitchOwner = pitch?.OwnerId == userId;
+
+        if (!isAdmin && !isPlayer && !isPitchOwner)
+            throw new ForbiddenException(
+                "You do not have permission to view this booking.");
+
+        return MapToResponse(booking);
+    }
+
+    /// <inheritdoc/>
+    public async Task<PagedResult<BookingResponse>> GetMyBookingsAsync(int userId, BookingQuery query)
+    {
+        string? status = null;
+        if (!string.IsNullOrWhiteSpace(query.Status))
+        {
+            status = query.Status.ToLowerInvariant();
+            if (!ValidStatuses.Contains(status))
+                throw new ArgumentException(
+                    "Invalid status. Must be one of: pending, confirmed, cancelled.");
+        }
+
+        var (items, totalCount) = await _bookingRepository.GetByUserIdAsync(
+            userId,
+            status,
+            query.From,
+            query.To,
+            query.Page,
+            query.PageSize);
+
+        return new PagedResult<BookingResponse>
+        {
+            Items = items.Select(MapToResponse),
+            TotalCount = totalCount,
+            Page = query.Page,
+            PageSize = query.PageSize
+        };
+    }
+
+    /// <inheritdoc/>
+    public async Task<PagedResult<BookingResponse>> GetOwnerBookingsAsync(int ownerId, BookingQuery query)
+    {
+        string? status = null;
+        if (!string.IsNullOrWhiteSpace(query.Status))
+        {
+            status = query.Status.ToLowerInvariant();
+            if (!ValidStatuses.Contains(status))
+                throw new ArgumentException(
+                    "Invalid status. Must be one of: pending, confirmed, cancelled.");
+        }
+
+        var (items, totalCount) = await _bookingRepository.GetByOwnerIdAsync(
+            ownerId,
+            status,
+            query.From,
+            query.To,
+            query.Page,
+            query.PageSize);
+
+        return new PagedResult<BookingResponse>
+        {
+            Items = items.Select(MapToResponse),
+            TotalCount = totalCount,
+            Page = query.Page,
+            PageSize = query.PageSize
+        };
+    }
+
+    // Private helpers
+
+    /// <summary>Maps a Booking domain entity to a BookingResponse DTO.</summary>
+    private static BookingResponse MapToResponse(Booking booking) => new()
+    {
+        Id = booking.Id,
+        UserId = booking.UserId,
+        PitchId = booking.PitchId,
+        PitchName = booking.PitchName,
+        BookingDate = booking.BookingDate,
+        StartTime = booking.StartTime,
+        EndTime = booking.EndTime,
+        TotalPrice = booking.TotalPrice,
+        Status = booking.Status,
+        BookedAt = booking.BookedAt
+    };
 }

@@ -1,0 +1,31 @@
+import api from "../api";
+
+//player
+export async function getMyBookings({ status, from, to, page = 1, pageSize = 10} = {})
+{
+    const params = { page, pageSize }
+    if (status) params.status = status
+    if (from) params.from = from
+    if (to) params.to = to
+
+    const { data } = await api.get('/api/bookings/my', { params })
+    return data
+}
+
+//owner
+export async function getOwnerBookings({ status, from, to, page = 1, pageSize = 10 } = {}) {
+  const params = { page, pageSize }
+  if (status) params.status = status
+  if (from)   params.from   = from
+  if (to)     params.to     = to
+
+  const { data } = await api.get('/api/bookings/owner', { params })
+  return data
+}
+
+
+//shared
+export async function getBookingById(id) {
+  const { data } = await api.get(`/api/bookings/${id}`)
+  return data
+}

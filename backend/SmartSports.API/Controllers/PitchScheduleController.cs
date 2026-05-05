@@ -24,6 +24,8 @@ public class PitchScheduleController : ControllerBase
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(IEnumerable<PitchScheduleResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSchedule(int pitchId)
     {
         var schedule = await _scheduleService.GetScheduleAsync(pitchId);
@@ -37,6 +39,11 @@ public class PitchScheduleController : ControllerBase
     /// </summary>
     [HttpPut]
     [Authorize(Policy = "PitchOwnerOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpsertSchedule(
         int pitchId,
         [FromBody] UpsertScheduleRequest request)

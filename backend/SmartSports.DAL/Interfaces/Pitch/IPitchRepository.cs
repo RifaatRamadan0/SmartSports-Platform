@@ -1,8 +1,8 @@
-using SmartSports.Domain.Entities.Projections;
+using PitchEntity = SmartSports.Domain.Entities.Pitch;
 
 namespace SmartSports.DAL.Interfaces.Pitch;
 
 public interface IPitchRepository
 {
-    Task<PitchBookingInfo?> GetByIdAsync(int pitchId);
+    Task<PitchEntity?> GetByIdAsync(int pitchId);
 }

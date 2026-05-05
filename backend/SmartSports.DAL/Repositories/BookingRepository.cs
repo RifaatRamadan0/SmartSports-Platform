@@ -2,6 +2,7 @@ using Dapper;
 using Npgsql;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Booking;
+using SmartSports.Domain.Entities;
 using SmartSports.Domain.Entities.Projections;
 using SmartSports.Domain.Exceptions;
 
@@ -22,10 +23,10 @@ public class BookingRepository : IBookingRepository
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
-        using var transaction = await connection.BeginTransactionAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
         try
         {
-            // Acquire a session-level advisory lock keyed on (pitchId, date) before the
+            // Acquire a transaction-scoped advisory lock keyed on (pitchId, date) before the
             // conflict check. Any concurrent request for the same pitch+date blocks here
             // until the first transaction commits or rolls back, eliminating the TOCTOU
             // gap between a read-then-insert pattern.
@@ -40,7 +41,7 @@ public class BookingRepository : IBookingRepository
                     SELECT 1 FROM bookings
                     WHERE pitch_id     = @PitchId
                       AND booking_date = @BookingDate
-                      AND status      != 'cancelled'
+                      AND status      != 'cancelled'::booking_status
                       AND start_time  < @EndTime
                       AND end_time    > @StartTime
                 )
@@ -96,6 +97,186 @@ public class BookingRepository : IBookingRepository
         }
     }
 
+    /// <inheritdoc/>
+    public async Task<Booking?> GetByIdAsync(int bookingId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        return await connection.QuerySingleOrDefaultAsync<Booking>(
+            """
+            SELECT  b.id,
+                    b.user_id,
+                    b.pitch_id,
+                    b.booking_date,
+                    b.start_time,
+                    b.end_time,
+                    b.total_price,
+                    b.status::TEXT  AS status,
+                    b.booked_at,
+                    p.name          AS pitch_name
+            FROM    bookings b
+            JOIN    pitches  p ON p.id = b.pitch_id
+            WHERE   b.id = @BookingId
+            """,
+            new { BookingId = bookingId });
+    }
+
+    /// <inheritdoc/>
+    public async Task<(IEnumerable<Booking> Items, int TotalCount)> GetByUserIdAsync(
+        int userId,
+        string? status,
+        DateOnly? from,
+        DateOnly? to,
+        int page,
+        int pageSize)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        // Dynamic WHERE clause — only add filters that were actually provided
+        var where = new List<string> { "b.user_id = @UserId" };
+
+        if (!string.IsNullOrWhiteSpace(status))
+            where.Add("b.status = @Status::booking_status");
+
+        if (from.HasValue)
+            where.Add("b.booking_date >= @From");
+
+        if (to.HasValue)
+            where.Add("b.booking_date <= @To");
+
+        var whereClause = string.Join(" AND ", where);
+
+        var sql = $"""
+            SELECT  b.id,
+                    b.user_id,
+                    b.pitch_id,
+                    b.booking_date,
+                    b.start_time,
+                    b.end_time,
+                    b.total_price,
+                    b.status::TEXT  AS status,
+                    b.booked_at,
+                    p.name          AS pitch_name,
+                    COUNT(*) OVER() AS total_count
+            FROM    bookings b
+            JOIN    pitches  p ON p.id = b.pitch_id
+            WHERE   {whereClause}
+            ORDER BY b.booking_date DESC, b.start_time DESC
+            LIMIT   @PageSize
+            OFFSET  @Offset
+            """;
+
+        var rows = await connection.QueryAsync<BookingWithCount>(
+            sql,
+            new
+            {
+                UserId = userId,
+                Status = status,
+                From = from,
+                To = to,
+                PageSize = pageSize,
+                Offset = (page - 1) * pageSize
+            });
+
+        var list = rows.ToList();
+
+        var items = list.Select(r => new Booking
+        {
+            Id = r.Id,
+            UserId = r.UserId,
+            PitchId = r.PitchId,
+            BookingDate = r.BookingDate,
+            StartTime = r.StartTime,
+            EndTime = r.EndTime,
+            TotalPrice = r.TotalPrice,
+            Status = r.Status,
+            BookedAt = r.BookedAt,
+            PitchName = r.PitchName
+        });
+
+        var totalCount = list.FirstOrDefault()?.TotalCount ?? 0;
+
+        return (items, totalCount);
+    }
+
+    /// <inheritdoc/>
+    public async Task<(IEnumerable<Booking> Items, int TotalCount)> GetByOwnerIdAsync(
+        int ownerId,
+        string? status,
+        DateOnly? from,
+        DateOnly? to,
+        int page,
+        int pageSize)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        // Filter by owner through the pitches JOIN
+        var where = new List<string> { "p.owner_id = @OwnerId" };
+
+        if (!string.IsNullOrWhiteSpace(status))
+            where.Add("b.status = @Status::booking_status");
+
+        if (from.HasValue)
+            where.Add("b.booking_date >= @From");
+
+        if (to.HasValue)
+            where.Add("b.booking_date <= @To");
+
+        var whereClause = string.Join(" AND ", where);
+
+        var sql = $"""
+            SELECT  b.id,
+                    b.user_id,
+                    b.pitch_id,
+                    b.booking_date,
+                    b.start_time,
+                    b.end_time,
+                    b.total_price,
+                    b.status::TEXT  AS status,
+                    b.booked_at,
+                    p.name          AS pitch_name,
+                    COUNT(*) OVER() AS total_count
+            FROM    bookings b
+            JOIN    pitches  p ON p.id = b.pitch_id
+            WHERE   {whereClause}
+            ORDER BY b.booking_date DESC, b.start_time DESC
+            LIMIT   @PageSize
+            OFFSET  @Offset
+            """;
+
+        var rows = await connection.QueryAsync<BookingWithCount>(
+            sql,
+            new
+            {
+                OwnerId = ownerId,
+                Status = status,
+                From = from,
+                To = to,
+                PageSize = pageSize,
+                Offset = (page - 1) * pageSize
+            });
+
+        var list = rows.ToList();
+
+        var items = list.Select(r => new Booking
+        {
+            Id = r.Id,
+            UserId = r.UserId,
+            PitchId = r.PitchId,
+            BookingDate = r.BookingDate,
+            StartTime = r.StartTime,
+            EndTime = r.EndTime,
+            TotalPrice = r.TotalPrice,
+            Status = r.Status,
+            BookedAt = r.BookedAt,
+            PitchName = r.PitchName
+        });
+
+        var totalCount = list.FirstOrDefault()?.TotalCount ?? 0;
+
+        return (items, totalCount);
+    }
+
     public async Task<BookingCancelInfo?> GetCancelInfoByIdAsync(int bookingId)
     {
         using var connection = _connectionFactory.CreateConnection();
@@ -116,5 +297,14 @@ public class BookingRepository : IBookingRepository
             new { Id = bookingId, Reason = cancellationReason });
     }
 
+    //  Private records
+
     private record BookingInsertResult(int Id, DateTime BookedAt);
+
+    // Extends Booking with a TotalCount column from the window function
+    private record BookingWithCount(
+        int Id, int UserId, int PitchId,
+        DateOnly BookingDate, TimeOnly StartTime, TimeOnly EndTime,
+        decimal TotalPrice, string Status, DateTime BookedAt,
+        string PitchName, int TotalCount);
 }
