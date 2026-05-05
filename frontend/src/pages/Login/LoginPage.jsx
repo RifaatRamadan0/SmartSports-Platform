@@ -4,7 +4,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { useLoginForm } from './useLoginForm'
+import { useLoginForm } from '../../hooks/useLoginForm'
 
 function LoginPage() {
   const { form, error, isSubmitting, handleChange, handleSubmit } = useLoginForm()

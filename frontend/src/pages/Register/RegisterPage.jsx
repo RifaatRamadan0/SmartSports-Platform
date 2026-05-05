@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useRegisterForm } from './useRegisterForm'
+import { useRegisterForm } from '../../hooks/useRegisterForm'
 
 function RegisterPage() {
   const { form, error, isSubmitting, handleChange, handleSubmit } = useRegisterForm()

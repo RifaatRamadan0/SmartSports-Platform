@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '../context/useAuth'
-import Spinner from './Spinner'
+import { useAuth } from '../../hooks/useAuth'
+import Spinner from '../Spinner'
 
 function RootRedirect() {
   const { token, isLoading } = useAuth()
