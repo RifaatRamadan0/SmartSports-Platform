@@ -1,18 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/useAuth'
-import api from '../../services/api'
+import { useAuth } from './useAuth'
+import api from '../services/api'
+import { parseApiError } from '../utils/errorUtils'
 
-export function useRegisterForm() {
+export function useLoginForm() {
   const { login } = useAuth()
   const navigate = useNavigate()
 
-  const [form, setForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-    role: 'Player',
-  })
+  const [form, setForm] = useState({ emailOrUsername: '', password: '' })
   const [error, setError] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -27,15 +23,21 @@ export function useRegisterForm() {
     setError(null)
 
     try {
-      const { data } = await api.post('/api/auth/register', form)
+      const { data } = await api.post('/api/auth/login', form)
       login(data)
       navigate('/dashboard', { replace: true })
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.')
+      setError(parseApiError(err, 'Invalid credentials. Please try again.'))
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  return { form, error, isSubmitting, handleChange, handleSubmit }
+  return {
+    form,
+    error,
+    isSubmitting,
+    handleChange,
+    handleSubmit,
+  }
 }

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getOwnerBookings } from '../../services/Booking/bookingService'
-import StatusBadge from '../../components/UI/StatusBadge'
-import Toast from '../../components/UI/Toast'
+import StatusBadge from '../../components/ui/StatusBadge'
+import Toast from '../../components/ui/Toast'
 import { parseApiError } from '../../utils/errorUtils'
 
 const PAGE_SIZE = 10
