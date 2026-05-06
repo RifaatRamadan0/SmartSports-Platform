@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from './useAuth'
 import api from '../services/api'
+import { parseApiError } from '../utils/errorUtils'
 
 export function useRegisterForm() {
   const { login } = useAuth()
@@ -31,7 +32,7 @@ export function useRegisterForm() {
       login(data)
       navigate('/dashboard', { replace: true })
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.')
+      setError(parseApiError(err, 'Registration failed. Please try again.'))
     } finally {
       setIsSubmitting(false)
     }
