@@ -7,6 +7,7 @@ import RootRedirect from './components/routing/RootRedirect'
 import HomePage from './pages/Home/HomePage'
 import LoginPage from './pages/Login/LoginPage'
 import RegisterPage from './pages/Register/RegisterPage'
+import PendingApprovalPage from './pages/PendingApproval/PendingApprovalPage'
 import ForbiddenPage from './pages/Forbidden/ForbiddenPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
 import OwnerSchedulePage from './pages/Owner/OwnerSchedulePage'
@@ -22,6 +23,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/pending-approval" element={<PendingApprovalPage />} />
             <Route path="/forbidden" element={<ForbiddenPage />} />
 
             {/* Smart entry point */}

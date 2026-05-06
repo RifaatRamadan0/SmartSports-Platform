@@ -82,6 +82,22 @@ public class AuthService : IAuthService
         };
     }
 
+    private static readonly System.Text.RegularExpressions.Regex EmailRegex =
+        new(@"^\S+@\S+\.\S+$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    public async Task<AvailabilityResponse> CheckAvailabilityAsync(string? username, string? email)
+    {
+        var response = new AvailabilityResponse();
+
+        if (!string.IsNullOrWhiteSpace(username) && username.Length is >= 3 and <= 50)
+            response.UsernameAvailable = !await _userRepository.ExistsByUsernameAsync(username);
+
+        if (!string.IsNullOrWhiteSpace(email) && email.Length <= 254 && EmailRegex.IsMatch(email))
+            response.EmailAvailable = !await _userRepository.ExistsByEmailAsync(email);
+
+        return response;
+    }
+
     // -- Login --
 
     public async Task<AuthResponse?> LoginAsync(LoginRequest request)

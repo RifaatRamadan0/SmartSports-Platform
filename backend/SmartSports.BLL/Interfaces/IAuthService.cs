@@ -6,6 +6,7 @@ public interface IAuthService
 {
     // -- Registeration --
     Task<AuthResponse> RegisterAsync(RegisterRequest request);
+    Task<AvailabilityResponse> CheckAvailabilityAsync(string? username, string? email);
 
     // -- Login & Authentication --
     Task<AuthResponse?> LoginAsync(LoginRequest request);

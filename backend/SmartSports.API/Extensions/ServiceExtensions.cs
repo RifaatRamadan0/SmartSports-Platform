@@ -188,22 +188,32 @@ public static class ServiceExtensions
     {
         services.AddRateLimiter(options =>
         {
-            options.AddPolicy("auth", httpContext =>
-            {
-                var partitionKey = httpContext.Connection.RemoteIpAddress is not null
-                    ? $"ip:{httpContext.Connection.RemoteIpAddress}"
-                    : $"connection:{httpContext.Connection.Id}";
+            static string IpPartition(HttpContext ctx) =>
+                ctx.Connection.RemoteIpAddress is not null
+                    ? $"ip:{ctx.Connection.RemoteIpAddress}"
+                    : $"connection:{ctx.Connection.Id}";
 
-                return RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: partitionKey,
+            options.AddPolicy("auth", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 10,
                         Window = TimeSpan.FromMinutes(1),
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                         QueueLimit = 0
-                    });
-            });
+                    }));
+
+            options.AddPolicy("availability", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 30,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
 
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
         });

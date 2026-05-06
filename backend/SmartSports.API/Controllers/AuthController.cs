@@ -32,6 +32,19 @@ public class AuthController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, ToClientResponse(result));
     }
 
+    // GET api/auth/check-availability
+    [HttpGet("check-availability")]
+    [EnableRateLimiting("availability")]
+    [ProducesResponseType(typeof(AvailabilityResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public async Task<IActionResult> CheckAvailability(
+        [FromQuery] string? username,
+        [FromQuery] string? email)
+    {
+        var result = await _authService.CheckAvailabilityAsync(username, email);
+        return Ok(result);
+    }
+
     // POST api/auth/login
     [HttpPost("login")]
     [EnableRateLimiting("auth")]
