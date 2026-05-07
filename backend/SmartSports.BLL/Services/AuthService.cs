@@ -40,10 +40,13 @@ public class AuthService : IAuthService
         if (!AllowedRoles.Contains(request.Role))
             throw new ArgumentException("Role must be 'Player' or 'PitchOwner'.");
 
-        if (await _userRepository.ExistsByEmailAsync(request.Email))
+        var email = request.Email.Trim();
+        var username = request.Username.Trim();
+
+        if (await _userRepository.ExistsByEmailAsync(email))
             throw new ArgumentException("Email is already in use.");
 
-        if (await _userRepository.ExistsByUsernameAsync(request.Username))
+        if (await _userRepository.ExistsByUsernameAsync(username))
             throw new ArgumentException("Username is already taken.");
 
         var role = await _userRepository.GetRoleByNameAsync(request.Role)
@@ -51,9 +54,12 @@ public class AuthService : IAuthService
 
         var user = new User
         {
-            Username = request.Username,
-            Email = request.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+            Username = username,
+            Email = email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            SkillLevel = (short?)request.SkillLevel,
+            PreferredPosition = request.PreferredPosition,
+            PhoneNumber = request.PhoneNumber?.Trim()
         };
 
         var userId = await _userRepository.CreateWithRoleAsync(user, role.Id);

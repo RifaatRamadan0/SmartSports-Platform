@@ -156,9 +156,9 @@ function RegisterPage() {
                     </span>
                   </div>
                   {fieldErrors.username ? (
-                    <p className="text-xs text-destructive">⚠ {fieldErrors.username}</p>
+                    <p className="text-xs text-destructive"><span aria-hidden="true">⚠</span>{' '}{fieldErrors.username}</p>
                   ) : availability.username === 'taken' ? (
-                    <p className="text-xs text-destructive">⚠ Username is already taken</p>
+                    <p className="text-xs text-destructive"><span aria-hidden="true">⚠</span>{' '}Username is already taken</p>
                   ) : availability.username === 'available' ? (
                     <p className="text-xs text-primary">Username is available</p>
                   ) : null}
@@ -185,9 +185,9 @@ function RegisterPage() {
                     </span>
                   </div>
                   {fieldErrors.email ? (
-                    <p className="text-xs text-destructive">⚠ {fieldErrors.email}</p>
+                    <p className="text-xs text-destructive"><span aria-hidden="true">⚠</span>{' '}{fieldErrors.email}</p>
                   ) : availability.email === 'taken' ? (
-                    <p className="text-xs text-destructive">⚠ Email is already in use</p>
+                    <p className="text-xs text-destructive"><span aria-hidden="true">⚠</span>{' '}Email is already in use</p>
                   ) : availability.email === 'available' ? (
                     <p className="text-xs text-primary">Email is available</p>
                   ) : null}
@@ -219,7 +219,7 @@ function RegisterPage() {
                     </button>
                   </div>
                   {fieldErrors.password && (
-                    <p className="text-xs text-destructive">⚠ {fieldErrors.password}</p>
+                    <p className="text-xs text-destructive"><span aria-hidden="true">⚠</span>{' '}{fieldErrors.password}</p>
                   )}
                   {form.password && (
                     <div className="mt-1 flex items-center gap-2">
@@ -354,8 +354,8 @@ function RegisterPage() {
 
                 <p className="text-center text-xs leading-relaxed text-muted-foreground">
                   By creating an account you agree to our{' '}
-                  <a className="text-primary hover:underline" href="#">Terms of Service</a> and{' '}
-                  <a className="text-primary hover:underline" href="#">Privacy Policy</a>.
+                  <Link className="text-primary hover:underline" to="/terms">Terms of Service</Link> and{' '}
+                  <Link className="text-primary hover:underline" to="/privacy">Privacy Policy</Link>.
                 </p>
               </form>
             )}

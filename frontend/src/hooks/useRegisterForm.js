@@ -4,7 +4,7 @@ import { useAuth } from './useAuth'
 import api from '../services/api'
 import { parseApiError } from '../utils/errorUtils'
 
-const EMAIL_RE = /\S+@\S+\.\S+/
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const DEBOUNCE_MS = 700
 
 export function useRegisterForm() {
@@ -64,7 +64,7 @@ export function useRegisterForm() {
           params: { username },
           signal: controller.signal,
         })
-        if (data.usernameAvailable !== undefined) {
+        if (data.usernameAvailable != null) {
           setAvailability(prev => ({
             ...prev,
             username: data.usernameAvailable ? 'available' : 'taken',
@@ -94,7 +94,7 @@ export function useRegisterForm() {
           params: { email },
           signal: controller.signal,
         })
-        if (data.emailAvailable !== undefined) {
+        if (data.emailAvailable != null) {
           setAvailability(prev => ({
             ...prev,
             email: data.emailAvailable ? 'available' : 'taken',
@@ -116,9 +116,10 @@ export function useRegisterForm() {
 
   function validateStep1() {
     const e = {}
-    if (!form.username.trim()) e.username = 'Required'
-    else if (form.username.length < 3) e.username = 'At least 3 characters'
-    else if (form.username.length > 50) e.username = 'Max 50 characters'
+    const trimmedUsername = form.username.trim()
+    if (!trimmedUsername) e.username = 'Required'
+    else if (trimmedUsername.length < 3) e.username = 'At least 3 characters'
+    else if (trimmedUsername.length > 50) e.username = 'Max 50 characters'
     else if (availability.username === 'taken') e.username = 'Username is already taken'
     if (!form.email.trim()) e.email = 'Required'
     else if (!EMAIL_RE.test(form.email)) e.email = 'Enter a valid email'
@@ -161,11 +162,11 @@ export function useRegisterForm() {
 
     try {
       const { data } = await api.post('/api/auth/register', payload)
+      login(data)
       if (form.role === 'PitchOwner') {
         navigate('/pending-approval', { replace: true })
         return
       }
-      login(data)
       navigate('/dashboard', { replace: true })
     } catch (err) {
       const msg = parseApiError(err, 'Registration failed. Please try again.')
