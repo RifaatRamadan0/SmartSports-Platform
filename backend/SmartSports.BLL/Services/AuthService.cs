@@ -58,8 +58,8 @@ public class AuthService : IAuthService
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             SkillLevel = (short?)request.SkillLevel,
-            PreferredPosition = request.PreferredPosition,
-            PhoneNumber = request.PhoneNumber?.Trim()
+            PreferredPosition = string.IsNullOrWhiteSpace(request.PreferredPosition) ? null : request.PreferredPosition.Trim(),
+            PhoneNumber = request.PhoneNumber.Trim()
         };
 
         var userId = await _userRepository.CreateWithRoleAsync(user, role.Id);
