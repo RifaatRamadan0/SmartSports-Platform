@@ -18,4 +18,8 @@ public class RegisterRequest
 
     [Required]
     public string Role { get; set; } = string.Empty; // "Player" or "PitchOwner"
+
+    public int? SkillLevel { get; set; }
+    public string? PreferredPosition { get; set; }
+    public string? PhoneNumber { get; set; }
 }

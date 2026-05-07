@@ -40,10 +40,13 @@ public class AuthService : IAuthService
         if (!AllowedRoles.Contains(request.Role))
             throw new ArgumentException("Role must be 'Player' or 'PitchOwner'.");
 
-        if (await _userRepository.ExistsByEmailAsync(request.Email))
+        var email = request.Email.Trim();
+        var username = request.Username.Trim();
+
+        if (await _userRepository.ExistsByEmailAsync(email))
             throw new ArgumentException("Email is already in use.");
 
-        if (await _userRepository.ExistsByUsernameAsync(request.Username))
+        if (await _userRepository.ExistsByUsernameAsync(username))
             throw new ArgumentException("Username is already taken.");
 
         var role = await _userRepository.GetRoleByNameAsync(request.Role)
@@ -51,9 +54,12 @@ public class AuthService : IAuthService
 
         var user = new User
         {
-            Username = request.Username,
-            Email = request.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+            Username = username,
+            Email = email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            SkillLevel = (short?)request.SkillLevel,
+            PreferredPosition = request.PreferredPosition,
+            PhoneNumber = request.PhoneNumber?.Trim()
         };
 
         var userId = await _userRepository.CreateWithRoleAsync(user, role.Id);
@@ -80,6 +86,22 @@ public class AuthService : IAuthService
             ExpiresIn = expiryMinutes * 60,
             Roles = roles
         };
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex EmailRegex =
+        new(@"^\S+@\S+\.\S+$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    public async Task<AvailabilityResponse> CheckAvailabilityAsync(string? username, string? email)
+    {
+        var response = new AvailabilityResponse();
+
+        if (!string.IsNullOrWhiteSpace(username) && username.Length is >= 3 and <= 50)
+            response.UsernameAvailable = !await _userRepository.ExistsByUsernameAsync(username);
+
+        if (!string.IsNullOrWhiteSpace(email) && email.Length <= 254 && EmailRegex.IsMatch(email))
+            response.EmailAvailable = !await _userRepository.ExistsByEmailAsync(email);
+
+        return response;
     }
 
     // -- Login --

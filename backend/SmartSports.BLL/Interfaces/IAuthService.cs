@@ -4,8 +4,9 @@ namespace SmartSports.BLL.Interfaces;
 
 public interface IAuthService
 {
-    // -- Registeration --
+    // -- Registration --
     Task<AuthResponse> RegisterAsync(RegisterRequest request);
+    Task<AvailabilityResponse> CheckAvailabilityAsync(string? username, string? email);
 
     // -- Login & Authentication --
     Task<AuthResponse?> LoginAsync(LoginRequest request);
