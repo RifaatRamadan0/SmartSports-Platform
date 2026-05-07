@@ -81,7 +81,7 @@ function RegisterPage() {
             <CardDescription className="text-muted-foreground">
               {step === 1
                 ? 'Join SmartSports to find and book pitches'
-                : 'Help us personalise your experience (optional)'}
+                : 'Help us personalise your experience'}
             </CardDescription>
           </CardHeader>
 
@@ -238,6 +238,26 @@ function RegisterPage() {
                   )}
                 </div>
 
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="phoneNumber" className="text-[0.8125rem] font-medium text-muted-foreground">
+                    Phone Number
+                  </label>
+                  <Input
+                    id="phoneNumber"
+                    type="tel"
+                    name="phoneNumber"
+                    value={form.phoneNumber}
+                    onChange={handleChange}
+                    placeholder="+44 7700 000000"
+                    autoComplete="tel"
+                    aria-invalid={!!fieldErrors.phoneNumber}
+                    className="h-10 rounded-[0.625rem] border-border bg-input px-3.5 text-[0.9375rem] text-foreground"
+                  />
+                  {fieldErrors.phoneNumber && (
+                    <p className="text-xs text-destructive"><span aria-hidden="true">⚠</span>{' '}{fieldErrors.phoneNumber}</p>
+                  )}
+                </div>
+
                 <Button
                   type="submit"
                   disabled={
@@ -315,22 +335,6 @@ function RegisterPage() {
                     </div>
                   </div>
                 )}
-
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="phoneNumber" className="text-[0.8125rem] font-medium text-muted-foreground">
-                    Phone Number <span className="text-muted-foreground/70">(optional)</span>
-                  </label>
-                  <Input
-                    id="phoneNumber"
-                    type="tel"
-                    name="phoneNumber"
-                    value={form.phoneNumber}
-                    onChange={handleChange}
-                    placeholder="+44 7700 000000"
-                    autoComplete="tel"
-                    className="h-10 rounded-[0.625rem] border-border bg-input px-3.5 text-[0.9375rem] text-foreground"
-                  />
-                </div>
 
                 <Button
                   type="submit"

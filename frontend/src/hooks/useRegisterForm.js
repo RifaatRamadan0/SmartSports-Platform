@@ -5,6 +5,7 @@ import api from '../services/api'
 import { parseApiError } from '../utils/errorUtils'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const PHONE_RE = /^\+?[\d\s\-().]{7,20}$/
 const DEBOUNCE_MS = 700
 
 export function useRegisterForm() {
@@ -126,6 +127,9 @@ export function useRegisterForm() {
     else if (availability.email === 'taken') e.email = 'Email is already in use'
     if (!form.password) e.password = 'Required'
     else if (form.password.length < 8) e.password = 'At least 8 characters'
+    const trimmedPhone = form.phoneNumber.trim()
+    if (!trimmedPhone) e.phoneNumber = 'Required'
+    else if (!PHONE_RE.test(trimmedPhone)) e.phoneNumber = 'Enter a valid phone number'
     setFieldErrors(e)
     return Object.keys(e).length === 0
   }
@@ -153,12 +157,12 @@ export function useRegisterForm() {
       email: form.email,
       password: form.password,
       role: form.role,
+      phoneNumber: form.phoneNumber.trim(),
     }
     if (form.role === 'Player') {
       if (form.skillLevel) payload.skillLevel = form.skillLevel
       if (form.preferredPosition) payload.preferredPosition = form.preferredPosition
     }
-    if (form.phoneNumber.trim()) payload.phoneNumber = form.phoneNumber.trim()
 
     try {
       const { data } = await api.post('/api/auth/register', payload)

@@ -21,5 +21,8 @@ public class RegisterRequest
 
     public int? SkillLevel { get; set; }
     public string? PreferredPosition { get; set; }
-    public string? PhoneNumber { get; set; }
+
+    [Required]
+    [RegularExpression(@"^\+?[\d\s\-().]{7,20}$", ErrorMessage = "Enter a valid phone number.")]
+    public string PhoneNumber { get; set; } = string.Empty;
 }
