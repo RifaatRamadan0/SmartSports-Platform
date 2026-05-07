@@ -5,7 +5,7 @@ import api from '../services/api'
 import { parseApiError } from '../utils/errorUtils'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const PHONE_RE = /^(\+?961\s?|0)(70|71|76|78|79|81|82|1|3|4|5|6|7|8|9)\s?\d{3}\s?\d{3}$/
+const PHONE_RE = /^(\+?961\s?|0)?(70|71|76|78|79|81|82|1|3|4|5|6|7|8|9)\s?\d{3}\s?\d{3}$/
 const DEBOUNCE_MS = 700
 
 export function useRegisterForm() {
