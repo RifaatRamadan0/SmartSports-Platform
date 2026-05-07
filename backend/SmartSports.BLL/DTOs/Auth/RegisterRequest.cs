@@ -23,6 +23,7 @@ public class RegisterRequest
     public string? PreferredPosition { get; set; }
 
     [Required]
-    [RegularExpression(@"^\+?[\d\s\-().]{7,20}$", ErrorMessage = "Enter a valid phone number.")]
+    [RegularExpression(@"^(\+?961|0)(1|3|4|5|6|70|71|76|78|79|81)\s?\d{3}\s?\d{3}$",
+        ErrorMessage = "Enter a valid Lebanese phone number (e.g. +961 3 123 456 or 03 123 456).")]
     public string PhoneNumber { get; set; } = string.Empty;
 }

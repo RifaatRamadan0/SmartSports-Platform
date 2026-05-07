@@ -248,7 +248,7 @@ function RegisterPage() {
                     name="phoneNumber"
                     value={form.phoneNumber}
                     onChange={handleChange}
-                    placeholder="+44 7700 000000"
+                    placeholder="+961 3 123 456"
                     autoComplete="tel"
                     aria-invalid={!!fieldErrors.phoneNumber}
                     className="h-10 rounded-[0.625rem] border-border bg-input px-3.5 text-[0.9375rem] text-foreground"
