@@ -80,7 +80,7 @@ public class AuthService : IAuthService
         var roles = new[] { request.Role };
         return new AuthResponse
         {
-            AccessToken = GenerateJwtToken(userId, request.Username, request.Email, roles, expiryMinutes),
+            AccessToken = GenerateJwtToken(userId, username, email, roles, expiryMinutes),
             RefreshToken = refreshTokenValue,
             RefreshTokenExpiresAt = refreshTokenExpiresAt,
             ExpiresIn = expiryMinutes * 60,

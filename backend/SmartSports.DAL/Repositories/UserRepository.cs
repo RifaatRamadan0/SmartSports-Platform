@@ -21,7 +21,7 @@ public class UserRepository : IUserRepository
     {
         using var connection = _connectionFactory.CreateConnection();
         return await connection.ExecuteScalarAsync<bool>(
-            "SELECT EXISTS(SELECT 1 FROM users WHERE email = @Email)",
+            "SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = LOWER(@Email))",
             new { Email = email });
     }
 
@@ -29,7 +29,7 @@ public class UserRepository : IUserRepository
     {
         using var connection = _connectionFactory.CreateConnection();
         return await connection.ExecuteScalarAsync<bool>(
-            "SELECT EXISTS(SELECT 1 FROM users WHERE username = @Username)",
+            "SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(username) = LOWER(@Username))",
             new { Username = username });
     }
 
