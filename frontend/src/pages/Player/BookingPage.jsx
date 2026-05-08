@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { getAvailableSlots } from '../../services/Availability/availabilityService'
 import { createBooking } from '../../services/Booking/bookingService'
+import { getPitchById } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
 import Toast from '../../components/ui/Toast'
 
@@ -69,8 +70,21 @@ export default function BookingPage() {
     rating,
     ratingCount,
     amenities,
-    currency = '£',
+    currency = '$',
   } = location.state || {}
+
+  const [pitch, setPitch] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getPitchById(pitchId)
+      .then((p) => { if (!cancelled) setPitch(p) })
+      .catch(() => { /* non-fatal — fall back to router state */ })
+    return () => { cancelled = true }
+  }, [pitchId])
+
+  const resolvedName  = pitchName ?? pitch?.name
+  const resolvedPrice = typeof pricePerHour === 'number' ? pricePerHour : pitch?.pricePerHour
 
   const dates = useMemo(() => generateDateOptions(), [])
 
@@ -153,8 +167,8 @@ export default function BookingPage() {
   const hiddenCount  = Math.max(0, futureSlots.length - INITIAL_VISIBLE_SLOTS)
 
   const totalPrice =
-    selectedSlot && typeof pricePerHour === 'number'
-      ? (duration / 60) * pricePerHour
+    typeof resolvedPrice === 'number'
+      ? (duration / 60) * resolvedPrice
       : null
 
   const handleSlotClick = (slot) => {
@@ -211,7 +225,7 @@ export default function BookingPage() {
               Select Date &amp; Time
             </h1>
             <p className="text-xs text-neutral-500 mt-1">
-              {pitchName || `Pitch #${pitchId}`}
+              {resolvedName || `Pitch #${pitchId}`}
               {sport ? ` · ${sport}` : ''}
             </p>
           </div>
@@ -230,7 +244,7 @@ export default function BookingPage() {
           <PitchIcon />
           <div className="flex-1 min-w-0">
             <h2 className="text-lg sm:text-xl font-bold text-white">
-              {pitchName || 'Pitch'}
+              {resolvedName || 'Pitch'}
               {format ? <span className="text-neutral-400 font-medium"> — {format}</span> : null}
             </h2>
             <p className="text-xs text-neutral-400 mt-1">
@@ -258,11 +272,11 @@ export default function BookingPage() {
               </div>
             )}
           </div>
-          {typeof pricePerHour === 'number' && (
+          {typeof resolvedPrice === 'number' && (
             <div className="text-right shrink-0">
               <p className="text-3xl font-bold leading-none">
                 <span className="text-neutral-500 text-lg align-top">{currency}</span>
-                <span className="text-green-400">{Math.round(pricePerHour)}</span>
+                <span className="text-green-400">{Math.round(resolvedPrice)}</span>
               </p>
               <p className="text-xs text-neutral-500 mt-1">/hr</p>
             </div>
@@ -324,19 +338,29 @@ export default function BookingPage() {
                 <div className="flex gap-3">
                   {availableDurations.map(({ minutes, label }) => {
                     const isSelected = duration === minutes
+                    const optionPrice =
+                      typeof resolvedPrice === 'number'
+                        ? (minutes / 60) * resolvedPrice
+                        : null
                     return (
                       <button
                         key={minutes}
                         onClick={() => setDuration(minutes)}
                         className={`
-                          flex-1 py-3 rounded-xl border text-sm font-bold transition-all duration-150
+                          flex-1 py-3 rounded-xl border transition-all duration-150
+                          flex flex-col items-center justify-center
                           ${isSelected
                             ? 'border-green-500 bg-[#0f1a12] text-green-400'
                             : 'border-[#1f2622] bg-[#0f1411] text-neutral-300 hover:border-green-700'
                           }
                         `}
                       >
-                        {label}
+                        <span className="text-sm font-bold">{label}</span>
+                        {optionPrice !== null && (
+                          <span className={`text-[11px] mt-0.5 ${isSelected ? 'text-green-300' : 'text-neutral-500'}`}>
+                            {formatPrice(optionPrice, currency)}
+                          </span>
+                        )}
                       </button>
                     )
                   })}

@@ -181,6 +181,9 @@ public static class ServiceExtensions
         services.AddScoped<IPitchRepository, PitchRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
 
+        // Pitch
+        services.AddScoped<IPitchService, PitchService>();
+
         return services;
     }
 

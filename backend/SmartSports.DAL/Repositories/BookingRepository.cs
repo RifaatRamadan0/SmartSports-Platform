@@ -194,7 +194,7 @@ public class BookingRepository : IBookingRepository
             PitchName = r.PitchName
         });
 
-        var totalCount = list.FirstOrDefault()?.TotalCount ?? 0;
+        var totalCount = (int)(list.FirstOrDefault()?.TotalCount ?? 0);
 
         return (items, totalCount);
     }
@@ -272,7 +272,7 @@ public class BookingRepository : IBookingRepository
             PitchName = r.PitchName
         });
 
-        var totalCount = list.FirstOrDefault()?.TotalCount ?? 0;
+        var totalCount = (int)(list.FirstOrDefault()?.TotalCount ?? 0);
 
         return (items, totalCount);
     }
@@ -306,5 +306,5 @@ public class BookingRepository : IBookingRepository
         int Id, int UserId, int PitchId,
         DateOnly BookingDate, TimeOnly StartTime, TimeOnly EndTime,
         decimal TotalPrice, string Status, DateTime BookedAt,
-        string PitchName, int TotalCount);
+        string PitchName, long TotalCount);
 }
