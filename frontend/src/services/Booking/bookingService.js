@@ -40,3 +40,10 @@ export async function createBooking({ pitchId, bookingDate, startTime, durationI
   })
   return data
 }
+
+//player — PATCH /api/bookings/{id}/cancel
+export async function cancelBooking(id, cancellationReason) {
+  await api.patch(`/api/bookings/${id}/cancel`, {
+    cancellationReason: cancellationReason ?? null,
+  })
+}
