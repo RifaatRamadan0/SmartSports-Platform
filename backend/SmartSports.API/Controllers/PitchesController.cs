@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Pitch;
 using SmartSports.BLL.Interfaces;
 
@@ -14,6 +15,22 @@ public class PitchesController : ControllerBase
     public PitchesController(IPitchService pitchService)
     {
         _pitchService = pitchService;
+    }
+
+    /// <summary>
+    /// GET /api/pitches?sport=&page=&pageSize=
+    /// Lists active and approved pitches with sport name. Public.
+    /// </summary>
+    [HttpGet]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(PagedResult<PitchListResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> List(
+        [FromQuery] string? sport,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 12)
+    {
+        var result = await _pitchService.ListAsync(sport, page, pageSize);
+        return Ok(result);
     }
 
     /// <summary>

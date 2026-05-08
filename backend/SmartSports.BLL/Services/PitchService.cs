@@ -1,3 +1,4 @@
+using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Pitch;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Pitch;
@@ -29,6 +30,32 @@ public class PitchService : IPitchService
             MaxBookingDurationMinutes = pitch.MaxBookingDurationMinutes,
             IsActive                  = pitch.IsActive,
             IsApproved                = pitch.IsApproved,
+        };
+    }
+
+    public async Task<PagedResult<PitchListResponse>> ListAsync(string? sport, int page, int pageSize)
+    {
+        if (page     < 1)             page     = 1;
+        if (pageSize < 1 || pageSize > 100) pageSize = 12;
+
+        var (rows, total) = await _pitchRepository.ListAsync(sport, page, pageSize);
+
+        var items = rows.Select(r => new PitchListResponse
+        {
+            Id           = r.Id,
+            Name         = r.Name,
+            Address      = r.Address,
+            PricePerHour = r.PricePerHour,
+            Rating       = r.Rating,
+            SportName    = r.SportName,
+        });
+
+        return new PagedResult<PitchListResponse>
+        {
+            Items      = items,
+            TotalCount = (int)total,
+            Page       = page,
+            PageSize   = pageSize,
         };
     }
 }

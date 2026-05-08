@@ -1,6 +1,7 @@
 using Dapper;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Pitch;
+using SmartSports.Domain.Entities.Projections;
 using PitchEntity = SmartSports.Domain.Entities.Pitch;
 
 namespace SmartSports.DAL.Repositories;
@@ -25,4 +26,60 @@ public class PitchRepository : IPitchRepository
             """,
             new { PitchId = pitchId });
     }
+
+    public async Task<(IEnumerable<PitchListRow> Items, long TotalCount)> ListAsync(
+        string? sport, int page, int pageSize)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        var where = new List<string> { "p.is_active = TRUE", "p.is_approved = TRUE" };
+        if (!string.IsNullOrWhiteSpace(sport))
+            where.Add("LOWER(s.name) = LOWER(@Sport)");
+
+        var whereClause = string.Join(" AND ", where);
+
+        var sql = $"""
+            SELECT  p.id,
+                    p.name,
+                    p.address,
+                    p.price_per_hour              AS price_per_hour,
+                    p.rating,
+                    s.name                        AS sport_name,
+                    COUNT(*) OVER()               AS total_count
+            FROM    pitches     p
+            JOIN    sport_types s ON s.id = p.sport_type_id
+            WHERE   {whereClause}
+            ORDER BY p.created_at DESC
+            LIMIT   @PageSize
+            OFFSET  @Offset
+            """;
+
+        var rows = await connection.QueryAsync<PitchListRowWithCount>(
+            sql,
+            new
+            {
+                Sport    = sport,
+                PageSize = pageSize,
+                Offset   = (page - 1) * pageSize,
+            });
+
+        var list = rows.ToList();
+
+        var items = list.Select(r => new PitchListRow
+        {
+            Id           = r.Id,
+            Name         = r.Name,
+            Address      = r.Address,
+            PricePerHour = r.PricePerHour,
+            Rating       = r.Rating,
+            SportName    = r.SportName,
+        });
+
+        var totalCount = list.FirstOrDefault()?.TotalCount ?? 0L;
+        return (items, totalCount);
+    }
+
+    private record PitchListRowWithCount(
+        int Id, string Name, string Address, decimal PricePerHour,
+        decimal? Rating, string SportName, long TotalCount);
 }
