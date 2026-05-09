@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 using SmartSports.BLL.DTOs.Auth;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Auth;
@@ -71,7 +72,17 @@ public class AuthService : IAuthService
             PhoneNumber = request.PhoneNumber.Trim()
         };
 
-        var userId = await _userRepository.CreateWithRoleAsync(user, role.Id);
+        int userId;
+        try
+        {
+            userId = await _userRepository.CreateWithRoleAsync(user, role.Id);
+        }
+        catch (PostgresException ex) when (ex.SqlState == "23505")
+        {
+            // Two concurrent registrations slipped past the pre-checks and hit the
+            // DB unique constraint. Map to a client-safe 400 instead of a 500.
+            throw new ArgumentException("Email or username is already in use.");
+        }
 
         var expiryMinutes = GetAccessTokenExpiryMinutes();
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();

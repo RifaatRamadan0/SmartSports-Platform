@@ -19,6 +19,7 @@ public class Program
         builder.Services.AddJwtAuthentication(builder.Configuration);
         builder.Services.AddRoleBasedAuthorization();
         builder.Services.AddAuthRateLimiting();
+        builder.Services.AddForwardedHeadersConfiguration(builder.Configuration);
         builder.Services.AddApplicationServices(builder.Configuration);
         builder.Services.AddDataAccess(builder.Configuration);
 
@@ -36,6 +37,11 @@ public class Program
         app.Services.GetRequiredService<MigrationRunner>().Run();
 
         // ── Middleware Pipeline ──────────────────────────────────
+
+        // Must run before rate limiting so RemoteIpAddress is set from
+        // X-Forwarded-For when the app is behind a reverse proxy/load balancer.
+        app.UseForwardedHeaders();
+
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         if (app.Environment.IsDevelopment())
