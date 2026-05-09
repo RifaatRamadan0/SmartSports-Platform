@@ -13,8 +13,10 @@ public class Booking
     public DateTime BookedAt { get; set; }
     public string? CancellationReason { get; set; }
 
-    // joined fields
-    // Populated only when fetched with a JOIN on pitches.
-    // Empty string when fetched without the JOIN (e.g. availability queries).
-    public string PitchName { get; set; } = string.Empty;
+    // joined fields — populated only when fetched via GetByIdAsync (includes JOIN on pitches).
+    // PitchOwnerId is read by BookingService.EnsureUserCanAccessAsync; any new repository
+    // method that loads a Booking MUST also JOIN pitches.owner_id, otherwise the owner-auth
+    // check will silently fail and deny legitimate pitch owners.
+    public string PitchName    { get; set; } = string.Empty;
+    public int?   PitchOwnerId { get; set; }
 }

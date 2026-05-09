@@ -13,6 +13,7 @@ import NotFoundPage from './pages/NotFound/NotFoundPage'
 import OwnerSchedulePage from './pages/Owner/OwnerSchedulePage'
 import OwnerBookingsPage from './pages/Owner/OwnerBookingsPage'
 import PlayerBookingsPage from './pages/Player/PlayerBookingsPage'
+import BookingPage from './pages/Player/BookingPage'
 import { ROLES } from './constants/roles'
 
 function App() {
@@ -48,6 +49,7 @@ function App() {
             {/* Protected: Player only */}
             <Route element={<RoleRoute allowedRoles={[ROLES.PLAYER]} />}>
               <Route path="/my-bookings" element={<PlayerBookingsPage />} />
+              <Route path="/book/:pitchId" element={<BookingPage />} />
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />

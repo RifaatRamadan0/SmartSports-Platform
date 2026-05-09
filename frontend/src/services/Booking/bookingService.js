@@ -29,3 +29,21 @@ export async function getBookingById(id) {
   const { data } = await api.get(`/api/bookings/${id}`)
   return data
 }
+
+//player
+export async function createBooking({ pitchId, bookingDate, startTime, durationInMinutes }) {
+  const { data } = await api.post('/api/bookings', {
+    pitchId,
+    bookingDate,
+    startTime,
+    durationInMinutes,
+  })
+  return data
+}
+
+//player — PATCH /api/bookings/{id}/cancel
+export async function cancelBooking(id, cancellationReason) {
+  await api.patch(`/api/bookings/${id}/cancel`, {
+    cancellationReason: cancellationReason ?? null,
+  })
+}
