@@ -10,5 +10,6 @@ public class User
     public string? ProfilePicture { get; set; }
     public short? SkillLevel { get; set; }
     public string? PreferredPosition { get; set; }
+    public bool IsEmailVerified { get; set; }
     public DateTime CreatedAt { get; set; }
 }

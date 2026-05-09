@@ -28,6 +28,9 @@ public class ExpiredTokenCleanupService : BackgroundService
 
                 var resetRepo = scope.ServiceProvider.GetRequiredService<IPasswordResetTokenRepository>();
                 await resetRepo.DeleteExpiredAsync();
+
+                var verifyRepo = scope.ServiceProvider.GetRequiredService<IEmailVerificationTokenRepository>();
+                await verifyRepo.DeleteExpiredAsync();
             }
             catch (Exception ex)
             {

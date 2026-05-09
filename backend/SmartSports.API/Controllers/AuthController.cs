@@ -16,22 +16,24 @@ public class AuthController : ControllerBase
 
     public AuthController(IAuthService authService, IConfiguration configuration)
     {
-        _authService = authService;
+        _authService   = authService;
         _configuration = configuration;
     }
 
     // POST api/auth/register
     [HttpPost("register")]
     [EnableRateLimiting("auth")]
-    [ProducesResponseType(typeof(ClientAuthResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        var result = await _authService.RegisterAsync(request);
+        var baseUrl = _configuration["Frontend:BaseUrl"]
+            ?? throw new InvalidOperationException("Frontend:BaseUrl is not configured.");
 
-        SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAt);
+        await _authService.RegisterAsync(request, baseUrl);
 
-        return StatusCode(StatusCodes.Status201Created, ToClientResponse(result));
+        return StatusCode(StatusCodes.Status201Created,
+            new { Message = "Account created. Please check your email to verify your account." });
     }
 
     // GET api/auth/check-availability
@@ -53,6 +55,7 @@ public class AuthController : ControllerBase
     [EnableRateLimiting("auth")]
     [ProducesResponseType(typeof(ClientAuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var result = await _authService.LoginAsync(request);
@@ -99,12 +102,37 @@ public class AuthController : ControllerBase
         Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,
+            Secure   = true,
             SameSite = SameSiteMode.Strict,
-            Path = "/api/auth"
+            Path     = "/api/auth"
         });
 
         return Ok(new { Message = "Logged out successfully." });
+    }
+
+    // GET api/auth/verify-email?token=...
+    [HttpGet("verify-email")]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyEmail([FromQuery] Guid token)
+    {
+        await _authService.VerifyEmailAsync(token);
+        return Ok(new { Message = "Email verified successfully." });
+    }
+
+    // POST api/auth/resend-verification
+    [HttpPost("resend-verification")]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequest request)
+    {
+        var baseUrl = _configuration["Frontend:BaseUrl"]
+            ?? throw new InvalidOperationException("Frontend:BaseUrl is not configured.");
+
+        await _authService.ResendVerificationEmailAsync(request.Email, baseUrl);
+
+        return Ok(new { Message = "If that email is registered and unverified, a new link has been sent." });
     }
 
     // POST api/auth/forgot-password
@@ -138,19 +166,18 @@ public class AuthController : ControllerBase
     {
         AccessToken = r.AccessToken,
         ExpiresIn   = r.ExpiresIn,
-        Roles        = r.Roles,
+        Roles       = r.Roles,
     };
 
     private void SetRefreshTokenCookie(string refreshToken, DateTime expiresAt)
     {
-        var cookieOptions = new CookieOptions
+        Response.Cookies.Append(RefreshTokenCookieName, refreshToken, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,
+            Secure   = true,
             SameSite = SameSiteMode.Strict,
-            Expires = expiresAt,
-            Path = "/api/auth"
-        };
-        Response.Cookies.Append(RefreshTokenCookieName, refreshToken, cookieOptions);
+            Expires  = expiresAt,
+            Path     = "/api/auth"
+        });
     }
 }

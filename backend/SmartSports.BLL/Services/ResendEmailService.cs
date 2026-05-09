@@ -37,4 +37,26 @@ public class ResendEmailService : IEmailService
 
         await _resend.EmailSendAsync(message);
     }
+
+    public async Task SendVerificationEmailAsync(string toEmail, string verificationLink)
+    {
+        var message = new EmailMessage
+        {
+            From = _fromEmail,
+            To = { toEmail },
+            Subject = "Verify your SmartSports email",
+            HtmlBody = $"""
+                <h2>Welcome to SmartSports!</h2>
+                <p>Click the button below to verify your email address. This link expires in 24 hours.</p>
+                <a href="{verificationLink}"
+                   style="background:#22c55e;color:#fff;padding:10px 20px;
+                          border-radius:6px;text-decoration:none;display:inline-block;">
+                    Verify Email
+                </a>
+                <p>If you didn't create an account, ignore this email.</p>
+                """,
+        };
+
+        await _resend.EmailSendAsync(message);
+    }
 }

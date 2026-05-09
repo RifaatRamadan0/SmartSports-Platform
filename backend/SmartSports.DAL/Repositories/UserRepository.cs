@@ -92,7 +92,8 @@ public class UserRepository : IUserRepository
         return await connection.QuerySingleOrDefaultAsync<User>(
             """
             SELECT id, username, email, password_hash, phone_number,
-                   profile_picture, skill_level, preferred_position, created_at
+                   profile_picture, skill_level, preferred_position,
+                   is_email_verified, created_at
             FROM users
             WHERE email = @Email
             """,
@@ -105,7 +106,8 @@ public class UserRepository : IUserRepository
         return await connection.QuerySingleOrDefaultAsync<User>(
             """
             SELECT id, username, email, password_hash, phone_number,
-                   profile_picture, skill_level, preferred_position, created_at
+                   profile_picture, skill_level, preferred_position,
+                   is_email_verified, created_at
             FROM users
             WHERE username = @Username
             """,
@@ -118,7 +120,8 @@ public class UserRepository : IUserRepository
         return await connection.QuerySingleOrDefaultAsync<User>(
             """
             SELECT id, username, email, password_hash, phone_number,
-                   profile_picture, skill_level, preferred_position, created_at
+                   profile_picture, skill_level, preferred_position,
+                   is_email_verified, created_at
             FROM users
             WHERE id = @UserId
             """,
@@ -150,5 +153,19 @@ public class UserRepository : IUserRepository
             WHERE id = @UserId
             """,
             new { UserId = userId, PasswordHash = passwordHash });
+    }
+
+    // -- Email verification --
+
+    public async Task VerifyEmailAsync(int userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        await connection.ExecuteAsync(
+            """
+            UPDATE users
+            SET is_email_verified = TRUE
+            WHERE id = @UserId
+            """,
+            new { UserId = userId });
     }
 }

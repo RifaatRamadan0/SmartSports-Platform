@@ -19,4 +19,7 @@ public interface IUserRepository
 
     // -- Password management --
     Task UpdatePasswordAsync(int userId, string passwordHash);
+
+    // -- Email verification --
+    Task VerifyEmailAsync(int userId);
 }

@@ -5,16 +5,19 @@ namespace SmartSports.BLL.Interfaces;
 public interface IAuthService
 {
     // -- Registration --
-    Task<AuthResponse> RegisterAsync(RegisterRequest request);
+    Task RegisterAsync(RegisterRequest request, string baseUrl);
     Task<AvailabilityResponse> CheckAvailabilityAsync(string? username, string? email, string? phoneNumber);
 
     // -- Login & Authentication --
     Task<AuthResponse?> LoginAsync(LoginRequest request);
     Task<AuthResponse?> RefreshTokenAsync(string refreshToken);
-
     Task LogoutAsync(string refreshToken);
 
-    // -- Forget and Reset Password
+    // -- Email Verification --
+    Task VerifyEmailAsync(Guid token);
+    Task ResendVerificationEmailAsync(string email, string baseUrl);
+
+    // -- Forgot & Reset Password --
     Task ForgotPasswordAsync(ForgotPasswordRequest dto, string baseUrl);
     Task ResetPasswordAsync(ResetPasswordRequest dto);
 }
