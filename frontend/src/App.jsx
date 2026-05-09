@@ -9,6 +9,8 @@ import LoginPage from './pages/Login/LoginPage'
 import RegisterPage from './pages/Register/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPassword/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPassword/ResetPasswordPage'
+import VerifyEmailPage from './pages/VerifyEmail/VerifyEmailPage'
+import ConfirmEmailPage from './pages/ConfirmEmail/ConfirmEmailPage'
 import PendingApprovalPage from './pages/PendingApproval/PendingApprovalPage'
 import ForbiddenPage from './pages/Forbidden/ForbiddenPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
@@ -28,6 +30,8 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/confirm-email" element={<ConfirmEmailPage />} />
             <Route path="/pending-approval" element={<PendingApprovalPage />} />
             <Route path="/forbidden" element={<ForbiddenPage />} />
 

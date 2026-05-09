@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from './useAuth'
 import api from '../services/api'
 import { parseApiError } from '../utils/errorUtils'
 
@@ -9,7 +8,6 @@ const PHONE_RE = /^(\+?961\s?|0)?(70|71|76|78|79|81|82|1|3|4|5|6|7|8|9)\s?\d{3}\
 const DEBOUNCE_MS = 700
 
 export function useRegisterForm() {
-  const { login } = useAuth()
   const navigate = useNavigate()
 
   const [step, setStep] = useState(1)
@@ -206,13 +204,8 @@ export function useRegisterForm() {
     }
 
     try {
-      const { data } = await api.post('/api/auth/register', payload)
-      login(data)
-      if (form.role === 'PitchOwner') {
-        navigate('/pending-approval', { replace: true })
-        return
-      }
-      navigate('/dashboard', { replace: true })
+      await api.post('/api/auth/register', payload)
+      navigate('/verify-email', { state: { email: form.email }, replace: true })
     } catch (err) {
       const msg = parseApiError(err, 'Registration failed. Please try again.')
       const lower = msg.toLowerCase()
