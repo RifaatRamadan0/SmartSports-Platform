@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.HttpOverrides;
-using SmartSports.API.Extensions;
+﻿using SmartSports.API.Extensions;
 using SmartSports.API.Middleware;
 using SmartSports.DAL.Data;
 
@@ -20,6 +19,7 @@ public class Program
         builder.Services.AddJwtAuthentication(builder.Configuration);
         builder.Services.AddRoleBasedAuthorization();
         builder.Services.AddAuthRateLimiting();
+        builder.Services.AddForwardedHeadersConfiguration(builder.Configuration);
         builder.Services.AddApplicationServices();
         builder.Services.AddDataAccess(builder.Configuration);
 
@@ -40,10 +40,7 @@ public class Program
 
         // Must run before rate limiting so RemoteIpAddress is set from
         // X-Forwarded-For when the app is behind a reverse proxy/load balancer.
-        app.UseForwardedHeaders(new ForwardedHeadersOptions
-        {
-            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-        });
+        app.UseForwardedHeaders();
 
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 

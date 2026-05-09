@@ -1,6 +1,8 @@
-﻿using System.Text;
+﻿using System.Net;
+using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -219,6 +221,40 @@ public static class ServiceExtensions
                     }));
 
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        });
+
+        return services;
+    }
+
+    // Configures forwarded-header trust so X-Forwarded-For from a known proxy
+    // populates RemoteIpAddress before the rate limiter runs. Without trusted
+    // entries, ASP.NET only honors forwarders from localhost — meaning a real
+    // proxy (nginx, ALB, Cloudflare) is silently ignored and every request
+    // shares the proxy's IP in the rate-limit bucket.
+    public static IServiceCollection AddForwardedHeadersConfiguration(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.ForwardLimit = 2;
+
+            var section = configuration.GetSection("ForwardedHeaders");
+            var knownNetworks = section.GetSection("KnownNetworks").Get<string[]>() ?? Array.Empty<string>();
+            var knownProxies  = section.GetSection("KnownProxies").Get<string[]>()  ?? Array.Empty<string>();
+
+            foreach (var cidr in knownNetworks)
+            {
+                var parts = cidr.Split('/');
+                options.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(
+                    IPAddress.Parse(parts[0]),
+                    int.Parse(parts[1])));
+            }
+
+            foreach (var ip in knownProxies)
+                options.KnownProxies.Add(IPAddress.Parse(ip));
         });
 
         return services;
