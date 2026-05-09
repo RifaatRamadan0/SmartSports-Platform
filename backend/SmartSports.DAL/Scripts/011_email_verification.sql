@@ -2,6 +2,8 @@
 -- Migration 011: Email Verification
 -- =============================================
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 ALTER TABLE users ADD COLUMN is_email_verified BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE TABLE email_verification_tokens (

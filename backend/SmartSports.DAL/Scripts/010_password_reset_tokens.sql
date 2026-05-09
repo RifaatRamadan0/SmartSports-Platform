@@ -2,6 +2,8 @@
 -- Migration 010: Password Reset Tokens
 -- =============================================
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id         INT             NOT NULL,

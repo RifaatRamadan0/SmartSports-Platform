@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using Npgsql;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.Domain.Entities;
@@ -46,19 +45,22 @@ public class PasswordResetTokenRepository : IPasswordResetTokenRepository
         return await connection.QuerySingleOrDefaultAsync<PasswordResetToken>(sql, new { Token = token });
     }
 
-    // Mark used
-    public async Task MarkUsedAsync(Guid token)
+    // Atomically marks the token used and returns the owner's user_id.
+    // Returns null if the token is invalid, expired, or already consumed.
+    public async Task<int?> ConsumeAsync(Guid token)
     {
         using var connection = _connectionFactory.CreateConnection();
 
         const string sql = """
             UPDATE password_reset_tokens
             SET    used_at = NOW()
-            WHERE  token   = @Token
-              AND  used_at IS NULL;
+            WHERE  token      = @Token
+              AND  used_at    IS NULL
+              AND  expires_at > NOW()
+            RETURNING user_id;
             """;
 
-        await connection.ExecuteAsync(sql, new { Token = token });
+        return await connection.ExecuteScalarAsync<int?>(sql, new { Token = token });
     }
 
     // Cleanup 

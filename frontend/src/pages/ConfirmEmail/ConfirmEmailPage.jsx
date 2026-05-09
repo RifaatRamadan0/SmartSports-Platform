@@ -40,13 +40,18 @@ function ConfirmEmailPage() {
       return
     }
 
-    api.get('/api/auth/verify-email', { params: { token } })
+    const controller = new AbortController()
+
+    api.get('/api/auth/verify-email', { params: { token }, signal: controller.signal })
       .then(() => setStatus('success'))
       .catch(err => {
+        if (err.code === 'ERR_CANCELED' || err.name === 'CanceledError') return
         const msg = err.response?.data?.message
         setErrorMsg(msg ?? 'This link has expired or already been used.')
         setStatus('error')
       })
+
+    return () => controller.abort()
   }, [token])
 
   return (

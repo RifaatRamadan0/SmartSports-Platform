@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -83,6 +83,12 @@ function ResetPasswordPage() {
   const [error,           setError]           = useState('')
   const [success,         setSuccess]         = useState(false)
 
+  useEffect(() => {
+    if (!success) return
+    const id = setTimeout(() => navigate('/login', { replace: true }), 2500)
+    return () => clearTimeout(id)
+  }, [success, navigate])
+
   if (!token) return <InvalidToken />
 
   async function handleSubmit(e) {
@@ -102,7 +108,6 @@ function ResetPasswordPage() {
     try {
       await api.post('/api/auth/reset-password', { token, newPassword })
       setSuccess(true)
-      setTimeout(() => navigate('/login', { replace: true }), 2500)
     } catch (err) {
       const msg = err.response?.data?.message
       setError(msg ?? 'This link has expired or already been used. Please request a new one.')

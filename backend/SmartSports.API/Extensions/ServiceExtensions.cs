@@ -29,33 +29,10 @@ public static class ServiceExtensions
             ?? throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' is not configured.");
 
-        VerifyDatabaseConnectivity(connectionString);
-
         services.AddSingleton<IDbConnectionFactory>(_ =>
             new DbConnectionFactory(connectionString));
         services.AddSingleton<MigrationRunner>();
         return services;
-    }
-
-    private static void VerifyDatabaseConnectivity(string connectionString)
-    {
-        try
-        {
-            using var connection = new Npgsql.NpgsqlConnection(connectionString);
-            connection.Open();
-        }
-        catch (Npgsql.PostgresException ex) when (ex.SqlState == "53300")
-        {
-            throw new InvalidOperationException(
-                "PostgreSQL rejected the connection: too many clients already. " +
-                "Kill lingering 'dotnet' processes and restart the DB container, " +
-                "or raise 'max_connections' in postgresql.conf.", ex);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(
-                $"Cannot reach the database. Ensure docker-compose is running. ({ex.Message})", ex);
-        }
     }
 
     public static IServiceCollection AddSwaggerConfiguration(this IServiceCollection services)

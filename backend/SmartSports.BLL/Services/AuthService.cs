@@ -93,7 +93,7 @@ public class AuthService : IAuthService
         if (!string.IsNullOrWhiteSpace(email) && email.Length <= 254 && EmailRegex.IsMatch(email))
             response.EmailAvailable = !await _userRepository.ExistsByEmailAsync(email);
 
-        if (!string.IsNullOrWhiteSpace(phoneNumber))
+        if (!string.IsNullOrWhiteSpace(phoneNumber) && phoneNumber.Length <= 32)
             response.PhoneNumberAvailable = !await _userRepository.ExistsByPhoneNumberAsync(phoneNumber.Trim());
 
         return response;
@@ -224,8 +224,12 @@ public class AuthService : IAuthService
     {
         var user = await _userRepository.GetByEmailAsync(email.Trim());
 
-        // Silent return: never reveal whether an email is registered
-        if (user is null || user.IsEmailVerified) return;
+        // Constant-time path: both branches do equivalent work so timing cannot reveal account existence
+        if (user is null || user.IsEmailVerified)
+        {
+            BCrypt.Net.BCrypt.Verify(Guid.NewGuid().ToString(), DummyPasswordHash);
+            return;
+        }
 
         var verificationToken = await _emailVerificationTokenRepository.CreateAsync(user.Id);
         var verificationLink  = $"{baseUrl}/confirm-email?token={verificationToken.Token}";
@@ -236,8 +240,15 @@ public class AuthService : IAuthService
 
     public async Task ForgotPasswordAsync(ForgotPasswordRequest dto, string baseUrl)
     {
-        var user = await _userRepository.GetByEmailAsync(dto.Email);
-        if (user is null) return;
+        var normalizedEmail = dto.Email.Trim();
+        var user = await _userRepository.GetByEmailAsync(normalizedEmail);
+
+        // Constant-time path: both branches do equivalent work so timing cannot reveal whether the email exists
+        if (user is null)
+        {
+            BCrypt.Net.BCrypt.Verify(Guid.NewGuid().ToString(), DummyPasswordHash);
+            return;
+        }
 
         var resetToken = await _passwordResetTokenRepository.CreateAsync(user.Id);
         var resetLink  = $"{baseUrl}/reset-password?token={resetToken.Token}";
@@ -246,17 +257,13 @@ public class AuthService : IAuthService
 
     public async Task ResetPasswordAsync(ResetPasswordRequest dto)
     {
-        var resetToken = await _passwordResetTokenRepository.GetByTokenAsync(dto.Token);
-
-        if (resetToken is null || !resetToken.IsValid)
+        // Atomically mark the token used and retrieve the owner — prevents TOCTOU races
+        var userId = await _passwordResetTokenRepository.ConsumeAsync(dto.Token);
+        if (userId is null)
             throw new ArgumentException("Token is invalid or has expired.");
 
-        var user = await _userRepository.GetByIdAsync(resetToken.UserId)
-            ?? throw new InvalidOperationException("User not found.");
-
         var newHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
-        await _userRepository.UpdatePasswordAsync(user.Id, newHash);
-        await _passwordResetTokenRepository.MarkUsedAsync(dto.Token);
+        await _userRepository.UpdatePasswordAsync(userId.Value, newHash);
     }
 
     // -- Private Helpers --

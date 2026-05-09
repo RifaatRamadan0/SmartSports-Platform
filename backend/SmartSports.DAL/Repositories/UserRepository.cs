@@ -95,7 +95,7 @@ public class UserRepository : IUserRepository
                    profile_picture, skill_level, preferred_position,
                    is_email_verified, created_at
             FROM users
-            WHERE email = @Email
+            WHERE LOWER(email) = LOWER(@Email)
             """,
             new { Email = email });
     }
@@ -109,7 +109,7 @@ public class UserRepository : IUserRepository
                    profile_picture, skill_level, preferred_position,
                    is_email_verified, created_at
             FROM users
-            WHERE username = @Username
+            WHERE LOWER(username) = LOWER(@Username)
             """,
             new { Username = username });
     }
