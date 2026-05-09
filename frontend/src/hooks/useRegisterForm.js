@@ -24,18 +24,23 @@ export function useRegisterForm() {
   })
   const [fieldErrors, setFieldErrors] = useState({})
   // 'idle' | 'checking' | 'available' | 'taken'
-  const [availability, setAvailability] = useState({ username: 'idle', email: 'idle' })
+  const [availability, setAvailability] = useState({ username: 'idle', email: 'idle', phoneNumber: 'idle' })
   const [error, setError] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const usernameAbortRef = useRef(null)
-  const emailAbortRef = useRef(null)
+  const emailAbortRef    = useRef(null)
+  const phoneAbortRef    = useRef(null)
 
   function handleChange(e) {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
-    if (name === 'username' || name === 'email') {
-      setAvailability(prev => ({ ...prev, [name]: 'idle' }))
+    if (name === 'username' || name === 'email' || name === 'phoneNumber') {
+      if (name !== 'phoneNumber') {
+        setAvailability(prev => ({ ...prev, [name]: 'idle' }))
+      } else {
+        setAvailability(prev => ({ ...prev, phoneNumber: 'idle' }))
+      }
       setFieldErrors(prev => {
         if (!prev[name]) return prev
         const { [name]: _, ...rest } = prev
@@ -110,9 +115,40 @@ export function useRegisterForm() {
     return () => clearTimeout(timer)
   }, [form.email])
 
+  useEffect(() => {
+    const phone = form.phoneNumber.trim()
+    if (!PHONE_RE.test(phone)) return
+
+    setAvailability(prev => ({ ...prev, phoneNumber: 'checking' }))
+
+    const timer = setTimeout(async () => {
+      phoneAbortRef.current?.abort()
+      const controller = new AbortController()
+      phoneAbortRef.current = controller
+      try {
+        const { data } = await api.get('/api/auth/check-availability', {
+          params: { phoneNumber: phone },
+          signal: controller.signal,
+        })
+        if (data.phoneNumberAvailable != null) {
+          setAvailability(prev => ({
+            ...prev,
+            phoneNumber: data.phoneNumberAvailable ? 'available' : 'taken',
+          }))
+        }
+      } catch (err) {
+        if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') return
+        setAvailability(prev => ({ ...prev, phoneNumber: 'idle' }))
+      }
+    }, DEBOUNCE_MS)
+
+    return () => clearTimeout(timer)
+  }, [form.phoneNumber])
+
   useEffect(() => () => {
     usernameAbortRef.current?.abort()
     emailAbortRef.current?.abort()
+    phoneAbortRef.current?.abort()
   }, [])
 
   function validateStep1() {
@@ -130,6 +166,7 @@ export function useRegisterForm() {
     const trimmedPhone = form.phoneNumber.trim()
     if (!trimmedPhone) e.phoneNumber = 'Required'
     else if (!PHONE_RE.test(trimmedPhone)) e.phoneNumber = 'Enter a valid phone number'
+    else if (availability.phoneNumber === 'taken') e.phoneNumber = 'Phone number is already registered.'
     setFieldErrors(e)
     return Object.keys(e).length === 0
   }
@@ -138,7 +175,11 @@ export function useRegisterForm() {
     e.preventDefault()
     setError(null)
     if (!validateStep1()) return
-    if (availability.username === 'checking' || availability.email === 'checking') return
+    if (
+      availability.username  === 'checking' ||
+      availability.email     === 'checking' ||
+      availability.phoneNumber === 'checking'
+    ) return
     setStep(2)
   }
 
@@ -182,6 +223,8 @@ export function useRegisterForm() {
       } else if (lower.includes('email')) {
         next.email = msg
         setAvailability(prev => ({ ...prev, email: 'taken' }))
+      } else if (lower.includes('phone')) {
+        next.phoneNumber = msg
       }
       if (Object.keys(next).length) {
         setFieldErrors(prev => ({ ...prev, ...next }))

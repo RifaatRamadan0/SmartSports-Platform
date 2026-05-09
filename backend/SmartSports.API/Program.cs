@@ -19,7 +19,7 @@ public class Program
         builder.Services.AddJwtAuthentication(builder.Configuration);
         builder.Services.AddRoleBasedAuthorization();
         builder.Services.AddAuthRateLimiting();
-        builder.Services.AddApplicationServices();
+        builder.Services.AddApplicationServices(builder.Configuration);
         builder.Services.AddDataAccess(builder.Configuration);
 
         // ── Build ────────────────────────────────────────────────

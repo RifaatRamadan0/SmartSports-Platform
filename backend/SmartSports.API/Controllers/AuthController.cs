@@ -10,12 +10,14 @@ namespace SmartSports.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IConfiguration _configuration;
 
     private const string RefreshTokenCookieName = "refreshToken";
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IConfiguration configuration)
     {
         _authService = authService;
+        _configuration = configuration;
     }
 
     // POST api/auth/register
@@ -39,9 +41,10 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> CheckAvailability(
         [FromQuery] string? username,
-        [FromQuery] string? email)
+        [FromQuery] string? email,
+        [FromQuery] string? phoneNumber)
     {
-        var result = await _authService.CheckAvailabilityAsync(username, email);
+        var result = await _authService.CheckAvailabilityAsync(username, email, phoneNumber);
         return Ok(result);
     }
 
@@ -102,6 +105,31 @@ public class AuthController : ControllerBase
         });
 
         return Ok(new { Message = "Logged out successfully." });
+    }
+
+    // POST api/auth/forgot-password
+    [HttpPost("forgot-password")]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var baseUrl = _configuration["Frontend:BaseUrl"]
+            ?? throw new InvalidOperationException("Frontend:BaseUrl is not configured.");
+
+        await _authService.ForgotPasswordAsync(request, baseUrl);
+
+        return Ok(new { Message = "If that email is registered, a reset link has been sent." });
+    }
+
+    // POST api/auth/reset-password
+    [HttpPost("reset-password")]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        await _authService.ResetPasswordAsync(request);
+        return Ok(new { Message = "Password has been reset successfully." });
     }
 
     // -- Private Helpers --

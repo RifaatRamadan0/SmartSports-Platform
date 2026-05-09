@@ -33,6 +33,14 @@ public class UserRepository : IUserRepository
             new { Username = username });
     }
 
+    public async Task<bool> ExistsByPhoneNumberAsync(string phoneNumber)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<bool>(
+            "SELECT EXISTS(SELECT 1 FROM users WHERE phone_number = @PhoneNumber)",
+            new { PhoneNumber = phoneNumber });
+    }
+
     public async Task<Role?> GetRoleByNameAsync(string roleName)
     {
         using var connection = _connectionFactory.CreateConnection();
@@ -65,7 +73,14 @@ public class UserRepository : IUserRepository
         catch (PostgresException ex) when (ex.SqlState == "23505")
         {
             await transaction.RollbackAsync();
-            throw new ArgumentException("Email or username is already in use.");
+            var message = ex.ConstraintName switch
+            {
+                "users_email_lower_idx"    => "Email is already in use.",
+                "users_username_lower_idx" => "Username is already taken.",
+                "users_phone_number_key"   => "Phone number is already registered.",
+                _                          => "An account with these details already exists."
+            };
+            throw new ArgumentException(message);
         }
     }
 
@@ -121,5 +136,19 @@ public class UserRepository : IUserRepository
             WHERE ur.user_id = @UserId
             """,
             new { UserId = userId });
+    }
+
+    // -- Password management --
+
+    public async Task UpdatePasswordAsync(int userId, string passwordHash)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        await connection.ExecuteAsync(
+            """
+            UPDATE users
+            SET password_hash = @PasswordHash
+            WHERE id = @UserId
+            """,
+            new { UserId = userId, PasswordHash = passwordHash });
     }
 }

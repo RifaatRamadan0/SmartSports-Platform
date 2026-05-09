@@ -11,11 +11,11 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-[#0f1a12] to-background px-4 py-10">
+    <div className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-[#0f1a12] to-background px-4 py-10">
       {/* subtle grid overlay */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-[size:60px_60px]"
+        className="pointer-events-none fixed inset-0 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-size-[60px_60px]"
       />
 
       <div className="relative z-10 w-full max-w-sm">
@@ -77,12 +77,20 @@ function LoginPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="password"
-                  className="text-[0.8125rem] font-medium text-muted-foreground"
-                >
-                  Password
-                </label>
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="password"
+                    className="text-[0.8125rem] font-medium text-muted-foreground"
+                  >
+                    Password
+                  </label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-[0.8125rem] font-semibold text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <div className="relative">
                   <Input
                     id="password"

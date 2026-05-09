@@ -7,6 +7,8 @@ import RootRedirect from './components/routing/RootRedirect'
 import HomePage from './pages/Home/HomePage'
 import LoginPage from './pages/Login/LoginPage'
 import RegisterPage from './pages/Register/RegisterPage'
+import ForgotPasswordPage from './pages/ForgotPassword/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPassword/ResetPasswordPage'
 import PendingApprovalPage from './pages/PendingApproval/PendingApprovalPage'
 import ForbiddenPage from './pages/Forbidden/ForbiddenPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
@@ -23,6 +25,8 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/pending-approval" element={<PendingApprovalPage />} />
             <Route path="/forbidden" element={<ForbiddenPage />} />
 

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartSports.API.BackgroundServices;
+using Resend;
 using SmartSports.BLL.Interfaces;
 using SmartSports.BLL.Services;
 using SmartSports.DAL.Data;
@@ -161,10 +162,24 @@ public static class ServiceExtensions
         return services;
     }
 
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddApplicationServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
+        // Resend email client
+        services.AddOptions();
+        services.AddHttpClient<ResendClient>();
+        services.Configure<ResendClientOptions>(options =>
+        {
+            options.ApiToken = configuration["Resend:ApiKey"]
+                ?? throw new InvalidOperationException("Resend:ApiKey is not configured.");
+        });
+        services.AddTransient<IResend, ResendClient>();
+
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+        services.AddScoped<IEmailService, ResendEmailService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IBookingService, BookingService>();
         services.AddHostedService<ExpiredTokenCleanupService>();

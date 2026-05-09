@@ -7,6 +7,7 @@ public interface IUserRepository
     // -- Registration methods --
     Task<bool> ExistsByEmailAsync(string email);
     Task<bool> ExistsByUsernameAsync(string username);
+    Task<bool> ExistsByPhoneNumberAsync(string phoneNumber);
     Task<int> CreateWithRoleAsync(User user, int roleId);
     Task<Role?> GetRoleByNameAsync(string roleName);
 
@@ -15,4 +16,7 @@ public interface IUserRepository
     Task<User?> GetByUsernameAsync(string username);
     Task<User?> GetByIdAsync(int userId);
     Task<IEnumerable<string>> GetUserRolesAsync(int userId);
+
+    // -- Password management --
+    Task UpdatePasswordAsync(int userId, string passwordHash);
 }
