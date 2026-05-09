@@ -1,4 +1,5 @@
-﻿using SmartSports.API.Extensions;
+﻿using Microsoft.AspNetCore.HttpOverrides;
+using SmartSports.API.Extensions;
 using SmartSports.API.Middleware;
 using SmartSports.DAL.Data;
 
@@ -36,6 +37,14 @@ public class Program
         app.Services.GetRequiredService<MigrationRunner>().Run();
 
         // ── Middleware Pipeline ──────────────────────────────────
+
+        // Must run before rate limiting so RemoteIpAddress is set from
+        // X-Forwarded-For when the app is behind a reverse proxy/load balancer.
+        app.UseForwardedHeaders(new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+        });
+
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         if (app.Environment.IsDevelopment())

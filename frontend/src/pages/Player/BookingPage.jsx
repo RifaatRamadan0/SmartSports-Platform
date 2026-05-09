@@ -10,16 +10,11 @@ const SLOT_DURATION_MINUTES = 30
 const MAX_DAYS_AHEAD        = 30
 const VISIBLE_DATES         = 7
 const INITIAL_VISIBLE_SLOTS = 8
+const DEFAULT_MAX_DURATION  = 120  // fallback until pitch data arrives
 
 const DAY_NAMES   = ['SUN','MON','TUE','WED','THU','FRI','SAT']
 const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN',
                      'JUL','AUG','SEP','OCT','NOV','DEC']
-
-const DURATION_OPTIONS = [
-  { minutes: 60,  label: '1 hr'   },
-  { minutes: 90,  label: '1.5 hrs'},
-  { minutes: 120, label: '2 hrs'  },
-]
 
 // Helpers
 const toApiDate = (date) => {
@@ -32,12 +27,12 @@ const toApiDate = (date) => {
 const formatTime = (timeStr) => (timeStr ? timeStr.slice(0, 5) : '')
 
 const formatDurationShort = (minutes) => {
-  if (minutes === 60) return '1 hr'
-  if (minutes === 90) return '1.5 hrs'
+  if (minutes === 60)  return '1 hr'
+  if (minutes === 90)  return '1.5 hrs'
   if (minutes === 120) return '2 hrs'
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
-  return m === 0 ? `${h} hr` : `${h}.${m === 30 ? 5 : m} hrs`
+  return m === 0 ? `${h} hrs` : `${h}h ${m}min`
 }
 
 const formatDateHeader = (date) =>
@@ -46,7 +41,8 @@ const formatDateHeader = (date) =>
 const formatDateSummary = (date) =>
   `${DAY_NAMES[date.getDay()]} ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`
 
-const formatPrice = (amount, currency = '£') => `${currency}${amount.toFixed(2)}`
+const formatPrice = (amount, currency = '$') =>
+  `${currency}${Number.isInteger(amount) ? amount : amount.toFixed(2)}`
 
 const generateDateOptions = () =>
   Array.from({ length: MAX_DAYS_AHEAD + 1 }, (_, i) => {
@@ -56,6 +52,15 @@ const generateDateOptions = () =>
     return date
   })
 
+// Builds duration chip options in 30-min steps from 60 up to the pitch's max.
+const buildDurationOptions = (maxMinutes) => {
+  const options = []
+  for (let m = 60; m <= Math.min(maxMinutes, 480); m += 30) {
+    options.push({ minutes: m, label: formatDurationShort(m) })
+  }
+  return options.length > 0 ? options : [{ minutes: 60, label: '1 hr' }]
+}
+
 export default function BookingPage() {
   const { pitchId } = useParams()
   const location = useLocation()
@@ -64,6 +69,7 @@ export default function BookingPage() {
   const {
     pricePerHour,
     pitchName,
+    maxBookingDurationMinutes: stateMaxDuration,
     sport,
     surface,
     format,
@@ -74,17 +80,37 @@ export default function BookingPage() {
   } = location.state || {}
 
   const [pitch, setPitch] = useState(null)
+  const [fetchError, setFetchError] = useState(false)
 
+  // Only fetch from the API when the router state is missing required fields.
+  // Cards pass pitchName, pricePerHour, and maxBookingDurationMinutes via state,
+  // so the network call is skipped on the normal navigation path.
   useEffect(() => {
+    const needsFetch =
+      !pitchName ||
+      typeof pricePerHour !== 'number' ||
+      typeof stateMaxDuration !== 'number'
+
+    if (!needsFetch) return
+
     let cancelled = false
     getPitchById(pitchId)
       .then((p) => { if (!cancelled) setPitch(p) })
-      .catch(() => { /* non-fatal — fall back to router state */ })
+      .catch(() => { if (!cancelled) setFetchError(true) })
     return () => { cancelled = true }
-  }, [pitchId])
+  }, [pitchId, pitchName, pricePerHour, stateMaxDuration])
 
-  const resolvedName  = pitchName ?? pitch?.name
-  const resolvedPrice = typeof pricePerHour === 'number' ? pricePerHour : pitch?.pricePerHour
+  const resolvedName     = pitchName     ?? pitch?.name
+  const resolvedPrice    = typeof pricePerHour === 'number' ? pricePerHour : pitch?.pricePerHour
+  const resolvedMaxDuration =
+    typeof stateMaxDuration === 'number'
+      ? stateMaxDuration
+      : (pitch?.maxBookingDurationMinutes ?? DEFAULT_MAX_DURATION)
+
+  const allDurationOptions = useMemo(
+    () => buildDurationOptions(resolvedMaxDuration),
+    [resolvedMaxDuration],
+  )
 
   const dates = useMemo(() => generateDateOptions(), [])
 
@@ -148,12 +174,12 @@ export default function BookingPage() {
 
   const availableDurations = useMemo(
     () =>
-      DURATION_OPTIONS.filter((opt) =>
+      allDurationOptions.filter((opt) =>
         futureSlots.some(
           (s) => s.isAvailable && s.maxConsecutiveSlots >= opt.minutes / SLOT_DURATION_MINUTES,
         ),
       ),
-    [futureSlots],
+    [futureSlots, allDurationOptions],
   )
 
   useEffect(() => {
@@ -188,7 +214,8 @@ export default function BookingPage() {
         durationInMinutes: duration,
       })
       setToast({ type: 'success', message: 'Booking confirmed' })
-      setTimeout(() => navigate('/my-bookings', { replace: true }), 600)
+      // Navigate immediately; no delay needed since the toast provides feedback.
+      navigate('/my-bookings', { replace: true })
     } catch (err) {
       const status = err?.response?.status
       if (status === 409) {
@@ -200,6 +227,7 @@ export default function BookingPage() {
       } else {
         setError(parseApiError(err, 'Could not complete booking.'))
       }
+    } finally {
       setIsSubmitting(false)
     }
   }
@@ -209,6 +237,22 @@ export default function BookingPage() {
     : isSubmitting
       ? 'Booking…'
       : 'Confirm Booking'
+
+  if (fetchError && !resolvedName && resolvedPrice == null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#080c0a] p-8">
+        <div className="text-center space-y-3">
+          <p className="text-red-400 text-sm">Could not load pitch details.</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="text-xs text-neutral-500 underline hover:text-white"
+          >
+            Go back
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#080c0a] p-4 sm:p-8"
@@ -276,7 +320,9 @@ export default function BookingPage() {
             <div className="text-right shrink-0">
               <p className="text-3xl font-bold leading-none">
                 <span className="text-neutral-500 text-lg align-top">{currency}</span>
-                <span className="text-green-400">{Math.round(resolvedPrice)}</span>
+                <span className="text-green-400">
+                  {Number.isInteger(resolvedPrice) ? resolvedPrice : resolvedPrice.toFixed(2)}
+                </span>
               </p>
               <p className="text-xs text-neutral-500 mt-1">/hr</p>
             </div>
@@ -303,7 +349,7 @@ export default function BookingPage() {
                       onClick={() => setSelectedDate(date)}
                       className={`
                         flex-1 min-w-0 flex flex-col items-center justify-center
-                        h-[64px] rounded-xl border transition-all duration-150
+                        h-16 rounded-xl border transition-all duration-150
                         ${isSelected
                           ? 'bg-green-500 border-green-500 text-black'
                           : 'bg-[#0f1411] border-[#1f2622] text-neutral-300 hover:border-green-700'
@@ -546,7 +592,7 @@ function ArrowButton({ direction, onClick, disabled }) {
       disabled={disabled}
       aria-label={direction === 'left' ? 'Previous dates' : 'Next dates'}
       className={`
-        w-8 h-[64px] rounded-xl border flex items-center justify-center text-sm
+        w-8 h-16 rounded-xl border flex items-center justify-center text-sm
         transition-colors shrink-0
         ${disabled
           ? 'border-[#161a18] text-neutral-700 cursor-not-allowed'
@@ -580,7 +626,7 @@ function SlotSkeleton() {
       {Array.from({ length: 8 }).map((_, i) => (
         <div
           key={i}
-          className="h-[58px] rounded-xl bg-[#0f1411] border border-[#161a18] animate-pulse"
+          className="h-14.5 rounded-xl bg-[#0f1411] border border-[#161a18] animate-pulse"
         />
       ))}
     </div>

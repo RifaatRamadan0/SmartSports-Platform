@@ -43,14 +43,7 @@ public class PitchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id)
     {
-        try
-        {
-            var pitch = await _pitchService.GetByIdAsync(id);
-            return Ok(pitch);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        var pitch = await _pitchService.GetByIdAsync(id);
+        return Ok(pitch);
     }
 }

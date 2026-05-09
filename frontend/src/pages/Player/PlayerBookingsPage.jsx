@@ -238,7 +238,7 @@ export default function PlayerBookingsPage() {
 
                 {/* Center — price */}
                 <p className="text-sm font-bold text-white shrink-0 mx-6">
-                  ${Number(booking.totalPrice).toFixed(2)}
+                  {Number(booking.totalPrice).toFixed(2)}
                 </p>
 
                 {/* Right — status + cancel */}

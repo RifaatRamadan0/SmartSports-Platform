@@ -119,6 +119,9 @@ public class BookingService : IBookingService
         if (booking.Status != "confirmed")
             throw new ArgumentException("Only confirmed bookings can be cancelled.");
 
+        // Booking times are stored as local/wall-clock time with no timezone component.
+        // DateTime.Now (not UtcNow) is intentional — the server must run in the same
+        // timezone as the pitches (Lebanon, UTC+3). Revisit if multi-timezone support is added.
         var bookingStart = booking.BookingDate.ToDateTime(booking.StartTime);
         if (bookingStart <= DateTime.Now.AddHours(1))
             throw new ArgumentException("Bookings can only be cancelled more than 1 hour before the start time.");
@@ -139,10 +142,9 @@ public class BookingService : IBookingService
         // Authorization check:
         // Caller must be the player who made the booking, the pitch owner, or an Admin.
         // Role-level auth is handled in the controller — here we check resource-level ownership.
-        var pitch = await _pitchRepository.GetByIdAsync(booking.PitchId);
-
-        var isPlayer = booking.UserId == userId;
-        var isPitchOwner = pitch?.OwnerId == userId;
+        // PitchOwnerId is populated by the JOIN in GetByIdAsync — no second DB round-trip needed.
+        var isPlayer     = booking.UserId      == userId;
+        var isPitchOwner = booking.PitchOwnerId == userId;
 
         if (!isAdmin && !isPlayer && !isPitchOwner)
             throw new ForbiddenException(
@@ -154,6 +156,9 @@ public class BookingService : IBookingService
     /// <inheritdoc/>
     public async Task<PagedResult<BookingResponse>> GetMyBookingsAsync(int userId, BookingQuery query)
     {
+        if (query.From.HasValue && query.To.HasValue && query.From > query.To)
+            throw new ArgumentException("'from' date must not be later than 'to' date.");
+
         string? status = null;
         if (!string.IsNullOrWhiteSpace(query.Status))
         {
@@ -183,6 +188,9 @@ public class BookingService : IBookingService
     /// <inheritdoc/>
     public async Task<PagedResult<BookingResponse>> GetOwnerBookingsAsync(int ownerId, BookingQuery query)
     {
+        if (query.From.HasValue && query.To.HasValue && query.From > query.To)
+            throw new ArgumentException("'from' date must not be later than 'to' date.");
+
         string? status = null;
         if (!string.IsNullOrWhiteSpace(query.Status))
         {

@@ -13,8 +13,7 @@ public class Booking
     public DateTime BookedAt { get; set; }
     public string? CancellationReason { get; set; }
 
-    // joined fields
-    // Populated only when fetched with a JOIN on pitches.
-    // Empty string when fetched without the JOIN (e.g. availability queries).
-    public string PitchName { get; set; } = string.Empty;
+    // joined fields — populated only when fetched via GetByIdAsync (includes JOIN on pitches)
+    public string PitchName    { get; set; } = string.Empty;
+    public int?   PitchOwnerId { get; set; }
 }

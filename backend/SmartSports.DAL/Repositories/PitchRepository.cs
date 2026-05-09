@@ -42,8 +42,9 @@ public class PitchRepository : IPitchRepository
             SELECT  p.id,
                     p.name,
                     p.address,
-                    p.price_per_hour              AS price_per_hour,
+                    p.price_per_hour,
                     p.rating,
+                    p.max_booking_duration_minutes,
                     s.name                        AS sport_name,
                     COUNT(*) OVER()               AS total_count
             FROM    pitches     p
@@ -65,15 +66,14 @@ public class PitchRepository : IPitchRepository
 
         var list = rows.ToList();
 
-        var items = list.Select(r => new PitchListRow
-        {
-            Id           = r.Id,
-            Name         = r.Name,
-            Address      = r.Address,
-            PricePerHour = r.PricePerHour,
-            Rating       = r.Rating,
-            SportName    = r.SportName,
-        });
+        var items = list.Select(r => new PitchListRow(
+            r.Id,
+            r.Name,
+            r.Address,
+            r.PricePerHour,
+            r.Rating,
+            r.SportName,
+            r.MaxBookingDurationMinutes));
 
         var totalCount = list.FirstOrDefault()?.TotalCount ?? 0L;
         return (items, totalCount);
@@ -81,5 +81,5 @@ public class PitchRepository : IPitchRepository
 
     private record PitchListRowWithCount(
         int Id, string Name, string Address, decimal PricePerHour,
-        decimal? Rating, string SportName, long TotalCount);
+        decimal? Rating, int MaxBookingDurationMinutes, string SportName, long TotalCount);
 }

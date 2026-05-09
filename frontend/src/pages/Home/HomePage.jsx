@@ -39,11 +39,12 @@ export default function HomePage() {
   const goToPitch = (pitch) => {
     navigate(`/book/${pitch.id}`, {
       state: {
-        pitchName:    pitch.name,
-        sport:        pitch.sportName,
-        pricePerHour: Number(pitch.pricePerHour),
-        rating:       pitch.rating != null ? Number(pitch.rating) : undefined,
-        currency:     '$',
+        pitchName:                pitch.name,
+        sport:                    pitch.sportName,
+        pricePerHour:             Number(pitch.pricePerHour),
+        maxBookingDurationMinutes: pitch.maxBookingDurationMinutes,
+        rating:                   pitch.rating != null ? Number(pitch.rating) : undefined,
+        currency:                 '$',
       },
     })
   }
@@ -100,9 +101,9 @@ function Navbar() {
 
         <ul className="hidden md:flex items-center gap-8 text-[13px] text-[var(--text2)]">
           <li><a href="#pitches" className="hover:text-white transition-colors">Pitches</a></li>
-          <li><a href="#" className="hover:text-white transition-colors">Leagues</a></li>
-          <li><a href="#" className="hover:text-white transition-colors">Coaching</a></li>
-          <li><a href="#" className="hover:text-white transition-colors">Venues</a></li>
+          <li><button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Leagues</button></li>
+          <li><button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Coaching</button></li>
+          <li><button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Venues</button></li>
         </ul>
 
         <div className="flex items-center gap-2 relative">
@@ -125,6 +126,10 @@ function Navbar() {
 
           <button
             onClick={() => setMenuOpen(o => !o)}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-controls="user-menu"
+            aria-label="User menu"
             className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-[var(--bg2)] px-2 py-1.5 hover:border-[var(--green-border)] transition-colors"
           >
             <span className="w-7 h-7 rounded-full bg-[var(--green)] text-[var(--primary-foreground)] text-[12px] font-bold flex items-center justify-center">
@@ -138,6 +143,8 @@ function Navbar() {
 
           {menuOpen && (
             <div
+              id="user-menu"
+              role="menu"
               className="absolute right-0 top-12 w-52 rounded-xl border border-white/[0.07] bg-[var(--surface)] shadow-2xl py-2 text-[13px]"
               onMouseLeave={() => setMenuOpen(false)}
             >
@@ -295,10 +302,17 @@ function SearchBar() {
 }
 
 function SearchField({ className = '', label, placeholder }) {
+  const id = `search-field-${label.toLowerCase().replace(/\s+/g, '-')}`
   return (
     <div className={`px-4 py-3 rounded-xl hover:bg-[var(--bg3)] transition-colors ${className}`}>
-      <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)]">{label}</p>
+      <label
+        htmlFor={id}
+        className="text-[10px] font-bold tracking-widest uppercase text-(--text3)"
+      >
+        {label}
+      </label>
       <input
+        id={id}
         type="text"
         placeholder={placeholder}
         className="mt-1 w-full bg-transparent border-0 outline-none text-sm text-white placeholder:text-[var(--text3)]"
@@ -562,9 +576,13 @@ function Footer() {
             <ul className="mt-3 space-y-2">
               {col.links.map(l => (
                 <li key={l}>
-                  <a href="#" className="text-[13px] text-[var(--text2)] hover:text-white transition-colors">
+                  <button
+                    type="button"
+                    className="text-[13px] text-(--text2) hover:text-white transition-colors opacity-60 cursor-not-allowed"
+                    disabled
+                  >
                     {l}
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>

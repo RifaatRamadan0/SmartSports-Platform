@@ -113,7 +113,8 @@ public class BookingRepository : IBookingRepository
                     b.total_price,
                     b.status::TEXT  AS status,
                     b.booked_at,
-                    p.name          AS pitch_name
+                    p.name          AS pitch_name,
+                    p.owner_id      AS pitch_owner_id
             FROM    bookings b
             JOIN    pitches  p ON p.id = b.pitch_id
             WHERE   b.id = @BookingId
