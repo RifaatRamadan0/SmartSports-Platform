@@ -63,7 +63,22 @@ public class PasswordResetTokenRepository : IPasswordResetTokenRepository
         return await connection.ExecuteScalarAsync<int?>(sql, new { Token = token });
     }
 
-    // Cleanup 
+    // Marks the token used without returning the owner — call only after a successful password update.
+    public async Task MarkUsedAsync(Guid token)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        const string sql = """
+            UPDATE password_reset_tokens
+            SET    used_at = NOW()
+            WHERE  token   = @Token
+              AND  used_at IS NULL;
+            """;
+
+        await connection.ExecuteAsync(sql, new { Token = token });
+    }
+
+    // Cleanup
     public async Task DeleteExpiredAsync()
     {
         using var connection = _connectionFactory.CreateConnection();

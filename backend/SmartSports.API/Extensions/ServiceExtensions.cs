@@ -169,15 +169,14 @@ public static class ServiceExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Resend email client
+        // Resend email client — use typed client on the interface so the managed HttpClient pipeline applies.
         services.AddOptions();
-        services.AddHttpClient<ResendClient>();
         services.Configure<ResendClientOptions>(options =>
         {
             options.ApiToken = configuration["Resend:ApiKey"]
                 ?? throw new InvalidOperationException("Resend:ApiKey is not configured.");
         });
-        services.AddTransient<IResend, ResendClient>();
+        services.AddHttpClient<IResend, ResendClient>();
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();

@@ -70,14 +70,17 @@ public class AuthService : IAuthService
             PasswordHash      = BCrypt.Net.BCrypt.HashPassword(request.Password),
             SkillLevel        = (short?)request.SkillLevel,
             PreferredPosition = string.IsNullOrWhiteSpace(request.PreferredPosition) ? null : request.PreferredPosition.Trim(),
-            PhoneNumber       = request.PhoneNumber.Trim()
+            PhoneNumber       = NormalizePhone(request.PhoneNumber)
         };
 
         var userId = await _userRepository.CreateWithRoleAsync(user, role.Id);
 
         var verificationToken = await _emailVerificationTokenRepository.CreateAsync(userId);
         var verificationLink  = $"{baseUrl}/confirm-email?token={verificationToken.Token}";
-        await _emailService.SendVerificationEmailAsync(email, verificationLink);
+
+        // Fire-and-forget: user is already created; email failure is recoverable via resend-verification.
+        _ = _emailService.SendVerificationEmailAsync(email, verificationLink)
+            .ContinueWith(_ => { }, TaskContinuationOptions.OnlyOnFaulted);
     }
 
     private static readonly System.Text.RegularExpressions.Regex EmailRegex =
@@ -94,7 +97,7 @@ public class AuthService : IAuthService
             response.EmailAvailable = !await _userRepository.ExistsByEmailAsync(email);
 
         if (!string.IsNullOrWhiteSpace(phoneNumber) && phoneNumber.Length <= 32)
-            response.PhoneNumberAvailable = !await _userRepository.ExistsByPhoneNumberAsync(phoneNumber.Trim());
+            response.PhoneNumberAvailable = !await _userRepository.ExistsByPhoneNumberAsync(NormalizePhone(phoneNumber));
 
         return response;
     }
@@ -224,16 +227,15 @@ public class AuthService : IAuthService
     {
         var user = await _userRepository.GetByEmailAsync(email.Trim());
 
-        // Constant-time path: both branches do equivalent work so timing cannot reveal account existence
         if (user is null || user.IsEmailVerified)
-        {
-            BCrypt.Net.BCrypt.Verify(Guid.NewGuid().ToString(), DummyPasswordHash);
             return;
-        }
 
         var verificationToken = await _emailVerificationTokenRepository.CreateAsync(user.Id);
         var verificationLink  = $"{baseUrl}/confirm-email?token={verificationToken.Token}";
-        await _emailService.SendVerificationEmailAsync(user.Email, verificationLink);
+
+        // Fire-and-forget so response time doesn't leak account existence via email-provider latency.
+        _ = _emailService.SendVerificationEmailAsync(user.Email, verificationLink)
+            .ContinueWith(_ => { }, TaskContinuationOptions.OnlyOnFaulted);
     }
 
     // -- Forgot & Reset Password --
@@ -243,27 +245,31 @@ public class AuthService : IAuthService
         var normalizedEmail = dto.Email.Trim();
         var user = await _userRepository.GetByEmailAsync(normalizedEmail);
 
-        // Constant-time path: both branches do equivalent work so timing cannot reveal whether the email exists
         if (user is null)
-        {
-            BCrypt.Net.BCrypt.Verify(Guid.NewGuid().ToString(), DummyPasswordHash);
             return;
-        }
 
         var resetToken = await _passwordResetTokenRepository.CreateAsync(user.Id);
         var resetLink  = $"{baseUrl}/reset-password?token={resetToken.Token}";
-        await _emailService.SendPasswordResetEmailAsync(user.Email, resetLink);
+
+        // Fire-and-forget so response time doesn't leak account existence via email-provider latency.
+        _ = _emailService.SendPasswordResetEmailAsync(user.Email, resetLink)
+            .ContinueWith(_ => { }, TaskContinuationOptions.OnlyOnFaulted);
     }
 
     public async Task ResetPasswordAsync(ResetPasswordRequest dto)
     {
-        // Atomically mark the token used and retrieve the owner — prevents TOCTOU races
-        var userId = await _passwordResetTokenRepository.ConsumeAsync(dto.Token);
-        if (userId is null)
+        if (dto.Token is null || dto.Token == Guid.Empty)
+            throw new ArgumentException("Token is invalid or has expired.");
+
+        var token = await _passwordResetTokenRepository.GetByTokenAsync(dto.Token.Value);
+        if (token is null)
             throw new ArgumentException("Token is invalid or has expired.");
 
         var newHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
-        await _userRepository.UpdatePasswordAsync(userId.Value, newHash);
+        await _userRepository.UpdatePasswordAsync(token.UserId, newHash);
+
+        // Mark used only after the password update succeeds so the token isn't burned on a transient DB error.
+        await _passwordResetTokenRepository.MarkUsedAsync(dto.Token.Value);
     }
 
     // -- Private Helpers --
@@ -275,6 +281,11 @@ public class AuthService : IAuthService
         rng.GetBytes(randomBytes);
         return Convert.ToBase64String(randomBytes);
     }
+
+    // Strips all whitespace and common delimiter characters so different
+    // formatting of the same number doesn't bypass the uniqueness check.
+    private static string NormalizePhone(string phone)
+        => System.Text.RegularExpressions.Regex.Replace(phone, @"[\s\-().]+", string.Empty);
 
     private static string HashToken(string token)
     {

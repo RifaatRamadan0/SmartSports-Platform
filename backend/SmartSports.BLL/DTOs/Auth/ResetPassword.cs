@@ -5,7 +5,7 @@ namespace SmartSports.BLL.DTOs.Auth;
 public class ResetPasswordRequest
 {
     [Required]
-    public Guid Token { get; set; }
+    public Guid? Token { get; set; }
 
     [Required]
     [MinLength(8)]
