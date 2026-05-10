@@ -227,8 +227,13 @@ public class AuthService : IAuthService
     {
         var user = await _userRepository.GetByEmailAsync(email.Trim());
 
+        // Constant-time mitigation: equalize the cheap pre-email work so an attacker can't
+        // distinguish an unknown/already-verified account from an unverified one by latency.
         if (user is null || user.IsEmailVerified)
+        {
+            BCrypt.Net.BCrypt.Verify(Guid.NewGuid().ToString(), DummyPasswordHash);
             return;
+        }
 
         var verificationToken = await _emailVerificationTokenRepository.CreateAsync(user.Id);
         var verificationLink  = $"{baseUrl}/confirm-email?token={verificationToken.Token}";
@@ -245,8 +250,14 @@ public class AuthService : IAuthService
         var normalizedEmail = dto.Email.Trim();
         var user = await _userRepository.GetByEmailAsync(normalizedEmail);
 
+        // Constant-time mitigation: equalize the cheap pre-email work so an attacker can't
+        // distinguish an unknown email from a known one by measuring response latency.
+        // Fire-and-forget covers the email-send latency; this covers the DB-write difference.
         if (user is null)
+        {
+            BCrypt.Net.BCrypt.Verify(Guid.NewGuid().ToString(), DummyPasswordHash);
             return;
+        }
 
         var resetToken = await _passwordResetTokenRepository.CreateAsync(user.Id);
         var resetLink  = $"{baseUrl}/reset-password?token={resetToken.Token}";
@@ -261,15 +272,14 @@ public class AuthService : IAuthService
         if (dto.Token is null || dto.Token == Guid.Empty)
             throw new ArgumentException("Token is invalid or has expired.");
 
-        var token = await _passwordResetTokenRepository.GetByTokenAsync(dto.Token.Value);
-        if (token is null)
+        // Atomically mark the token used and retrieve the owner — single UPDATE ... RETURNING
+        // closes the TOCTOU window that a Get → Update → Mark sequence leaves open under concurrency.
+        var userId = await _passwordResetTokenRepository.ConsumeAsync(dto.Token.Value);
+        if (userId is null)
             throw new ArgumentException("Token is invalid or has expired.");
 
         var newHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
-        await _userRepository.UpdatePasswordAsync(token.UserId, newHash);
-
-        // Mark used only after the password update succeeds so the token isn't burned on a transient DB error.
-        await _passwordResetTokenRepository.MarkUsedAsync(dto.Token.Value);
+        await _userRepository.UpdatePasswordAsync(userId.Value, newHash);
     }
 
     // -- Private Helpers --

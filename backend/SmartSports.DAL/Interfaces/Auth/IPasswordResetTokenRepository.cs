@@ -7,6 +7,5 @@ public interface IPasswordResetTokenRepository
     Task<PasswordResetToken> CreateAsync(int userId);
     Task<PasswordResetToken?> GetByTokenAsync(Guid token);
     Task<int?> ConsumeAsync(Guid token);
-    Task MarkUsedAsync(Guid token);
     Task DeleteExpiredAsync();
 }
