@@ -280,6 +280,10 @@ public class AuthService : IAuthService
 
         var newHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
         await _userRepository.UpdatePasswordAsync(userId.Value, newHash);
+
+        // Revoke every refresh token for this user so any session opened with the
+        // old password (legitimate or attacker-held) can no longer mint access tokens.
+        await _refreshTokenRepository.RevokeAllForUserAsync(userId.Value);
     }
 
     // -- Private Helpers --

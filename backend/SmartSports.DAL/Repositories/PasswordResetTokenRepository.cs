@@ -16,11 +16,20 @@ public class PasswordResetTokenRepository : IPasswordResetTokenRepository
 
 
     //  Create
+    // Atomically supersede any prior unused tokens for this user so only the latest
+    // link is valid — prevents multiple concurrent reset windows from one account.
     public async Task<PasswordResetToken> CreateAsync(int userId)
     {
         using var connection = _connectionFactory.CreateConnection();
 
         const string sql = """
+            WITH invalidated AS (
+                UPDATE password_reset_tokens
+                SET    used_at = NOW()
+                WHERE  user_id = @UserId
+                  AND  used_at IS NULL
+                RETURNING 1
+            )
             INSERT INTO password_reset_tokens (user_id)
             VALUES (@UserId)
             RETURNING *;

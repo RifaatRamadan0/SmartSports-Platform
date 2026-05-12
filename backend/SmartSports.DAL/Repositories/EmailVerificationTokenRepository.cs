@@ -14,11 +14,20 @@ public class EmailVerificationTokenRepository : IEmailVerificationTokenRepositor
         _connectionFactory = connectionFactory;
     }
 
+    // Atomically supersede any prior unused tokens for this user so only the latest
+    // link is valid — prevents multiple concurrent verification windows from resend.
     public async Task<EmailVerificationToken> CreateAsync(int userId)
     {
         using var connection = _connectionFactory.CreateConnection();
 
         const string sql = """
+            WITH invalidated AS (
+                UPDATE email_verification_tokens
+                SET    used_at = NOW()
+                WHERE  user_id = @UserId
+                  AND  used_at IS NULL
+                RETURNING 1
+            )
             INSERT INTO email_verification_tokens (user_id)
             VALUES (@UserId)
             RETURNING id, user_id, token, expires_at, used_at, created_at;
