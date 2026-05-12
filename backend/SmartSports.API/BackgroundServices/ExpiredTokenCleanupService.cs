@@ -22,12 +22,19 @@ public class ExpiredTokenCleanupService : BackgroundService
             try
             {
                 using var scope = _scopeFactory.CreateScope();
-                var repo = scope.ServiceProvider.GetRequiredService<IRefreshTokenRepository>();
-                await repo.DeleteExpiredAsync();
+
+                var refreshRepo = scope.ServiceProvider.GetRequiredService<IRefreshTokenRepository>();
+                await refreshRepo.DeleteExpiredAsync();
+
+                var resetRepo = scope.ServiceProvider.GetRequiredService<IPasswordResetTokenRepository>();
+                await resetRepo.DeleteExpiredAsync();
+
+                var verifyRepo = scope.ServiceProvider.GetRequiredService<IEmailVerificationTokenRepository>();
+                await verifyRepo.DeleteExpiredAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to delete expired refresh tokens.");
+                _logger.LogError(ex, "Failed to delete expired tokens.");
             }
 
             await Task.Delay(_interval, stoppingToken);

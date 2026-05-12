@@ -38,6 +38,10 @@ const authEndpointsSkipRefresh = [
   '/api/auth/login',
   '/api/auth/register',
   '/api/auth/logout',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/auth/verify-email',
+  '/api/auth/resend-verification',
 ]
 
 function processQueue(error, token = null) {

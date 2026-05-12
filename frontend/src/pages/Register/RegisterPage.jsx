@@ -43,10 +43,10 @@ function RegisterPage() {
   const strength = pwStrength(form.password)
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-[#0f1a12] to-background px-4 py-10">
+    <div className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-[#0f1a12] to-background px-4 py-10">
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-[size:60px_60px]"
+        className="pointer-events-none fixed inset-0 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-size-[60px_60px]"
       />
 
       <div className="relative z-10 w-full max-w-md">
@@ -242,29 +242,40 @@ function RegisterPage() {
                   <label htmlFor="phoneNumber" className="text-[0.8125rem] font-medium text-muted-foreground">
                     Phone Number
                   </label>
-                  <Input
-                    id="phoneNumber"
-                    type="tel"
-                    name="phoneNumber"
-                    value={form.phoneNumber}
-                    onChange={handleChange}
-                    placeholder="+961 3 123 456"
-                    autoComplete="tel"
-                    aria-invalid={!!fieldErrors.phoneNumber}
-                    className="h-10 rounded-[0.625rem] border-border bg-input px-3.5 text-[0.9375rem] text-foreground"
-                  />
-                  {fieldErrors.phoneNumber && (
+                  <div className="relative">
+                    <Input
+                      id="phoneNumber"
+                      type="tel"
+                      name="phoneNumber"
+                      value={form.phoneNumber}
+                      onChange={handleChange}
+                      placeholder="+961 3 123 456"
+                      autoComplete="tel"
+                      aria-invalid={!!fieldErrors.phoneNumber || availability.phoneNumber === 'taken'}
+                      className="h-10 rounded-[0.625rem] border-border bg-input px-3.5 pr-10 text-[0.9375rem] text-foreground"
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                      <AvailabilityIcon status={availability.phoneNumber} />
+                    </span>
+                  </div>
+                  {fieldErrors.phoneNumber ? (
                     <p className="text-xs text-destructive"><span aria-hidden="true">⚠</span>{' '}{fieldErrors.phoneNumber}</p>
-                  )}
+                  ) : availability.phoneNumber === 'taken' ? (
+                    <p className="text-xs text-destructive"><span aria-hidden="true">⚠</span>{' '}Phone number is already registered</p>
+                  ) : availability.phoneNumber === 'available' ? (
+                    <p className="text-xs text-primary">Phone number is available</p>
+                  ) : null}
                 </div>
 
                 <Button
                   type="submit"
                   disabled={
-                    availability.username === 'checking' ||
-                    availability.email === 'checking' ||
-                    availability.username === 'taken' ||
-                    availability.email === 'taken'
+                    availability.username    === 'checking' ||
+                    availability.email       === 'checking' ||
+                    availability.phoneNumber === 'checking' ||
+                    availability.username    === 'taken'    ||
+                    availability.email       === 'taken'    ||
+                    availability.phoneNumber === 'taken'
                   }
                   className="mt-1 h-10 w-full rounded-[0.625rem] bg-primary text-[0.9375rem] font-bold tracking-tight text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
                 >

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartSports.API.BackgroundServices;
+using Resend;
 using SmartSports.BLL.Interfaces;
 using SmartSports.BLL.Services;
 using SmartSports.DAL.Data;
@@ -27,6 +28,7 @@ public static class ServiceExtensions
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' is not configured.");
+
         services.AddSingleton<IDbConnectionFactory>(_ =>
             new DbConnectionFactory(connectionString));
         services.AddSingleton<MigrationRunner>();
@@ -163,10 +165,24 @@ public static class ServiceExtensions
         return services;
     }
 
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddApplicationServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
+        // Resend email client — use typed client on the interface so the managed HttpClient pipeline applies.
+        services.AddOptions();
+        services.Configure<ResendClientOptions>(options =>
+        {
+            options.ApiToken = configuration["Resend:ApiKey"]
+                ?? throw new InvalidOperationException("Resend:ApiKey is not configured.");
+        });
+        services.AddHttpClient<IResend, ResendClient>();
+
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+        services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
+        services.AddScoped<IEmailService, ResendEmailService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IBookingService, BookingService>();
         services.AddHostedService<ExpiredTokenCleanupService>();

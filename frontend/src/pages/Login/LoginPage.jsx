@@ -1,21 +1,21 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, MailWarning } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useLoginForm } from '@/hooks/useLoginForm'
 
 function LoginPage() {
-  const { form, error, isSubmitting, handleChange, handleSubmit } = useLoginForm()
+  const { form, error, unverified, isSubmitting, handleChange, handleSubmit } = useLoginForm()
   const [showPassword, setShowPassword] = useState(false)
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-[#0f1a12] to-background px-4 py-10">
+    <div className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-[#0f1a12] to-background px-4 py-10">
       {/* subtle grid overlay */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-[size:60px_60px]"
+        className="pointer-events-none fixed inset-0 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-size-[60px_60px]"
       />
 
       <div className="relative z-10 w-full max-w-sm">
@@ -77,12 +77,20 @@ function LoginPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="password"
-                  className="text-[0.8125rem] font-medium text-muted-foreground"
-                >
-                  Password
-                </label>
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="password"
+                    className="text-[0.8125rem] font-medium text-muted-foreground"
+                  >
+                    Password
+                  </label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-[0.8125rem] font-semibold text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <div className="relative">
                   <Input
                     id="password"
@@ -105,8 +113,25 @@ function LoginPage() {
                 </div>
               </div>
 
+              {unverified && (
+                <div className="rounded-[0.625rem] border border-amber-500/30 bg-amber-500/10 px-3.5 py-3 text-sm text-amber-400">
+                  <div className="flex items-start gap-2.5">
+                    <MailWarning size={15} className="mt-px shrink-0" />
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold">Email not verified</span>
+                      <span className="text-amber-400/80">
+                        Please check your inbox and click the verification link.{' '}
+                        <Link to="/verify-email" className="font-semibold underline hover:text-amber-300">
+                          Resend link
+                        </Link>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {error && (
-                <div className="rounded-[0.625rem] border border-destructive/30 bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive">
+                <div className="flex items-center gap-2.5 rounded-[0.625rem] border border-destructive/30 bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive">
                   {error}
                 </div>
               )}
