@@ -183,7 +183,7 @@ public static class ServiceExtensions
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
         services.AddScoped<IEmailService, ResendEmailService>();
-        services.AddScoped<ITwilioService, TwilioVerifyService>();
+        services.AddSingleton<ITwilioService, TwilioVerifyService>();
         services.AddScoped<IPhoneProofService, PhoneProofService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IBookingService, BookingService>();

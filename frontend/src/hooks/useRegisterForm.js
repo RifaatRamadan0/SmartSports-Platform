@@ -34,6 +34,7 @@ export function useRegisterForm() {
   const [phoneProof, setPhoneProof] = useState(null)
   const [countdown, setCountdown] = useState(0)
   const countdownRef = useRef(null)
+  const shakeTimerRef = useRef(null)
 
   const usernameAbortRef = useRef(null)
   const emailAbortRef    = useRef(null)
@@ -51,6 +52,7 @@ export function useRegisterForm() {
         setPhoneProof(null)
         setCountdown(0)
         clearInterval(countdownRef.current)
+        clearTimeout(shakeTimerRef.current)
       }
     }
   }, [form.phoneNumber, otpState])
@@ -69,7 +71,10 @@ export function useRegisterForm() {
     }, 1000)
   }
 
-  useEffect(() => () => clearInterval(countdownRef.current), [])
+  useEffect(() => () => {
+    clearInterval(countdownRef.current)
+    clearTimeout(shakeTimerRef.current)
+  }, [])
 
   async function sendCode() {
     setOtpState('sending')
@@ -79,7 +84,7 @@ export function useRegisterForm() {
       setOtpState('sent')
       startCountdown()
     } catch {
-      setOtpState('idle')
+      setOtpState('sent')
       setOtpError('Could not send code. Check the number and try again.')
     }
   }
@@ -107,7 +112,8 @@ export function useRegisterForm() {
       setOtpError(msg)
       setOtpState('error')
       // allow retry from the 'sent' state after brief shake
-      setTimeout(() => setOtpState('sent'), 600)
+      clearTimeout(shakeTimerRef.current)
+      shakeTimerRef.current = setTimeout(() => setOtpState('sent'), 600)
     }
   }
 

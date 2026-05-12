@@ -329,7 +329,7 @@ public class AuthService : IAuthService
     // so different input formats collide on the uniqueness check.
     private static string NormalizePhone(string phone)
     {
-        var digits = System.Text.RegularExpressions.Regex.Replace(phone, @"[\s\-().+]+", string.Empty);
+        var digits = System.Text.RegularExpressions.Regex.Replace(phone, @"\D", string.Empty);
         if (digits.StartsWith("961")) return "+" + digits;
         if (digits.StartsWith("0"))   return "+961" + digits[1..];
         return "+961" + digits;

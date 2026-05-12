@@ -186,8 +186,15 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> VerifyPhoneOtp([FromBody] VerifyOtpRequest request)
     {
-        var proofToken = await _authService.VerifyPhoneOtpAsync(request.PhoneNumber, request.Code);
-        return Ok(new { Token = proofToken });
+        try
+        {
+            var proofToken = await _authService.VerifyPhoneOtpAsync(request.PhoneNumber, request.Code);
+            return Ok(new { Token = proofToken });
+        }
+        catch (TwilioException)
+        {
+            return BadRequest(new { Message = "Could not verify the code. Check the phone number and try again." });
+        }
     }
 
     // -- Private Helpers --

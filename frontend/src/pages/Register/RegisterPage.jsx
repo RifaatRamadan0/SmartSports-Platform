@@ -347,8 +347,8 @@ function RegisterPage() {
                     {otpState !== 'verified' && (
                       <button
                         type="button"
-                        disabled={!phoneIsValidAndAvailable || otpState === 'sending' || otpState === 'verifying'}
-                        onClick={phoneIsValidAndAvailable && otpState === 'idle' ? sendCode : undefined}
+                        disabled={!phoneIsValidAndAvailable || otpState !== 'idle'}
+                        onClick={sendCode}
                         className="h-10 shrink-0 rounded-[0.625rem] border border-primary/40 bg-primary/10 px-3 text-[0.8125rem] font-semibold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         {otpState === 'sending'
