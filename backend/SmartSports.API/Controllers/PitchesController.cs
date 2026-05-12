@@ -18,18 +18,16 @@ public class PitchesController : ControllerBase
     }
 
     /// <summary>
-    /// GET /api/pitches?sport=&page=&pageSize=
-    /// Lists active and approved pitches with sport name. Public.
+    /// GET /api/pitches?search=&sport=&city=&maxPrice=&sortBy=&page=&pageSize=
+    /// Public. Returns active and approved pitches with filtering, sorting, and pagination.
+    /// sortBy: newest (default) | price_asc | price_desc | rating_desc
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType(typeof(PagedResult<PitchListResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> List(
-        [FromQuery] string? sport,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 12)
+    public async Task<IActionResult> List([FromQuery] PitchSearchQuery query)
     {
-        var result = await _pitchService.ListAsync(sport, page, pageSize);
+        var result = await _pitchService.ListAsync(query);
         return Ok(result);
     }
 

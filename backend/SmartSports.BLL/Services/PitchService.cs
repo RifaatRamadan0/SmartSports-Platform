@@ -2,6 +2,7 @@ using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Pitch;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Pitch;
+using SmartSports.DAL.Parameters;
 
 namespace SmartSports.BLL.Services;
 
@@ -33,13 +34,28 @@ public class PitchService : IPitchService
         };
     }
 
-    public async Task<PagedResult<PitchListResponse>> ListAsync(string? sport, int page, int pageSize)
+    public async Task<PagedResult<PitchListResponse>> ListAsync(PitchSearchQuery query)
     {
-        if (page     < 1)   page     = 1;
-        if (pageSize < 1)   pageSize = 12;
-        if (pageSize > 100) pageSize = 100;
+        // Clamp pagination bounds.
+        if (query.Page     < 1)   query.Page     = 1;
+        if (query.PageSize < 1)   query.PageSize = 12;
+        if (query.PageSize > 100) query.PageSize = 100;
 
-        var (rows, total) = await _pitchRepository.ListAsync(sport, page, pageSize);
+        // Discard nonsensical price ceiling.
+        if (query.MaxPrice.HasValue && query.MaxPrice <= 0)
+            query.MaxPrice = null;
+
+        var filters = new PitchFilterParams(
+            Search:   query.Search,
+            Sport:    query.Sport,
+            City:     query.City,
+            MaxPrice: query.MaxPrice,
+            SortBy:   query.SortBy,
+            Page:     query.Page,
+            PageSize: query.PageSize
+        );
+
+        var (rows, total) = await _pitchRepository.ListAsync(filters);
 
         var items = rows.Select(r => new PitchListResponse
         {
@@ -50,14 +66,16 @@ public class PitchService : IPitchService
             Rating                    = r.Rating,
             SportName                 = r.SportName,
             MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
+            CityName                  = r.CityName,
+            CoverImageUrl             = r.CoverImageUrl,
         });
 
         return new PagedResult<PitchListResponse>
         {
             Items      = items,
             TotalCount = (int)Math.Min(total, int.MaxValue),
-            Page       = page,
-            PageSize   = pageSize,
+            Page       = query.Page,
+            PageSize   = query.PageSize,
         };
     }
 }

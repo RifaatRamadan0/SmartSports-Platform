@@ -12,7 +12,7 @@ public interface IPitchService
     Task<PitchResponse> GetByIdAsync(int pitchId);
 
     /// <summary>
-    /// Lists active and approved pitches, optionally filtered by sport name.
+    /// Returns a filtered, sorted, paginated list of active and approved pitches.
     /// </summary>
-    Task<PagedResult<PitchListResponse>> ListAsync(string? sport, int page, int pageSize);
+    Task<PagedResult<PitchListResponse>> ListAsync(PitchSearchQuery query);
 }
