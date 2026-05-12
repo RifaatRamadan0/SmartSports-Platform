@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SmartSports.BLL.DTOs.Auth;
 using SmartSports.BLL.Interfaces;
+using Twilio.Exceptions;
 
 namespace SmartSports.API.Controllers;
 
@@ -158,6 +159,35 @@ public class AuthController : ControllerBase
     {
         await _authService.ResetPasswordAsync(request);
         return Ok(new { Message = "Password has been reset successfully." });
+    }
+
+    // POST api/auth/phone/send-otp
+    [HttpPost("phone/send-otp")]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SendPhoneOtp([FromBody] SendOtpRequest request)
+    {
+        try
+        {
+            await _authService.SendPhoneOtpAsync(request.PhoneNumber);
+            return Ok(new { Message = "Verification code sent." });
+        }
+        catch (TwilioException)
+        {
+            return BadRequest(new { Message = "Could not send verification code. Check the phone number and try again." });
+        }
+    }
+
+    // POST api/auth/phone/verify-otp
+    [HttpPost("phone/verify-otp")]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyPhoneOtp([FromBody] VerifyOtpRequest request)
+    {
+        var proofToken = await _authService.VerifyPhoneOtpAsync(request.PhoneNumber, request.Code);
+        return Ok(new { Token = proofToken });
     }
 
     // -- Private Helpers --

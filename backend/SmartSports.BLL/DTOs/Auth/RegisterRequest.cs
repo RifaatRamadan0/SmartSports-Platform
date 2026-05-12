@@ -26,4 +26,7 @@ public class RegisterRequest
     [RegularExpression(@"^(\+?961\s?|0)?(70|71|76|78|79|81|82|1|3|4|5|6|7|8|9)\s?\d{3}\s?\d{3}$",
         ErrorMessage = "Enter a valid Lebanese phone number (e.g. +961 3 123 456 or 03 123 456).")]
     public string PhoneNumber { get; set; } = string.Empty;
+
+    [Required]
+    public string PhoneVerificationProof { get; set; } = string.Empty;
 }

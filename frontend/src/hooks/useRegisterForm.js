@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import api from '../services/api'
+import api, { sendPhoneOtp, verifyPhoneOtp } from '../services/api'
 import { parseApiError } from '../utils/errorUtils'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PHONE_RE = /^(\+?961\s?|0)?(70|71|76|78|79|81|82|1|3|4|5|6|7|8|9)\s?\d{3}\s?\d{3}$/
 const DEBOUNCE_MS = 700
+const RESEND_SECONDS = 60
+
+// otpState machine: 'idle' | 'sending' | 'sent' | 'verifying' | 'verified' | 'error'
 
 export function useRegisterForm() {
   const navigate = useNavigate()
@@ -21,24 +24,98 @@ export function useRegisterForm() {
     phoneNumber: '',
   })
   const [fieldErrors, setFieldErrors] = useState({})
-  // 'idle' | 'checking' | 'available' | 'taken'
   const [availability, setAvailability] = useState({ username: 'idle', email: 'idle', phoneNumber: 'idle' })
   const [error, setError] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // OTP state
+  const [otpState, setOtpState] = useState('idle')
+  const [otpError, setOtpError] = useState(null)
+  const [phoneProof, setPhoneProof] = useState(null)
+  const [countdown, setCountdown] = useState(0)
+  const countdownRef = useRef(null)
 
   const usernameAbortRef = useRef(null)
   const emailAbortRef    = useRef(null)
   const phoneAbortRef    = useRef(null)
 
+  // Reset OTP state whenever the phone number changes after it was already sent/verified
+  const prevPhoneRef = useRef('')
+  useEffect(() => {
+    const phone = form.phoneNumber
+    if (phone !== prevPhoneRef.current) {
+      prevPhoneRef.current = phone
+      if (otpState !== 'idle') {
+        setOtpState('idle')
+        setOtpError(null)
+        setPhoneProof(null)
+        setCountdown(0)
+        clearInterval(countdownRef.current)
+      }
+    }
+  }, [form.phoneNumber, otpState])
+
+  function startCountdown() {
+    setCountdown(RESEND_SECONDS)
+    clearInterval(countdownRef.current)
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownRef.current)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  useEffect(() => () => clearInterval(countdownRef.current), [])
+
+  async function sendCode() {
+    setOtpState('sending')
+    setOtpError(null)
+    try {
+      await sendPhoneOtp(form.phoneNumber.trim())
+      setOtpState('sent')
+      startCountdown()
+    } catch {
+      setOtpState('idle')
+      setOtpError('Could not send code. Check the number and try again.')
+    }
+  }
+
+  async function resendCode() {
+    setOtpError(null)
+    try {
+      await sendPhoneOtp(form.phoneNumber.trim())
+      startCountdown()
+    } catch {
+      setOtpError('Could not resend code. Please try again.')
+    }
+  }
+
+  async function submitOtp(code) {
+    setOtpState('verifying')
+    setOtpError(null)
+    try {
+      const { data } = await verifyPhoneOtp(form.phoneNumber.trim(), code)
+      setPhoneProof(data.token)
+      setOtpState('verified')
+      clearInterval(countdownRef.current)
+    } catch (err) {
+      const msg = parseApiError(err, 'Incorrect or expired code. Please try again.')
+      setOtpError(msg)
+      setOtpState('error')
+      // allow retry from the 'sent' state after brief shake
+      setTimeout(() => setOtpState('sent'), 600)
+    }
+  }
+
   function handleChange(e) {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
     if (name === 'username' || name === 'email' || name === 'phoneNumber') {
-      if (name !== 'phoneNumber') {
-        setAvailability(prev => ({ ...prev, [name]: 'idle' }))
-      } else {
-        setAvailability(prev => ({ ...prev, phoneNumber: 'idle' }))
-      }
+      setAvailability(prev => ({ ...prev, [name]: 'idle' }))
       setFieldErrors(prev => {
         if (!prev[name]) return prev
         const { [name]: _, ...rest } = prev
@@ -51,8 +128,6 @@ export function useRegisterForm() {
     setForm(prev => ({ ...prev, [name]: value }))
   }
 
-  // Debounced availability check — independent per field so typing in one
-  // doesn't reset the other's already-resolved status.
   useEffect(() => {
     const username = form.username.trim()
     if (username.length < 3 || username.length > 50) return
@@ -165,6 +240,7 @@ export function useRegisterForm() {
     if (!trimmedPhone) e.phoneNumber = 'Required'
     else if (!PHONE_RE.test(trimmedPhone)) e.phoneNumber = 'Enter a valid phone number'
     else if (availability.phoneNumber === 'taken') e.phoneNumber = 'Phone number is already registered.'
+    else if (otpState !== 'verified') e.phoneNumber = 'Please verify your phone number first.'
     setFieldErrors(e)
     return Object.keys(e).length === 0
   }
@@ -174,8 +250,8 @@ export function useRegisterForm() {
     setError(null)
     if (!validateStep1()) return
     if (
-      availability.username  === 'checking' ||
-      availability.email     === 'checking' ||
+      availability.username    === 'checking' ||
+      availability.email       === 'checking' ||
       availability.phoneNumber === 'checking'
     ) return
     setStep(2)
@@ -197,6 +273,7 @@ export function useRegisterForm() {
       password: form.password,
       role: form.role,
       phoneNumber: form.phoneNumber.trim(),
+      phoneVerificationProof: phoneProof,
     }
     if (form.role === 'Player') {
       if (form.skillLevel) payload.skillLevel = form.skillLevel
@@ -216,7 +293,7 @@ export function useRegisterForm() {
       } else if (lower.includes('email')) {
         next.email = msg
         setAvailability(prev => ({ ...prev, email: 'taken' }))
-      } else if (lower.includes('phone')) {
+      } else if (lower.includes('phone') && !lower.includes('verification')) {
         next.phoneNumber = msg
       }
       if (Object.keys(next).length) {
@@ -230,6 +307,9 @@ export function useRegisterForm() {
     }
   }
 
+  const phoneIsValidAndAvailable =
+    PHONE_RE.test(form.phoneNumber.trim()) && availability.phoneNumber === 'available'
+
   return {
     form,
     step,
@@ -237,8 +317,15 @@ export function useRegisterForm() {
     fieldErrors,
     availability,
     isSubmitting,
+    otpState,
+    otpError,
+    countdown,
+    phoneIsValidAndAvailable,
     handleChange,
     setField,
+    sendCode,
+    resendCode,
+    submitOtp,
     handleStep1,
     handleSubmit,
     back,

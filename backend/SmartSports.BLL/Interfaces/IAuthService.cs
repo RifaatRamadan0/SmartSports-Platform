@@ -13,6 +13,10 @@ public interface IAuthService
     Task<AuthResponse?> RefreshTokenAsync(string refreshToken);
     Task LogoutAsync(string refreshToken);
 
+    // -- Phone Verification --
+    Task SendPhoneOtpAsync(string phoneNumber);
+    Task<string> VerifyPhoneOtpAsync(string phoneNumber, string code);
+
     // -- Email Verification --
     Task VerifyEmailAsync(Guid token);
     Task ResendVerificationEmailAsync(string email, string baseUrl);
