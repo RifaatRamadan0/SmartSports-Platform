@@ -292,10 +292,15 @@ public class AuthService : IAuthService
         return Convert.ToBase64String(randomBytes);
     }
 
-    // Strips all whitespace and common delimiter characters so different
-    // formatting of the same number doesn't bypass the uniqueness check.
+    // Canonicalizes valid Lebanese mobile numbers to E.164 (+961XXXXXXXX)
+    // so different input formats collide on the uniqueness check.
     private static string NormalizePhone(string phone)
-        => System.Text.RegularExpressions.Regex.Replace(phone, @"[\s\-().]+", string.Empty);
+    {
+        var digits = System.Text.RegularExpressions.Regex.Replace(phone, @"[\s\-().+]+", string.Empty);
+        if (digits.StartsWith("961")) return "+" + digits;
+        if (digits.StartsWith("0"))   return "+961" + digits[1..];
+        return "+961" + digits;
+    }
 
     private static string HashToken(string token)
     {
