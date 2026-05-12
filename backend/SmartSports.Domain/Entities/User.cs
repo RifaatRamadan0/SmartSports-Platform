@@ -11,5 +11,6 @@ public class User
     public short? SkillLevel { get; set; }
     public string? PreferredPosition { get; set; }
     public bool IsEmailVerified { get; set; }
+    public bool IsPhoneVerified { get; set; }
     public DateTime CreatedAt { get; set; }
 }

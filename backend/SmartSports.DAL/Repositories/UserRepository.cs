@@ -57,8 +57,8 @@ public class UserRepository : IUserRepository
         try
         {
             var userId = await connection.ExecuteScalarAsync<int>("""
-                INSERT INTO users (username, email, password_hash, phone_number, profile_picture, skill_level, preferred_position)
-                VALUES (@Username, @Email, @PasswordHash, @PhoneNumber, @ProfilePicture, @SkillLevel, @PreferredPosition)
+                INSERT INTO users (username, email, password_hash, phone_number, profile_picture, skill_level, preferred_position, is_phone_verified)
+                VALUES (@Username, @Email, @PasswordHash, @PhoneNumber, @ProfilePicture, @SkillLevel, @PreferredPosition, @IsPhoneVerified)
                 RETURNING id
                 """,
                 user, transaction);
@@ -93,7 +93,7 @@ public class UserRepository : IUserRepository
             """
             SELECT id, username, email, password_hash, phone_number,
                    profile_picture, skill_level, preferred_position,
-                   is_email_verified, created_at
+                   is_email_verified, is_phone_verified, created_at
             FROM users
             WHERE LOWER(email) = LOWER(@Email)
             """,
@@ -107,7 +107,7 @@ public class UserRepository : IUserRepository
             """
             SELECT id, username, email, password_hash, phone_number,
                    profile_picture, skill_level, preferred_position,
-                   is_email_verified, created_at
+                   is_email_verified, is_phone_verified, created_at
             FROM users
             WHERE LOWER(username) = LOWER(@Username)
             """,
@@ -121,7 +121,7 @@ public class UserRepository : IUserRepository
             """
             SELECT id, username, email, password_hash, phone_number,
                    profile_picture, skill_level, preferred_position,
-                   is_email_verified, created_at
+                   is_email_verified, is_phone_verified, created_at
             FROM users
             WHERE id = @UserId
             """,

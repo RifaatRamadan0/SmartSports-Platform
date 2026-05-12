@@ -20,6 +20,8 @@ public class AuthService : IAuthService
     private readonly IPasswordResetTokenRepository _passwordResetTokenRepository;
     private readonly IEmailVerificationTokenRepository _emailVerificationTokenRepository;
     private readonly IEmailService _emailService;
+    private readonly ITwilioService _twilioService;
+    private readonly IPhoneProofService _phoneProofService;
 
     private static readonly HashSet<string> AllowedRoles = new(StringComparer.Ordinal)
     {
@@ -34,7 +36,9 @@ public class AuthService : IAuthService
         IRefreshTokenRepository refreshTokenRepository,
         IPasswordResetTokenRepository passwordResetTokenRepository,
         IEmailVerificationTokenRepository emailVerificationTokenRepository,
-        IEmailService emailService)
+        IEmailService emailService,
+        ITwilioService twilioService,
+        IPhoneProofService phoneProofService)
     {
         _userRepository = userRepository;
         _configuration = configuration;
@@ -42,6 +46,8 @@ public class AuthService : IAuthService
         _passwordResetTokenRepository = passwordResetTokenRepository;
         _emailVerificationTokenRepository = emailVerificationTokenRepository;
         _emailService = emailService;
+        _twilioService = twilioService;
+        _phoneProofService = phoneProofService;
     }
 
     // -- Registration --
@@ -51,8 +57,12 @@ public class AuthService : IAuthService
         if (!AllowedRoles.Contains(request.Role))
             throw new ArgumentException("Role must be 'Player' or 'PitchOwner'.");
 
-        var email    = request.Email.Trim();
-        var username = request.Username.Trim();
+        var email       = request.Email.Trim();
+        var username    = request.Username.Trim();
+        var phoneNumber = NormalizePhone(request.PhoneNumber);
+
+        if (!_phoneProofService.ValidateProof(request.PhoneVerificationProof, phoneNumber))
+            throw new ArgumentException("Phone verification has expired or is invalid. Please verify your phone number again.");
 
         if (await _userRepository.ExistsByEmailAsync(email))
             throw new ArgumentException("Email is already in use.");
@@ -70,7 +80,8 @@ public class AuthService : IAuthService
             PasswordHash      = BCrypt.Net.BCrypt.HashPassword(request.Password),
             SkillLevel        = (short?)request.SkillLevel,
             PreferredPosition = string.IsNullOrWhiteSpace(request.PreferredPosition) ? null : request.PreferredPosition.Trim(),
-            PhoneNumber       = NormalizePhone(request.PhoneNumber)
+            PhoneNumber       = phoneNumber,
+            IsPhoneVerified   = true
         };
 
         var userId = await _userRepository.CreateWithRoleAsync(user, role.Id);
@@ -199,6 +210,24 @@ public class AuthService : IAuthService
         await _refreshTokenRepository.RevokeAsync(HashToken(refreshToken));
     }
 
+    // -- Phone Verification --
+
+    public async Task SendPhoneOtpAsync(string phoneNumber)
+    {
+        await _twilioService.SendOtpAsync(NormalizePhone(phoneNumber));
+    }
+
+    public async Task<string> VerifyPhoneOtpAsync(string phoneNumber, string code)
+    {
+        var normalized = NormalizePhone(phoneNumber);
+        var verified = await _twilioService.VerifyOtpAsync(normalized, code);
+
+        if (!verified)
+            throw new ArgumentException("The code is incorrect or has expired.");
+
+        return _phoneProofService.GenerateProof(normalized);
+    }
+
     // -- Email Verification --
 
     public async Task VerifyEmailAsync(Guid token)
@@ -300,7 +329,7 @@ public class AuthService : IAuthService
     // so different input formats collide on the uniqueness check.
     private static string NormalizePhone(string phone)
     {
-        var digits = System.Text.RegularExpressions.Regex.Replace(phone, @"[\s\-().+]+", string.Empty);
+        var digits = System.Text.RegularExpressions.Regex.Replace(phone, @"\D", string.Empty);
         if (digits.StartsWith("961")) return "+" + digits;
         if (digits.StartsWith("0"))   return "+961" + digits[1..];
         return "+961" + digits;

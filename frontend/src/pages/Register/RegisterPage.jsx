@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, EyeOff, ChevronRight, AlertCircle, Loader2, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -33,14 +33,88 @@ const ROLE_OPTIONS = [
   { value: 'PitchOwner', icon: '🏟', title: 'Pitch Owner', desc: 'List your facilities and manage bookings' },
 ]
 
+function OtpBoxes({ onComplete, disabled, shake }) {
+  const [digits, setDigits] = useState(['', '', '', '', '', ''])
+  const refs = useRef([])
+
+  useEffect(() => {
+    if (!disabled) refs.current[0]?.focus()
+  }, [disabled])
+
+  function handleKey(e, idx) {
+    if (e.key === 'Backspace') {
+      e.preventDefault()
+      const next = [...digits]
+      if (digits[idx]) {
+        next[idx] = ''
+        setDigits(next)
+      } else if (idx > 0) {
+        next[idx - 1] = ''
+        setDigits(next)
+        refs.current[idx - 1]?.focus()
+      }
+      return
+    }
+    if (e.key === 'ArrowLeft' && idx > 0) refs.current[idx - 1]?.focus()
+    if (e.key === 'ArrowRight' && idx < 5) refs.current[idx + 1]?.focus()
+  }
+
+  function handleInput(e, idx) {
+    const raw = e.target.value.replace(/\D/g, '')
+    if (!raw) return
+
+    if (raw.length > 1) {
+      const chars = raw.slice(0, 6).split('')
+      const next = [...digits]
+      chars.forEach((c, i) => { if (i < 6) next[i] = c })
+      setDigits(next)
+      const lastFilled = Math.min(chars.length - 1, 5)
+      refs.current[lastFilled]?.focus()
+      if (chars.length === 6) onComplete(chars.join(''))
+      return
+    }
+
+    const next = [...digits]
+    next[idx] = raw[0]
+    setDigits(next)
+    if (idx < 5) refs.current[idx + 1]?.focus()
+    if (idx === 5 && next.every(d => d)) onComplete(next.join(''))
+  }
+
+  return (
+    <div className={`flex gap-2 ${shake ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}>
+      {digits.map((d, i) => (
+        <input
+          key={i}
+          ref={el => refs.current[i] = el}
+          type="text"
+          inputMode="numeric"
+          maxLength={6}
+          value={d}
+          disabled={disabled}
+          onKeyDown={e => handleKey(e, i)}
+          onChange={e => handleInput(e, i)}
+          className={`h-11 w-full rounded-[0.625rem] border bg-input text-center text-lg font-bold text-foreground caret-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 transition-colors ${
+            d ? 'border-primary/40' : 'border-border'
+          }`}
+        />
+      ))}
+    </div>
+  )
+}
+
 function RegisterPage() {
   const {
     form, step, error, fieldErrors, availability, isSubmitting,
-    handleChange, setField, handleStep1, handleSubmit, back,
+    otpState, otpError, countdown, phoneIsValidAndAvailable,
+    handleChange, setField, sendCode, resendCode, submitOtp,
+    handleStep1, handleSubmit, back,
   } = useRegisterForm()
   const [showPw, setShowPw] = useState(false)
 
   const strength = pwStrength(form.password)
+  const otpVisible = otpState === 'sent' || otpState === 'verifying' || otpState === 'error'
+  const shake = otpState === 'error'
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-[#0f1a12] to-background px-4 py-10">
@@ -102,6 +176,7 @@ function RegisterPage() {
             {step === 1 && (
               <form onSubmit={handleStep1} noValidate className="flex flex-col gap-4">
 
+                {/* Role selector */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[0.8125rem] font-medium text-muted-foreground">
                     I am a…
@@ -133,6 +208,7 @@ function RegisterPage() {
                   </div>
                 </div>
 
+                {/* Username */}
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="username" className="text-[0.8125rem] font-medium text-muted-foreground">
                     Username
@@ -164,6 +240,7 @@ function RegisterPage() {
                   ) : null}
                 </div>
 
+                {/* Email */}
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="email" className="text-[0.8125rem] font-medium text-muted-foreground">
                     Email
@@ -193,6 +270,7 @@ function RegisterPage() {
                   ) : null}
                 </div>
 
+                {/* Password */}
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="password" className="text-[0.8125rem] font-medium text-muted-foreground">
                     Password
@@ -238,33 +316,101 @@ function RegisterPage() {
                   )}
                 </div>
 
+                {/* Phone Number + OTP */}
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="phoneNumber" className="text-[0.8125rem] font-medium text-muted-foreground">
                     Phone Number
                   </label>
-                  <div className="relative">
-                    <Input
-                      id="phoneNumber"
-                      type="tel"
-                      name="phoneNumber"
-                      value={form.phoneNumber}
-                      onChange={handleChange}
-                      placeholder="+961 3 123 456"
-                      autoComplete="tel"
-                      aria-invalid={!!fieldErrors.phoneNumber || availability.phoneNumber === 'taken'}
-                      className="h-10 rounded-[0.625rem] border-border bg-input px-3.5 pr-10 text-[0.9375rem] text-foreground"
-                    />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
-                      <AvailabilityIcon status={availability.phoneNumber} />
-                    </span>
+
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        id="phoneNumber"
+                        type="tel"
+                        name="phoneNumber"
+                        value={form.phoneNumber}
+                        onChange={handleChange}
+                        placeholder="+961 3 123 456"
+                        autoComplete="tel"
+                        disabled={otpState === 'verified'}
+                        aria-invalid={!!fieldErrors.phoneNumber || availability.phoneNumber === 'taken'}
+                        className="h-10 rounded-[0.625rem] border-border bg-input px-3.5 pr-10 text-[0.9375rem] text-foreground disabled:opacity-60"
+                      />
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                        {otpState === 'verified'
+                          ? <Check size={16} className="text-primary" />
+                          : <AvailabilityIcon status={availability.phoneNumber} />
+                        }
+                      </span>
+                    </div>
+
+                    {otpState !== 'verified' && (
+                      <button
+                        type="button"
+                        disabled={!phoneIsValidAndAvailable || otpState !== 'idle'}
+                        onClick={sendCode}
+                        className="h-10 shrink-0 rounded-[0.625rem] border border-primary/40 bg-primary/10 px-3 text-[0.8125rem] font-semibold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {otpState === 'sending'
+                          ? <Loader2 size={14} className="animate-spin" />
+                          : 'Send Code'
+                        }
+                      </button>
+                    )}
                   </div>
+
                   {fieldErrors.phoneNumber ? (
                     <p className="text-xs text-destructive"><span aria-hidden="true">⚠</span>{' '}{fieldErrors.phoneNumber}</p>
                   ) : availability.phoneNumber === 'taken' ? (
                     <p className="text-xs text-destructive"><span aria-hidden="true">⚠</span>{' '}Phone number is already registered</p>
-                  ) : availability.phoneNumber === 'available' ? (
-                    <p className="text-xs text-primary">Phone number is available</p>
+                  ) : availability.phoneNumber === 'available' && otpState === 'idle' ? (
+                    <p className="text-xs text-primary">Phone number is available — tap Send Code to verify</p>
                   ) : null}
+
+                  {/* OTP boxes slide in */}
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      otpVisible ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
+                    }`}
+                  >
+                    <div className="flex flex-col gap-2 pt-1">
+                      <OtpBoxes
+                        onComplete={submitOtp}
+                        disabled={otpState === 'verifying'}
+                        shake={shake}
+                      />
+                      <div className="flex items-center justify-between">
+                        <div>
+                          {otpError && (
+                            <p className="text-xs text-destructive">{otpError}</p>
+                          )}
+                        </div>
+                        <div>
+                          {countdown > 0 ? (
+                            <span className="text-xs text-muted-foreground">
+                              Resend in {countdown}s
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={resendCode}
+                              className="text-xs font-medium text-primary hover:underline"
+                            >
+                              Resend code
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Verified banner */}
+                  {otpState === 'verified' && (
+                    <div className="flex items-center gap-1.5 rounded-[0.625rem] border border-primary/20 bg-primary/5 px-3 py-2">
+                      <Check size={14} className="text-primary" />
+                      <span className="text-xs font-medium text-primary">Phone verified</span>
+                    </div>
+                  )}
                 </div>
 
                 <Button
@@ -275,7 +421,8 @@ function RegisterPage() {
                     availability.phoneNumber === 'checking' ||
                     availability.username    === 'taken'    ||
                     availability.email       === 'taken'    ||
-                    availability.phoneNumber === 'taken'
+                    availability.phoneNumber === 'taken'    ||
+                    otpState !== 'verified'
                   }
                   className="mt-1 h-10 w-full rounded-[0.625rem] bg-primary text-[0.9375rem] font-bold tracking-tight text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
                 >

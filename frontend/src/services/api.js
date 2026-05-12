@@ -96,4 +96,10 @@ api.interceptors.response.use(
   }
 )
 
+export const sendPhoneOtp = (phoneNumber) =>
+  api.post('/api/auth/phone/send-otp', { phoneNumber })
+
+export const verifyPhoneOtp = (phoneNumber, code) =>
+  api.post('/api/auth/phone/verify-otp', { phoneNumber, code })
+
 export default api
