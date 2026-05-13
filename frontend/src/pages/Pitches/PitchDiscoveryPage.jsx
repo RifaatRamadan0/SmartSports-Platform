@@ -119,6 +119,7 @@ export default function PitchDiscoveryPage() {
   }
 
   const clearAllFilters = () => {
+    clearTimeout(debounceRef.current)
     setLocalSearch('')
     setSearchParams({})
   }
