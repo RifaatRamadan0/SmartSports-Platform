@@ -25,7 +25,8 @@ export default function PitchDiscoveryPage() {
   const urlSortBy   = searchParams.get('sortBy')   ?? 'newest'
   const urlPage     = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
 
-  const { token } = useAuth()
+  const { token, roles } = useAuth()
+  const [refreshKey, setRefreshKey] = useState(0)
 
   // Local search input state — debounced before it reaches the URL.
   const [localSearch, setLocalSearch] = useState(urlSearch)
@@ -80,7 +81,7 @@ export default function PitchDiscoveryPage() {
       .finally(()  => { if (!cancelled) setIsLoading(false) })
 
     return () => { cancelled = true }
-  }, [urlSearch, urlSport, urlCity, urlMaxPrice, urlSortBy, urlPage])
+  }, [urlSearch, urlSport, urlCity, urlMaxPrice, urlSortBy, urlPage, refreshKey])
 
   // Helpers to mutate URL params.
   const setFilter = useCallback((key, value) => {
@@ -166,7 +167,7 @@ export default function PitchDiscoveryPage() {
         {isLoading && <PitchesSkeleton />}
 
         {!isLoading && error && (
-          <ErrorBanner message={error} onRetry={() => setSearchParams(new URLSearchParams(searchParams))} />
+          <ErrorBanner message={error} onRetry={() => setRefreshKey(k => k + 1)} />
         )}
 
         {!isLoading && !error && result?.items?.length === 0 && (
@@ -177,7 +178,7 @@ export default function PitchDiscoveryPage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {result.items.map(p => (
-                <PitchCard key={p.id} pitch={p} onBook={() => handleBook(p, navigate, token)} />
+                <PitchCard key={p.id} pitch={p} onBook={() => handleBook(p, navigate, token, roles)} />
               ))}
             </div>
 
@@ -198,10 +199,14 @@ export default function PitchDiscoveryPage() {
   )
 }
 
-// Route a "Book Now" click: guests go to /login, players go to the booking page.
-function handleBook(pitch, navigate, token) {
+// Route a "Book Now" click: guests → /login, players → booking, others → /dashboard.
+function handleBook(pitch, navigate, token, roles) {
   if (!token) {
     navigate('/login', { state: { from: `/book/${pitch.id}` } })
+    return
+  }
+  if (!roles.includes(ROLES.PLAYER)) {
+    navigate('/dashboard')
     return
   }
   navigate(`/book/${pitch.id}`, {
@@ -545,14 +550,16 @@ function PitchCard({ pitch, onBook }) {
 }
 
 function PitchCover({ imageUrl, sport }) {
-  if (imageUrl) {
+  const [imgError, setImgError] = useState(false)
+
+  if (imageUrl && !imgError) {
     return (
       <div className="relative h-44 overflow-hidden bg-[var(--bg2)]">
         <img
           src={imageUrl}
           alt=""
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={e => { e.currentTarget.style.display = 'none' }}
+          onError={() => setImgError(true)}
         />
       </div>
     )
