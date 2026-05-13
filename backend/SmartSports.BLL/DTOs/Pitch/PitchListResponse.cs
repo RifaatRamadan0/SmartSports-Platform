@@ -9,6 +9,8 @@ public class PitchListResponse
     public decimal? Rating                    { get; set; }
     public string   SportName                 { get; set; } = string.Empty;
     public int      MaxBookingDurationMinutes { get; set; }
+    public string   CityName                  { get; set; } = string.Empty;
+    public string?  CoverImageUrl             { get; set; }
     public bool     IsActive                  { get; set; }
     public bool     IsApproved                { get; set; }
 }

@@ -1,3 +1,4 @@
+using SmartSports.DAL.Parameters;
 using SmartSports.Domain.Entities.Projections;
 using PitchEntity = SmartSports.Domain.Entities.Pitch;
 
@@ -13,11 +14,10 @@ public interface IPitchRepository
     Task<PitchEntity?> GetByIdAsync(int pitchId);
 
     /// <summary>
-    /// Lists active and approved (non soft-deleted) pitches with their sport name.
-    /// Optional filter by sport name (case-insensitive). Returns paged rows + total.
+    /// Returns a paged, filtered, sorted list of active and approved pitches.
+    /// All filter fields in <paramref name="filters"/> are optional.
     /// </summary>
-    Task<(IEnumerable<PitchListRow> Items, long TotalCount)> ListAsync(
-        string? sport, int page, int pageSize);
+    Task<(IEnumerable<PitchListRow> Items, long TotalCount)> ListAsync(PitchFilterParams filters);
 
     /// <summary>
     /// Returns all non-deleted pitches owned by the given user (includes

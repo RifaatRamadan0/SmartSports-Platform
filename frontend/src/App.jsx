@@ -5,6 +5,7 @@ import RoleRoute from './components/routing/RoleRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 import RootRedirect from './components/routing/RootRedirect'
 import HomePage from './pages/Home/HomePage'
+import PitchDiscoveryPage from './pages/Pitches/PitchDiscoveryPage'
 import LoginPage from './pages/Login/LoginPage'
 import RegisterPage from './pages/Register/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPassword/ForgotPasswordPage'
@@ -39,6 +40,9 @@ function App() {
 
             {/* Smart entry point */}
             <Route path="/" element={<RootRedirect />} />
+
+            {/* Public pitch discovery — no auth required */}
+            <Route path="/pitches" element={<PitchDiscoveryPage />} />
 
             {/* Protected: any authenticated user */}
             <Route element={<PrivateRoute />}>

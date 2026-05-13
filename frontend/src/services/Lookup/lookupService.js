@@ -9,3 +9,7 @@ export async function listSportTypes() {
   const { data } = await api.get('/api/lookups/sport-types')
   return data
 }
+
+// Aliases used by PitchDiscoveryPage
+export const getCities     = listCities
+export const getSportTypes = listSportTypes

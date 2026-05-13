@@ -8,5 +8,7 @@ public record PitchListRow(
     decimal? Rating,
     string   SportName,
     int      MaxBookingDurationMinutes,
+    string   CityName,
+    string?  CoverImageUrl,
     bool     IsActive,
     bool     IsApproved);
