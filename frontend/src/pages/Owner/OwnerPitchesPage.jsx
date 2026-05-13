@@ -120,14 +120,6 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting }) {
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
-            onClick={() => onNavigate('/dashboard/bookings')}
-            className="rounded-lg px-3 py-1.5 text-xs font-semibold
-                       bg-green-500/10 border border-green-500/30 text-green-400
-                       hover:bg-green-500/20 transition-colors"
-          >
-            View Bookings
-          </button>
-          <button
             onClick={() => onNavigate(`/dashboard/pitches/${pitch.id}/schedule`)}
             className="rounded-lg px-3 py-1.5 text-xs font-semibold
                        bg-[#141414] border border-[#1f1f1f] text-neutral-300
@@ -258,13 +250,23 @@ export default function OwnerPitchesPage() {
             Every pitch you own — including listings still pending admin approval.
           </p>
         </div>
-        <button
-          onClick={() => navigate('/dashboard/pitches/new')}
-          className="rounded-xl px-4 py-2.5 text-sm font-semibold
-                     bg-green-500 text-black hover:bg-green-400 transition-colors"
-        >
-          + Add Pitch
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/dashboard/bookings')}
+            className="rounded-xl px-4 py-2.5 text-sm font-semibold
+                       bg-[#0d0d0d] border border-[#1f1f1f] text-neutral-300
+                       hover:text-white hover:border-white/15 transition-colors"
+          >
+            View Bookings
+          </button>
+          <button
+            onClick={() => navigate('/dashboard/pitches/new')}
+            className="rounded-xl px-4 py-2.5 text-sm font-semibold
+                       bg-green-500 text-black hover:bg-green-400 transition-colors"
+          >
+            + Add Pitch
+          </button>
+        </div>
       </div>
 
       {/* Filter pills */}
