@@ -64,7 +64,26 @@ public class PitchRepository : IPitchRepository
             _             => "p.created_at DESC, p.id DESC",
         };
 
-        var sql = $"""
+        var whereClause = string.Join(" AND ", conditions);
+        var parameters  = new
+        {
+            SearchPattern = $"%{EscapeLike(filters.Search?.Trim())}%",
+            Sport         = filters.Sport,
+            City          = filters.City,
+            MaxPrice      = filters.MaxPrice,
+            PageSize      = filters.PageSize,
+            Offset        = (filters.Page - 1) * filters.PageSize,
+        };
+
+        var countSql = $"""
+            SELECT COUNT(*)
+            FROM   pitches     p
+            JOIN   sport_types s ON s.id = p.sport_type_id
+            JOIN   cities      c ON c.id = p.city_id
+            WHERE  {whereClause}
+            """;
+
+        var dataSql = $"""
             SELECT  p.id,
                     p.name,
                     p.address,
@@ -75,8 +94,7 @@ public class PitchRepository : IPitchRepository
                     c.name              AS city_name,
                     cover.image_url     AS cover_image_url,
                     p.is_active,
-                    p.is_approved,
-                    COUNT(*) OVER()     AS total_count
+                    p.is_approved
             FROM    pitches             p
             JOIN    sport_types         s    ON s.id = p.sport_type_id
             JOIN    cities              c    ON c.id = p.city_id
@@ -87,40 +105,15 @@ public class PitchRepository : IPitchRepository
                 ORDER BY id
                 LIMIT  1
             ) cover ON TRUE
-            WHERE   {string.Join(" AND ", conditions)}
+            WHERE   {whereClause}
             ORDER BY {orderBy}
             LIMIT   @PageSize
             OFFSET  @Offset
             """;
 
-        var rows = await connection.QueryAsync<PitchListRowWithCount>(
-            sql,
-            new
-            {
-                SearchPattern = $"%{EscapeLike(filters.Search?.Trim())}%",
-                Sport         = filters.Sport,
-                City          = filters.City,
-                MaxPrice      = filters.MaxPrice,
-                PageSize      = filters.PageSize,
-                Offset        = (filters.Page - 1) * filters.PageSize,
-            });
+        var totalCount = await connection.ExecuteScalarAsync<long>(countSql, parameters);
+        var items      = await connection.QueryAsync<PitchListRow>(dataSql, parameters);
 
-        var list = rows.ToList();
-
-        var items = list.Select(r => new PitchListRow(
-            r.Id,
-            r.Name,
-            r.Address,
-            r.PricePerHour,
-            r.Rating,
-            r.SportName,
-            r.MaxBookingDurationMinutes,
-            r.CityName,
-            r.CoverImageUrl,
-            r.IsActive,
-            r.IsApproved));
-
-        var totalCount = list.FirstOrDefault()?.TotalCount ?? 0L;
         return (items, totalCount);
     }
 
@@ -227,17 +220,5 @@ public class PitchRepository : IPitchRepository
             .Replace("%",  @"\%")
             .Replace("_",  @"\_");
 
-    private record PitchListRowWithCount(
-        int      Id,
-        string   Name,
-        string   Address,
-        decimal  PricePerHour,
-        decimal? Rating,
-        int      MaxBookingDurationMinutes,
-        string   SportName,
-        string   CityName,
-        string?  CoverImageUrl,
-        bool     IsActive,
-        bool     IsApproved,
-        long     TotalCount);
+
 }
