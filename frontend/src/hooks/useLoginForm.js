@@ -30,9 +30,10 @@ export function useLoginForm() {
     try {
       const { data } = await api.post('/api/auth/login', form)
       login(data)
+      const isPlayer     = data.roles?.includes('Player')
       const isPitchOwner = data.roles?.includes('PitchOwner')
       const fallback     = isPitchOwner ? '/pending-approval' : '/dashboard'
-      navigate(location.state?.from ?? fallback, { replace: true })
+      navigate(isPlayer && location.state?.from ? location.state.from : fallback, { replace: true })
     } catch (err) {
       if (err.response?.status === 403) {
         setUnverified(true)

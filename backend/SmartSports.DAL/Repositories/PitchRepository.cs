@@ -40,7 +40,7 @@ public class PitchRepository : IPitchRepository
         };
 
         if (!string.IsNullOrWhiteSpace(filters.Search))
-            conditions.Add("(LOWER(p.name) LIKE LOWER(@SearchPattern) OR LOWER(p.address) LIKE LOWER(@SearchPattern))");
+            conditions.Add("(LOWER(p.name) LIKE LOWER(@SearchPattern) ESCAPE '\\' OR LOWER(p.address) LIKE LOWER(@SearchPattern) ESCAPE '\\')");
 
         if (!string.IsNullOrWhiteSpace(filters.Sport))
             conditions.Add("LOWER(s.name) = LOWER(@Sport)");
@@ -91,7 +91,7 @@ public class PitchRepository : IPitchRepository
             sql,
             new
             {
-                SearchPattern = $"%{filters.Search?.Trim()}%",
+                SearchPattern = $"%{EscapeLike(filters.Search?.Trim())}%",
                 Sport         = filters.Sport,
                 City          = filters.City,
                 MaxPrice      = filters.MaxPrice,
@@ -115,6 +115,12 @@ public class PitchRepository : IPitchRepository
         var totalCount = list.FirstOrDefault()?.TotalCount ?? 0L;
         return (items, totalCount);
     }
+
+    private static string EscapeLike(string? value) =>
+        (value ?? string.Empty)
+            .Replace(@"\", @"\\")
+            .Replace("%",  @"\%")
+            .Replace("_",  @"\_");
 
     private record PitchListRowWithCount(
         int      Id,
