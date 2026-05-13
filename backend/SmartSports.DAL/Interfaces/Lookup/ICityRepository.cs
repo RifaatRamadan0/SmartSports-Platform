@@ -4,5 +4,5 @@ namespace SmartSports.DAL.Interfaces.Lookup;
 
 public interface ICityRepository
 {
-    Task<IEnumerable<LookupRow>> ListAsync();
+    Task<IEnumerable<CityRow>> ListAsync();
 }
