@@ -16,4 +16,5 @@ public class Pitch
     public bool IsApproved { get; set; }
     public int MaxBookingDurationMinutes { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }
