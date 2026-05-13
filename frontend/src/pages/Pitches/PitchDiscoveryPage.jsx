@@ -152,7 +152,7 @@ export default function PitchDiscoveryPage() {
         city={urlCity}
         onCityChange={v => setFilter('city', v)}
         maxPrice={urlMaxPrice}
-        onMaxPriceChange={v => setFilter('maxPrice', v)}
+        onMaxPriceChange={v => setFilter('maxPrice', Number(v) > 0 ? v : '')}
         sortBy={urlSortBy}
         onSortChange={v => setFilter('sortBy', v)}
         sportTypes={sportTypes}

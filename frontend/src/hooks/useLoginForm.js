@@ -34,7 +34,9 @@ export function useLoginForm() {
       const isPlayer     = data.roles?.includes(ROLES.PLAYER)
       const isPitchOwner = data.roles?.includes(ROLES.PITCH_OWNER)
       const fallback     = isPitchOwner ? '/pending-approval' : '/dashboard'
-      navigate(isPlayer && location.state?.from ? location.state.from : fallback, { replace: true })
+      const from = location.state?.from
+      const safePath = typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')
+      navigate(isPlayer && safePath ? from : fallback, { replace: true })
     } catch (err) {
       if (err.response?.status === 403) {
         setUnverified(true)
