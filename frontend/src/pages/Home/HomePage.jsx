@@ -116,12 +116,20 @@ function Navbar() {
             </button>
           )}
           {(isOwner || isAdmin) && (
-            <button
-              onClick={() => navigate('/dashboard/bookings')}
-              className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
-            >
-              Owner Dashboard
-            </button>
+            <>
+              <button
+                onClick={() => navigate('/dashboard/pitches')}
+                className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
+              >
+                My Pitches
+              </button>
+              <button
+                onClick={() => navigate('/dashboard/bookings')}
+                className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
+              >
+                Owner Dashboard
+              </button>
+            </>
           )}
 
           <button
@@ -163,10 +171,10 @@ function Navbar() {
               {(isOwner || isAdmin) && (
                 <>
                   <button
-                    onClick={() => { setMenuOpen(false); navigate('/pitches/manage') }}
+                    onClick={() => { setMenuOpen(false); navigate('/dashboard/pitches') }}
                     className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
                   >
-                    Manage Pitches
+                    My Pitches
                   </button>
                   <button
                     onClick={() => { setMenuOpen(false); navigate('/dashboard/bookings') }}

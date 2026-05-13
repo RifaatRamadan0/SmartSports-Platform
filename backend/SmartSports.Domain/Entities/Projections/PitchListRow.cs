@@ -7,4 +7,6 @@ public record PitchListRow(
     decimal  PricePerHour,
     decimal? Rating,
     string   SportName,
-    int      MaxBookingDurationMinutes);
+    int      MaxBookingDurationMinutes,
+    bool     IsActive,
+    bool     IsApproved);

@@ -53,6 +53,8 @@ public class PitchRepository : IPitchRepository
                     p.price_per_hour,
                     p.rating,
                     p.max_booking_duration_minutes,
+                    p.is_active,
+                    p.is_approved,
                     s.name                        AS sport_name,
                     COUNT(*) OVER()               AS total_count
             FROM    pitches     p
@@ -81,7 +83,9 @@ public class PitchRepository : IPitchRepository
             r.PricePerHour,
             r.Rating,
             r.SportName,
-            r.MaxBookingDurationMinutes));
+            r.MaxBookingDurationMinutes,
+            r.IsActive,
+            r.IsApproved));
 
         var totalCount = list.FirstOrDefault()?.TotalCount ?? 0L;
         return (items, totalCount);
@@ -99,7 +103,9 @@ public class PitchRepository : IPitchRepository
                     p.price_per_hour,
                     p.rating,
                     s.name AS sport_name,
-                    p.max_booking_duration_minutes
+                    p.max_booking_duration_minutes,
+                    p.is_active,
+                    p.is_approved
             FROM    pitches     p
             JOIN    sport_types s ON s.id = p.sport_type_id
             WHERE   p.owner_id   = @OwnerId
@@ -174,5 +180,6 @@ public class PitchRepository : IPitchRepository
 
     private record PitchListRowWithCount(
         int Id, string Name, string Address, decimal PricePerHour,
-        decimal? Rating, int MaxBookingDurationMinutes, string SportName, long TotalCount);
+        decimal? Rating, int MaxBookingDurationMinutes,
+        bool IsActive, bool IsApproved, string SportName, long TotalCount);
 }

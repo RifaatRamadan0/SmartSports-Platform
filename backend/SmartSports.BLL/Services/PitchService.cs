@@ -43,6 +43,8 @@ public class PitchService : IPitchService
             Rating                    = r.Rating,
             SportName                 = r.SportName,
             MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
+            IsActive                  = r.IsActive,
+            IsApproved                = r.IsApproved,
         });
 
         return new PagedResult<PitchListResponse>
@@ -67,6 +69,8 @@ public class PitchService : IPitchService
             Rating                    = r.Rating,
             SportName                 = r.SportName,
             MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
+            IsActive                  = r.IsActive,
+            IsApproved                = r.IsApproved,
         });
     }
 
