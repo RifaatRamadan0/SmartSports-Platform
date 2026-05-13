@@ -23,15 +23,18 @@ export default function PitchDiscoveryPage() {
   const urlCity     = searchParams.get('city')     ?? ''
   const urlMaxPrice = searchParams.get('maxPrice') ?? ''
   const urlSortBy   = searchParams.get('sortBy')   ?? 'newest'
-  const urlPage     = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+  const urlPage     = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+
+  const { token } = useAuth()
 
   // Local search input state — debounced before it reaches the URL.
   const [localSearch, setLocalSearch] = useState(urlSearch)
   const debounceRef = useRef(null)
 
   // Lookup data for dropdowns (loaded once).
-  const [sportTypes, setSportTypes] = useState([])
-  const [cities,     setCities]     = useState([])
+  const [sportTypes,  setSportTypes]  = useState([])
+  const [cities,      setCities]      = useState([])
+  const [lookupError, setLookupError] = useState(null)
 
   // Pitch list result state.
   const [result,    setResult]    = useState(null)
@@ -48,8 +51,14 @@ export default function PitchDiscoveryPage() {
         setSportTypes(st)
         setCities(c)
       })
-      .catch(() => {})
+      .catch(err => {
+        console.error('Failed to load filter options:', err)
+        setLookupError('Could not load filter options.')
+      })
   }, [])
+
+  // Clear the pending debounce on unmount to avoid a stale setSearchParams call.
+  useEffect(() => () => clearTimeout(debounceRef.current), [])
 
   // Fetch pitches whenever any URL-driven filter changes.
   useEffect(() => {
@@ -145,6 +154,7 @@ export default function PitchDiscoveryPage() {
         onSortChange={v => setFilter('sortBy', v)}
         sportTypes={sportTypes}
         cities={cities}
+        lookupError={lookupError}
         hasActiveFilters={hasActiveFilters}
         onClearAll={clearAllFilters}
       />
@@ -167,7 +177,7 @@ export default function PitchDiscoveryPage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {result.items.map(p => (
-                <PitchCard key={p.id} pitch={p} onBook={() => handleBook(p, navigate)} />
+                <PitchCard key={p.id} pitch={p} onBook={() => handleBook(p, navigate, token)} />
               ))}
             </div>
 
@@ -189,11 +199,7 @@ export default function PitchDiscoveryPage() {
 }
 
 // Route a "Book Now" click: guests go to /login, players go to the booking page.
-function handleBook(pitch, navigate) {
-  const token = localStorage.getItem('accessToken')
-  // Check auth via the roles stored in context is not accessible here, so we
-  // navigate and let the RoleRoute guard redirect if needed. If no token at
-  // all, send directly to /login to avoid a confusing /forbidden screen.
+function handleBook(pitch, navigate, token) {
   if (!token) {
     navigate('/login', { state: { from: `/book/${pitch.id}` } })
     return
@@ -357,12 +363,15 @@ function FilterBar({
   city, onCityChange,
   maxPrice, onMaxPriceChange,
   sortBy, onSortChange,
-  sportTypes, cities,
+  sportTypes, cities, lookupError,
   hasActiveFilters, onClearAll,
 }) {
   return (
     <div className="sticky top-16 z-30 bg-[var(--bg)]/95 backdrop-blur border-b border-white/[0.06] py-3">
       <div className="mx-auto max-w-[1280px] px-6">
+        {lookupError && (
+          <p className="text-[11px] text-red-400 mb-2">{lookupError} Filters may be incomplete.</p>
+        )}
         <div className="flex flex-wrap gap-2 items-center">
 
           {/* Text search */}
