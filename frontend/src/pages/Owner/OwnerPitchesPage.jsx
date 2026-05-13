@@ -1,7 +1,39 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listMyPitches } from '../../services/Pitch/pitchService'
+import { listMyPitches, deletePitch } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
+
+// Toast
+
+function Toast({ message, type, onClose }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3500)
+    return () => clearTimeout(timer)
+  }, [onClose])
+
+  return (
+    <div
+      className={`
+        fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4
+        rounded-xl shadow-2xl border text-sm font-medium
+        ${type === 'success'
+          ? 'bg-[#0f1a12] border-green-600 text-green-400'
+          : 'bg-[#1a0f0f] border-red-600 text-red-400'
+        }
+      `}
+    >
+      <span>{type === 'success' ? '✓' : '✕'}</span>
+      <span>{message}</span>
+      <button
+        onClick={onClose}
+        aria-label="Close"
+        className="ml-2 opacity-50 hover:opacity-100 transition-opacity"
+      >
+        ×
+      </button>
+    </div>
+  )
+}
 
 // Skeleton
 
@@ -48,7 +80,9 @@ function StatusPill({ isActive, isApproved }) {
 
 // Card
 
-function PitchCard({ pitch, onNavigate }) {
+function PitchCard({ pitch, onNavigate, onDelete, isDeleting }) {
+  const [confirming, setConfirming] = useState(false)
+
   return (
     <div className="flex overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d]
                     hover:border-white/10 transition-colors">
@@ -72,7 +106,7 @@ function PitchCard({ pitch, onNavigate }) {
             </p>
           </div>
           <div className="font-bold text-green-400 whitespace-nowrap">
-            £{pitch.pricePerHour}
+            ${pitch.pricePerHour}
             <span className="text-xs text-neutral-500 font-normal">/hr</span>
           </div>
         </div>
@@ -84,7 +118,7 @@ function PitchCard({ pitch, onNavigate }) {
           )}
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
             onClick={() => onNavigate('/dashboard/bookings')}
             className="rounded-lg px-3 py-1.5 text-xs font-semibold
@@ -109,6 +143,38 @@ function PitchCard({ pitch, onNavigate }) {
           >
             Edit Details
           </button>
+
+          {confirming ? (
+            <>
+              <button
+                onClick={() => { setConfirming(false); onDelete(pitch.id) }}
+                disabled={isDeleting}
+                className="rounded-lg px-3 py-1.5 text-xs font-semibold
+                           bg-red-500/15 border border-red-500/40 text-red-400
+                           hover:bg-red-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? 'Deleting…' : 'Confirm Delete'}
+              </button>
+              <button
+                onClick={() => setConfirming(false)}
+                disabled={isDeleting}
+                className="rounded-lg px-3 py-1.5 text-xs font-semibold
+                           bg-[#141414] border border-[#1f1f1f] text-neutral-400
+                           hover:text-white hover:border-white/15 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setConfirming(true)}
+              className="rounded-lg px-3 py-1.5 text-xs font-semibold
+                         bg-[#141414] border border-red-900/40 text-red-500
+                         hover:bg-red-500/10 hover:border-red-500/40 transition-colors"
+            >
+              Delete
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -120,10 +186,14 @@ function PitchCard({ pitch, onNavigate }) {
 export default function OwnerPitchesPage() {
   const navigate = useNavigate()
 
-  const [pitches,   setPitches]   = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error,     setError]     = useState(null)
-  const [filter,    setFilter]    = useState('all')
+  const [pitches,    setPitches]   = useState([])
+  const [isLoading,  setIsLoading] = useState(true)
+  const [error,      setError]     = useState(null)
+  const [filter,     setFilter]    = useState('all')
+  const [deletingId, setDeletingId] = useState(null)
+  const [toast,      setToast]     = useState(null)
+
+  const closeToast = useCallback(() => setToast(null), [])
 
   const fetchPitches = useCallback(async () => {
     setIsLoading(true)
@@ -139,6 +209,19 @@ export default function OwnerPitchesPage() {
   }, [])
 
   useEffect(() => { fetchPitches() }, [fetchPitches])
+
+  const handleDelete = useCallback(async (id) => {
+    setDeletingId(id)
+    try {
+      await deletePitch(id)
+      setPitches(prev => prev.filter(p => p.id !== id))
+      setToast({ message: 'Pitch deleted successfully.', type: 'success' })
+    } catch (err) {
+      setToast({ message: parseApiError(err, 'Failed to delete pitch. Please try again.'), type: 'error' })
+    } finally {
+      setDeletingId(null)
+    }
+  }, [])
 
   const counts = {
     all:      pitches.length,
@@ -269,10 +352,18 @@ export default function OwnerPitchesPage() {
       {!isLoading && !error && visiblePitches.length > 0 && (
         <div className="flex flex-col gap-3">
           {visiblePitches.map(p => (
-            <PitchCard key={p.id} pitch={p} onNavigate={navigate} />
+            <PitchCard
+              key={p.id}
+              pitch={p}
+              onNavigate={navigate}
+              onDelete={handleDelete}
+              isDeleting={deletingId === p.id}
+            />
           ))}
         </div>
       )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
     </div>
   )
 }

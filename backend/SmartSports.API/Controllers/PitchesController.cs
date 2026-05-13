@@ -74,7 +74,9 @@ public class PitchesController : ControllerBase
 
     /// <summary>
     /// GET /api/pitches/{id}
-    /// Returns the pitch's public info (name, price/hr, max duration).
+    /// Returns full pitch details (name, address, price/hr, max duration,
+    /// lat/lon, sport, city, owner id, approval/active state, created date).
+    /// Only active and approved pitches are returned; soft-deleted or unapproved → 404.
     /// </summary>
     [HttpGet("{id:int}")]
     [AllowAnonymous]

@@ -28,7 +28,7 @@ const EMPTY_FORM = {
 
 // Validation
 
-function validate(form, mode) {
+function validate(form) {
   const errors = {}
 
   if (!form.regionId)    errors.regionId    = 'Pick a region.'
@@ -173,7 +173,7 @@ export default function OwnerPitchFormPage() {
 
   const handleSubmit = async e => {
     e.preventDefault()
-    const v = validate(form, mode)
+    const v = validate(form)
     setErrors(v)
     if (Object.keys(v).length > 0) return
 
@@ -329,7 +329,7 @@ export default function OwnerPitchFormPage() {
           </Field>
 
           <div className="grid sm:grid-cols-2 gap-5">
-            <Field label="Price per hour (£)" htmlFor="pricePerHour" error={errors.pricePerHour}>
+            <Field label="Price per hour ($)" htmlFor="pricePerHour" error={errors.pricePerHour}>
               <input
                 id="pricePerHour"
                 type="number"

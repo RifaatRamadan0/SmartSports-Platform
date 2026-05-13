@@ -6,8 +6,9 @@ namespace SmartSports.DAL.Interfaces.Pitch;
 public interface IPitchRepository
 {
     /// <summary>
-    /// Returns a pitch row by id, including soft-deleted rows so callers can
-    /// distinguish 404 (truly missing) from 410/404 (soft-deleted).
+    /// Returns a pitch row by id, including soft-deleted rows so callers may
+    /// inspect DeletedAt if needed. Currently all callers treat missing and
+    /// soft-deleted rows the same way (404 Not Found).
     /// </summary>
     Task<PitchEntity?> GetByIdAsync(int pitchId);
 

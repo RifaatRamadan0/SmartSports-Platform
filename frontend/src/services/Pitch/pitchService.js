@@ -31,3 +31,7 @@ export async function updatePitch(id, payload) {
   const { data } = await api.put(`/api/pitches/${id}`, payload)
   return data
 }
+
+export async function deletePitch(id) {
+  await api.delete(`/api/pitches/${id}`)
+}

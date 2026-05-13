@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getSchedule, upsertSchedule } from '../../services/Schedule/scheduleService';
 import ScheduleGrid from '../../components/Schedule/ScheduleGrid';
 import { parseApiError } from '../../utils/errorUtils';
@@ -84,6 +84,7 @@ function ScheduleSkeleton() {
 
 function OwnerSchedulePage() {
   const { pitchId } = useParams();
+  const navigate = useNavigate();
 
   const [schedule, setSchedule] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,6 +125,7 @@ function OwnerSchedulePage() {
       setIsSaving(true);
       await upsertSchedule(pitchId, toApiPayload(schedule));
       setToast({ message: 'Schedule saved successfully.', type: 'success' });
+      setTimeout(() => navigate('/dashboard/pitches'), 1500);
     } catch (err) {
       // ── Centralized error parsing instead of inline logic ──
       setToast({ message: parseApiError(err, 'Failed to save schedule. Please try again.'), type: 'error' });

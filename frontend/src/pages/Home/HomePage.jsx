@@ -80,7 +80,6 @@ function Navbar() {
 
   const isPlayer = roles.includes(ROLES.PLAYER)
   const isOwner  = roles.includes(ROLES.PITCH_OWNER)
-  const isAdmin  = roles.includes(ROLES.ADMIN)
 
   const handleLogout = async () => {
     setMenuOpen(false)
@@ -115,7 +114,7 @@ function Navbar() {
               My Bookings
             </button>
           )}
-          {(isOwner || isAdmin) && (
+          {isOwner && (
             <>
               <button
                 onClick={() => navigate('/dashboard/pitches')}
@@ -168,7 +167,7 @@ function Navbar() {
                   My Bookings
                 </button>
               )}
-              {(isOwner || isAdmin) && (
+              {isOwner && (
                 <>
                   <button
                     onClick={() => { setMenuOpen(false); navigate('/dashboard/pitches') }}
