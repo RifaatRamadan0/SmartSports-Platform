@@ -21,8 +21,10 @@ export default function PitchDiscoveryPage() {
   const urlSearch   = searchParams.get('search')   ?? ''
   const urlSport    = searchParams.get('sport')    ?? ''
   const urlCity     = searchParams.get('city')     ?? ''
-  const urlMaxPrice = searchParams.get('maxPrice') ?? ''
-  const urlSortBy   = searchParams.get('sortBy')   ?? 'newest'
+  const rawMaxPrice = searchParams.get('maxPrice') ?? ''
+  const urlMaxPrice = rawMaxPrice !== '' && Number(rawMaxPrice) > 0 ? rawMaxPrice : ''
+  const rawSortBy   = searchParams.get('sortBy') ?? ''
+  const urlSortBy   = SORT_OPTIONS.some(o => o.value === rawSortBy) ? rawSortBy : 'newest'
   const urlPage     = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
 
   const { token, roles } = useAuth()

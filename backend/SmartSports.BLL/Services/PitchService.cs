@@ -50,7 +50,7 @@ public class PitchService : IPitchService
             Sport:    query.Sport?.Trim(),
             City:     query.City?.Trim(),
             MaxPrice: query.MaxPrice,
-            SortBy:   query.SortBy,
+            SortBy:   query.SortBy?.Trim(),
             Page:     query.Page,
             PageSize: query.PageSize
         );

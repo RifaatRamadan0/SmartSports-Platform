@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './useAuth'
+import { ROLES } from '../constants/roles'
 import api from '../services/api'
 import { parseApiError } from '../utils/errorUtils'
 
@@ -30,8 +31,8 @@ export function useLoginForm() {
     try {
       const { data } = await api.post('/api/auth/login', form)
       login(data)
-      const isPlayer     = data.roles?.includes('Player')
-      const isPitchOwner = data.roles?.includes('PitchOwner')
+      const isPlayer     = data.roles?.includes(ROLES.PLAYER)
+      const isPitchOwner = data.roles?.includes(ROLES.PITCH_OWNER)
       const fallback     = isPitchOwner ? '/pending-approval' : '/dashboard'
       navigate(isPlayer && location.state?.from ? location.state.from : fallback, { replace: true })
     } catch (err) {
