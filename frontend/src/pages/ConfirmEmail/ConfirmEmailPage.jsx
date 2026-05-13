@@ -30,15 +30,11 @@ function ConfirmEmailPage() {
   const [searchParams] = useSearchParams()
   const token          = searchParams.get('token')
 
-  const [status, setStatus] = useState('verifying') // 'verifying' | 'success' | 'error'
-  const [errorMsg, setErrorMsg] = useState('')
+  const [status,   setStatus]   = useState(() => token ? 'verifying' : 'error')
+  const [errorMsg, setErrorMsg] = useState(() => token ? '' : 'No verification token found in the link.')
 
   useEffect(() => {
-    if (!token) {
-      setStatus('error')
-      setErrorMsg('No verification token found in the link.')
-      return
-    }
+    if (!token) return
 
     const controller = new AbortController()
 

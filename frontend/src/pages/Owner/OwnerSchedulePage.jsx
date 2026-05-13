@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getSchedule, upsertSchedule } from '../../services/Schedule/scheduleService';
 import ScheduleGrid from '../../components/Schedule/ScheduleGrid';
 import { parseApiError } from '../../utils/errorUtils';
@@ -84,12 +84,16 @@ function ScheduleSkeleton() {
 
 function OwnerSchedulePage() {
   const { pitchId } = useParams();
+  const navigate = useNavigate();
+  const navTimerRef = useRef(null);
 
   const [schedule, setSchedule] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
+
+  useEffect(() => () => clearTimeout(navTimerRef.current), []);
 
   // useCallback prevents fetchSchedule from being recreated on every render
   // while still allowing it to be called from both useEffect and the Retry button
@@ -121,9 +125,11 @@ function OwnerSchedulePage() {
     }
 
     try {
+      clearTimeout(navTimerRef.current);
       setIsSaving(true);
       await upsertSchedule(pitchId, toApiPayload(schedule));
       setToast({ message: 'Schedule saved successfully.', type: 'success' });
+      navTimerRef.current = setTimeout(() => navigate('/dashboard/pitches'), 1500);
     } catch (err) {
       // ── Centralized error parsing instead of inline logic ──
       setToast({ message: parseApiError(err, 'Failed to save schedule. Please try again.'), type: 'error' });

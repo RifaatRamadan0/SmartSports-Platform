@@ -30,7 +30,7 @@ export function useLoginForm() {
       const { data } = await api.post('/api/auth/login', form)
       login(data)
       const isPitchOwner = data.roles?.includes('PitchOwner')
-      navigate(isPitchOwner ? '/pending-approval' : '/dashboard', { replace: true })
+      navigate(isPitchOwner ? '/dashboard' : '/dashboard', { replace: true })
     } catch (err) {
       if (err.response?.status === 403) {
         setUnverified(true)
