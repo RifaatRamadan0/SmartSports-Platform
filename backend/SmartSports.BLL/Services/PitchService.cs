@@ -74,6 +74,12 @@ public class PitchService : IPitchService
         });
     }
 
+    public async Task<PitchResponse> GetOwnedByIdAsync(int ownerId, int pitchId)
+    {
+        var pitch = await GetOwnedPitchOrThrowAsync(ownerId, pitchId);
+        return ToResponse(pitch);
+    }
+
     public async Task<PitchResponse> CreateAsync(int ownerId, CreatePitchRequest request)
     {
         ValidateMaxDurationStep(request.MaxBookingDurationMinutes);

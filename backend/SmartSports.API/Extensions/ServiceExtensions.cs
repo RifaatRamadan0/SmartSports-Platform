@@ -14,6 +14,7 @@ using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.DAL.Interfaces.Availability;
 using SmartSports.DAL.Interfaces.Booking;
+using SmartSports.DAL.Interfaces.Lookup;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Repositories;
 
@@ -203,6 +204,10 @@ public static class ServiceExtensions
 
         // Pitch
         services.AddScoped<IPitchService, PitchService>();
+
+        // Lookups
+        services.AddScoped<ILookupRepository, LookupRepository>();
+        services.AddScoped<ILookupService, LookupService>();
 
         return services;
     }

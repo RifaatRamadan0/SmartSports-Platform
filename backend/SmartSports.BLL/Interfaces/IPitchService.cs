@@ -23,6 +23,14 @@ public interface IPitchService
     Task<IEnumerable<PitchListResponse>> ListMineAsync(int ownerId);
 
     /// <summary>
+    /// Returns full pitch detail for an owned pitch, regardless of approval/active
+    /// state, so the edit form can pre-fill. Throws KeyNotFoundException if the
+    /// pitch does not exist (or is soft-deleted), ForbiddenException if the caller
+    /// is not the owner.
+    /// </summary>
+    Task<PitchResponse> GetOwnedByIdAsync(int ownerId, int pitchId);
+
+    /// <summary>
     /// Creates a new pitch owned by <paramref name="ownerId"/>. The server sets
     /// owner_id, is_active=true, is_approved=false, created_at=NOW(). Approval
     /// flows through the admin workflow.

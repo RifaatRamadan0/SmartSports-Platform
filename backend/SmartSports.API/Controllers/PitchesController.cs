@@ -53,6 +53,26 @@ public class PitchesController : ControllerBase
     }
 
     /// <summary>
+    /// GET /api/pitches/mine/{id}
+    /// Returns full detail for one of the caller's own pitches (incl. inactive/unapproved).
+    /// Used to pre-fill the owner edit form.
+    /// </summary>
+    [HttpGet("mine/{id:int}")]
+    [Authorize(Policy = "PitchOwnerOnly")]
+    [ProducesResponseType(typeof(PitchResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMineById(int id)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
+            return Unauthorized();
+
+        var pitch = await _pitchService.GetOwnedByIdAsync(ownerId, id);
+        return Ok(pitch);
+    }
+
+    /// <summary>
     /// GET /api/pitches/{id}
     /// Returns the pitch's public info (name, price/hr, max duration).
     /// </summary>
