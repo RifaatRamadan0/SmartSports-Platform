@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './useAuth'
 import api from '../services/api'
 import { parseApiError } from '../utils/errorUtils'
@@ -7,6 +7,7 @@ import { parseApiError } from '../utils/errorUtils'
 export function useLoginForm() {
   const { login }  = useAuth()
   const navigate   = useNavigate()
+  const location   = useLocation()
 
   const [form, setForm]           = useState({ emailOrUsername: '', password: '' })
   const [error, setError]         = useState(null)
@@ -30,7 +31,8 @@ export function useLoginForm() {
       const { data } = await api.post('/api/auth/login', form)
       login(data)
       const isPitchOwner = data.roles?.includes('PitchOwner')
-      navigate(isPitchOwner ? '/pending-approval' : '/dashboard', { replace: true })
+      const fallback     = isPitchOwner ? '/pending-approval' : '/dashboard'
+      navigate(location.state?.from ?? fallback, { replace: true })
     } catch (err) {
       if (err.response?.status === 403) {
         setUnverified(true)

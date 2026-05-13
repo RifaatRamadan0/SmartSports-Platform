@@ -301,8 +301,8 @@ function DiscoveryNavbar() {
 
               <button
                 onClick={() => setMenuOpen(o => !o)}
-                aria-haspopup="menu"
                 aria-expanded={menuOpen}
+                aria-label="User menu"
                 className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-[var(--bg2)] px-2 py-1.5 hover:border-[var(--green-border)] transition-colors"
               >
                 <span className="w-7 h-7 rounded-full bg-[var(--green)] text-[var(--primary-foreground)] text-[12px] font-bold flex items-center justify-center">
@@ -314,7 +314,6 @@ function DiscoveryNavbar() {
 
               {menuOpen && (
                 <div
-                  role="menu"
                   className="absolute right-0 top-12 w-52 rounded-xl border border-white/[0.07] bg-[var(--surface)] shadow-2xl py-2 text-[13px]"
                   onMouseLeave={() => setMenuOpen(false)}
                 >
@@ -392,7 +391,7 @@ function FilterBar({
               className="bg-transparent outline-none text-sm text-white placeholder:text-[var(--text3)] w-full"
             />
             {localSearch && (
-              <button onClick={() => onSearchChange('')} className="text-[var(--text3)] hover:text-white transition-colors text-xs">✕</button>
+              <button onClick={() => onSearchChange('')} aria-label="Clear search" className="text-[var(--text3)] hover:text-white transition-colors text-xs">✕</button>
             )}
           </div>
 

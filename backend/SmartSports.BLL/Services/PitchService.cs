@@ -46,9 +46,9 @@ public class PitchService : IPitchService
             query.MaxPrice = null;
 
         var filters = new PitchFilterParams(
-            Search:   query.Search,
-            Sport:    query.Sport,
-            City:     query.City,
+            Search:   query.Search?.Trim(),
+            Sport:    query.Sport?.Trim(),
+            City:     query.City?.Trim(),
             MaxPrice: query.MaxPrice,
             SortBy:   query.SortBy,
             Page:     query.Page,

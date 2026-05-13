@@ -54,10 +54,10 @@ public class PitchRepository : IPitchRepository
         // ORDER BY comes from a closed whitelist — never user input.
         var orderBy = filters.SortBy switch
         {
-            "price_asc"   => "p.price_per_hour ASC",
-            "price_desc"  => "p.price_per_hour DESC",
-            "rating_desc" => "p.rating DESC NULLS LAST, p.created_at DESC",
-            _             => "p.created_at DESC",
+            "price_asc"   => "p.price_per_hour ASC,  p.id DESC",
+            "price_desc"  => "p.price_per_hour DESC, p.id DESC",
+            "rating_desc" => "p.rating DESC NULLS LAST, p.created_at DESC, p.id DESC",
+            _             => "p.created_at DESC, p.id DESC",
         };
 
         var sql = $"""
