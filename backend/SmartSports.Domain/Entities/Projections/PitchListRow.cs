@@ -9,4 +9,6 @@ public record PitchListRow(
     string   SportName,
     int      MaxBookingDurationMinutes,
     string   CityName,
-    string?  CoverImageUrl);
+    string?  CoverImageUrl,
+    bool     IsActive,
+    bool     IsApproved);

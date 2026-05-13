@@ -205,11 +205,9 @@ public static class ServiceExtensions
         // Pitch
         services.AddScoped<IPitchService, PitchService>();
 
-        // Lookups (sport types, cities)
-        services.AddScoped<ISportTypeRepository, SportTypeRepository>();
-        services.AddScoped<ICityRepository, CityRepository>();
-        services.AddScoped<ISportTypeService, SportTypeService>();
-        services.AddScoped<ICityService, CityService>();
+        // Lookups
+        services.AddScoped<ILookupRepository, LookupRepository>();
+        services.AddScoped<ILookupService, LookupService>();
 
         return services;
     }
