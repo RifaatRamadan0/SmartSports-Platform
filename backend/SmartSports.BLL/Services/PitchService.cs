@@ -9,28 +9,45 @@ namespace SmartSports.BLL.Services;
 public class PitchService : IPitchService
 {
     private readonly IPitchRepository _pitchRepository;
+    private readonly IReviewService   _reviewService;
 
-    public PitchService(IPitchRepository pitchRepository)
+    public PitchService(IPitchRepository pitchRepository, IReviewService reviewService)
     {
         _pitchRepository = pitchRepository;
+        _reviewService   = reviewService;
     }
 
-    public async Task<PitchResponse> GetByIdAsync(int pitchId)
+    public async Task<PitchDetailResponse> GetDetailAsync(int pitchId)
     {
-        var pitch = await _pitchRepository.GetByIdAsync(pitchId);
+        var detail = await _pitchRepository.GetDetailAsync(pitchId)
+            ?? throw new KeyNotFoundException($"Pitch with ID {pitchId} was not found.");
 
-        if (pitch is null || !pitch.IsActive || !pitch.IsApproved)
-            throw new KeyNotFoundException($"Pitch with ID {pitchId} was not found.");
+        var imagesTask   = _pitchRepository.GetImagesAsync(pitchId);
+        var scheduleTask = _pitchRepository.GetScheduleAsync(pitchId);
+        var reviewsTask  = _reviewService.GetRecentByPitchAsync(pitchId, 5);
 
-        return new PitchResponse
+        await Task.WhenAll(imagesTask, scheduleTask, reviewsTask);
+
+        return new PitchDetailResponse
         {
-            Id                        = pitch.Id,
-            OwnerId                   = pitch.OwnerId,
-            Name                      = pitch.Name,
-            PricePerHour              = pitch.PricePerHour,
-            MaxBookingDurationMinutes = pitch.MaxBookingDurationMinutes,
-            IsActive                  = pitch.IsActive,
-            IsApproved                = pitch.IsApproved,
+            Id                        = detail.Id,
+            OwnerId                   = detail.OwnerId,
+            Name                      = detail.Name,
+            SportTypeName             = detail.SportTypeName,
+            CityName                  = detail.CityName,
+            Address                   = detail.Address,
+            PricePerHour              = detail.PricePerHour,
+            Rating                    = detail.Rating,
+            MaxBookingDurationMinutes = detail.MaxBookingDurationMinutes,
+            Images                    = imagesTask.Result,
+            Schedule                  = scheduleTask.Result.Select(s => new ScheduleDayResponse
+            {
+                DayOfWeek = s.DayOfWeek,
+                OpenTime  = s.OpenTime,
+                CloseTime = s.CloseTime,
+                IsActive  = s.IsActive,
+            }),
+            RecentReviews             = reviewsTask.Result,
         };
     }
 

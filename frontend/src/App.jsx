@@ -6,6 +6,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import RootRedirect from './components/routing/RootRedirect'
 import HomePage from './pages/Home/HomePage'
 import PitchDiscoveryPage from './pages/Pitches/PitchDiscoveryPage'
+import PitchDetailPage from './pages/Pitches/PitchDetailPage'
 import LoginPage from './pages/Login/LoginPage'
 import RegisterPage from './pages/Register/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPassword/ForgotPasswordPage'
@@ -41,6 +42,7 @@ function App() {
 
             {/* Public pitch discovery — no auth required */}
             <Route path="/pitches" element={<PitchDiscoveryPage />} />
+            <Route path="/pitches/:id" element={<PitchDetailPage />} />
 
             {/* Protected: any authenticated user */}
             <Route element={<PrivateRoute />}>

@@ -16,6 +16,7 @@ using SmartSports.DAL.Interfaces.Availability;
 using SmartSports.DAL.Interfaces.Booking;
 using SmartSports.DAL.Interfaces.Lookup;
 using SmartSports.DAL.Interfaces.Pitch;
+using SmartSports.DAL.Interfaces.Review;
 using SmartSports.DAL.Repositories;
 
 namespace SmartSports.API.Extensions;
@@ -203,6 +204,8 @@ public static class ServiceExtensions
         services.AddScoped<IBookingRepository, BookingRepository>();
 
         // Pitch
+        services.AddScoped<IReviewRepository, ReviewRepository>();
+        services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IPitchService, PitchService>();
 
         // Lookups (sport types, cities)
