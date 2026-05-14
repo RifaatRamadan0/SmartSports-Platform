@@ -2,6 +2,7 @@ using Dapper;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Parameters;
+using SmartSports.Domain.Entities;
 using SmartSports.Domain.Entities.Projections;
 using PitchEntity = SmartSports.Domain.Entities.Pitch;
 
@@ -63,7 +64,7 @@ public class PitchRepository : IPitchRepository
             SELECT image_url
             FROM   pitch_images
             WHERE  pitch_id = @PitchId
-            ORDER  BY id
+            ORDER  BY is_cover DESC, display_order, id
             """,
             new { PitchId = pitchId });
     }
@@ -156,7 +157,7 @@ public class PitchRepository : IPitchRepository
                 SELECT image_url
                 FROM   pitch_images
                 WHERE  pitch_id = p.id
-                ORDER BY id
+                ORDER BY is_cover DESC, display_order, id
                 LIMIT  1
             ) cover ON TRUE
             WHERE   {whereClause}
@@ -195,7 +196,7 @@ public class PitchRepository : IPitchRepository
                 SELECT image_url
                 FROM   pitch_images
                 WHERE  pitch_id = p.id
-                ORDER BY id
+                ORDER BY is_cover DESC, display_order, id
                 LIMIT  1
             ) cover ON TRUE
             WHERE   p.owner_id   = @OwnerId
@@ -274,5 +275,107 @@ public class PitchRepository : IPitchRepository
             .Replace("%",  @"\%")
             .Replace("_",  @"\_");
 
+    public async Task<IEnumerable<PitchImage>> GetPitchImagesAsync(int pitchId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QueryAsync<PitchImage>(
+            """
+            SELECT id, pitch_id, image_url, is_cover, display_order, created_at
+            FROM   pitch_images
+            WHERE  pitch_id = @PitchId
+            ORDER  BY is_cover DESC, display_order, id
+            """,
+            new { PitchId = pitchId });
+    }
 
+    public async Task<PitchImage?> GetPitchImageAsync(int pitchId, int imageId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<PitchImage>(
+            """
+            SELECT id, pitch_id, image_url, is_cover, display_order, created_at
+            FROM   pitch_images
+            WHERE  pitch_id = @PitchId
+              AND  id       = @ImageId
+            """,
+            new { PitchId = pitchId, ImageId = imageId });
+    }
+
+    public async Task<int> CountPitchImagesAsync(int pitchId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM pitch_images WHERE pitch_id = @PitchId",
+            new { PitchId = pitchId });
+    }
+
+    public async Task<PitchImage> AddPitchImageAsync(int pitchId, string imageUrl, bool isCover)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        await connection.OpenAsync();
+        await using var tx = await connection.BeginTransactionAsync();
+
+        if (isCover)
+        {
+            await connection.ExecuteAsync(
+                "UPDATE pitch_images SET is_cover = FALSE WHERE pitch_id = @PitchId AND is_cover = TRUE",
+                new { PitchId = pitchId },
+                tx);
+        }
+
+        var row = await connection.QuerySingleAsync<PitchImage>(
+            """
+            INSERT INTO pitch_images (pitch_id, image_url, is_cover, display_order)
+            VALUES (
+                @PitchId,
+                @ImageUrl,
+                @IsCover,
+                COALESCE((SELECT MAX(display_order) FROM pitch_images WHERE pitch_id = @PitchId), -1) + 1
+            )
+            RETURNING id, pitch_id, image_url, is_cover, display_order, created_at
+            """,
+            new { PitchId = pitchId, ImageUrl = imageUrl, IsCover = isCover },
+            tx);
+
+        await tx.CommitAsync();
+        return row;
+    }
+
+    public async Task<bool> SetPitchImageCoverAsync(int pitchId, int imageId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        await connection.OpenAsync();
+        await using var tx = await connection.BeginTransactionAsync();
+
+        await connection.ExecuteAsync(
+            "UPDATE pitch_images SET is_cover = FALSE WHERE pitch_id = @PitchId AND is_cover = TRUE",
+            new { PitchId = pitchId },
+            tx);
+
+        var updated = await connection.ExecuteAsync(
+            """
+            UPDATE pitch_images
+            SET    is_cover = TRUE
+            WHERE  pitch_id = @PitchId
+              AND  id       = @ImageId
+            """,
+            new { PitchId = pitchId, ImageId = imageId },
+            tx);
+
+        await tx.CommitAsync();
+        return updated > 0;
+    }
+
+    public async Task<bool> DeletePitchImageAsync(int pitchId, int imageId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        var rows = await connection.ExecuteAsync(
+            """
+            DELETE FROM pitch_images
+            WHERE  pitch_id = @PitchId
+              AND  id       = @ImageId
+            """,
+            new { PitchId = pitchId, ImageId = imageId });
+        return rows > 0;
+    }
 }

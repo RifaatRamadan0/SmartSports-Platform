@@ -11,11 +11,13 @@ namespace SmartSports.API.Controllers;
 [Route("api/pitches")]
 public class PitchesController : ControllerBase
 {
-    private readonly IPitchService _pitchService;
+    private readonly IPitchService      _pitchService;
+    private readonly IPitchImageService _pitchImageService;
 
-    public PitchesController(IPitchService pitchService)
+    public PitchesController(IPitchService pitchService, IPitchImageService pitchImageService)
     {
-        _pitchService = pitchService;
+        _pitchService      = pitchService;
+        _pitchImageService = pitchImageService;
     }
 
     /// <summary>
@@ -141,6 +143,87 @@ public class PitchesController : ControllerBase
             return Unauthorized();
 
         await _pitchService.SoftDeleteAsync(ownerId, id);
+        return NoContent();
+    }
+
+    // ─── Pitch images (owner-only) ────────────────────────────────────────────
+
+    /// <summary>
+    /// GET /api/pitches/mine/{pitchId}/images
+    /// Lists all images attached to one of the caller's pitches, cover first.
+    /// </summary>
+    [HttpGet("mine/{pitchId:int}/images")]
+    [Authorize(Policy = "PitchOwnerOnly")]
+    [ProducesResponseType(typeof(IEnumerable<PitchImageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ListImages(int pitchId)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
+            return Unauthorized();
+
+        var images = await _pitchImageService.ListAsync(ownerId, pitchId);
+        return Ok(images);
+    }
+
+    /// <summary>
+    /// POST /api/pitches/mine/{pitchId}/images
+    /// Attaches a new image to the caller's pitch. Up to 8 images per pitch.
+    /// Pass isCover = true to make this the cover (any prior cover is unset).
+    /// </summary>
+    [HttpPost("mine/{pitchId:int}/images")]
+    [Authorize(Policy = "PitchOwnerOnly")]
+    [ProducesResponseType(typeof(PitchImageResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddImage(int pitchId, [FromBody] AddPitchImageRequest request)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
+            return Unauthorized();
+
+        var created = await _pitchImageService.AddAsync(ownerId, pitchId, request);
+        return CreatedAtAction(nameof(ListImages), new { pitchId }, created);
+    }
+
+    /// <summary>
+    /// PATCH /api/pitches/mine/{pitchId}/images/{imageId}/cover
+    /// Marks an existing image as the cover for the pitch. Clears any prior cover.
+    /// </summary>
+    [HttpPatch("mine/{pitchId:int}/images/{imageId:int}/cover")]
+    [Authorize(Policy = "PitchOwnerOnly")]
+    [ProducesResponseType(typeof(PitchImageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetCover(int pitchId, int imageId)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
+            return Unauthorized();
+
+        var updated = await _pitchImageService.SetCoverAsync(ownerId, pitchId, imageId);
+        return Ok(updated);
+    }
+
+    /// <summary>
+    /// DELETE /api/pitches/mine/{pitchId}/images/{imageId}
+    /// Removes an image from the pitch. Deleting the cover leaves the pitch
+    /// without a cover (no auto-promote).
+    /// </summary>
+    [HttpDelete("mine/{pitchId:int}/images/{imageId:int}")]
+    [Authorize(Policy = "PitchOwnerOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteImage(int pitchId, int imageId)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
+            return Unauthorized();
+
+        await _pitchImageService.DeleteAsync(ownerId, pitchId, imageId);
         return NoContent();
     }
 }
