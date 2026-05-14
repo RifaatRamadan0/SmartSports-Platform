@@ -54,7 +54,7 @@ function App() {
 
             {/* Protected: PitchOwner or Admin only */}
             <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER, ROLES.ADMIN]} />}>
-              <Route path="/pitches/manage" element={<AdminPitchApprovalsPage />} />
+              <Route path="/pitches/manage" element={<HomePage />} />
             </Route>
 
             {/* Protected: PitchOwner only */}

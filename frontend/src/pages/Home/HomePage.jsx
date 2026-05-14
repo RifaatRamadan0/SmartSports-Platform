@@ -80,6 +80,7 @@ function Navbar() {
 
   const isPlayer = roles.includes(ROLES.PLAYER)
   const isOwner  = roles.includes(ROLES.PITCH_OWNER)
+  const isAdmin  = roles.includes(ROLES.ADMIN)
 
   const handleLogout = async () => {
     setMenuOpen(false)
@@ -129,6 +130,14 @@ function Navbar() {
                 Owner Dashboard
               </button>
             </>
+          )}
+          {isAdmin && (
+            <button
+              onClick={() => navigate('/admin/pitches')}
+              className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
+            >
+              Pitch Approvals
+            </button>
           )}
 
           <button
@@ -183,6 +192,14 @@ function Navbar() {
                   </button>
                 </>
               )}
+              {isAdmin && (
+                <button
+                  onClick={() => { setMenuOpen(false); navigate('/admin/pitches') }}
+                  className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
+                >
+                  Pitch Approvals
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="w-full text-left px-3 py-2 hover:bg-[var(--red-muted)] text-[var(--text2)] hover:text-[oklch(0.62_0.2_25)] transition-colors border-t border-white/[0.06] mt-1 pt-2"
@@ -203,6 +220,7 @@ function Hero({ onBrowse }) {
   const { roles } = useAuth()
   const navigate  = useNavigate()
   const isPlayer  = roles.includes(ROLES.PLAYER)
+  const isAdmin   = roles.includes(ROLES.ADMIN)
 
   return (
     <section className="relative overflow-hidden">
@@ -257,11 +275,11 @@ function Hero({ onBrowse }) {
             Browse Pitches
           </button>
           <button
-            onClick={() => navigate(isPlayer ? '/my-bookings' : '/pitches/manage')}
+            onClick={() => navigate(isPlayer ? '/my-bookings' : isAdmin ? '/admin/pitches' : '/dashboard/pitches')}
             className="rounded-full border border-white/[0.10] bg-white/[0.02] px-6 py-3 text-[14px] font-semibold
                        text-[var(--text)] hover:bg-white/[0.05] hover:border-white/[0.20] transition-all"
           >
-            {isPlayer ? 'My Bookings' : 'Manage Pitches'}
+            {isPlayer ? 'My Bookings' : isAdmin ? 'Pitch Approvals' : 'Manage Pitches'}
           </button>
         </div>
 
