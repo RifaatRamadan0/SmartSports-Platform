@@ -31,6 +31,60 @@ public class PitchRepository : IPitchRepository
             new { PitchId = pitchId });
     }
 
+    public async Task<PitchDetailRow?> GetDetailAsync(int pitchId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<PitchDetailRow>(
+            """
+            SELECT p.id,
+                   p.owner_id,
+                   p.name,
+                   s.name  AS sport_type_name,
+                   c.name  AS city_name,
+                   p.address,
+                   p.price_per_hour,
+                   p.rating,
+                   p.max_booking_duration_minutes
+            FROM   pitches     p
+            JOIN   sport_types s ON s.id = p.sport_type_id
+            JOIN   cities      c ON c.id = p.city_id
+            WHERE  p.id          = @PitchId
+              AND  p.is_active   = TRUE
+              AND  p.is_approved = TRUE
+            """,
+            new { PitchId = pitchId });
+    }
+
+    public async Task<IEnumerable<string>> GetImagesAsync(int pitchId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QueryAsync<string>(
+            """
+            SELECT image_url
+            FROM   pitch_images
+            WHERE  pitch_id = @PitchId
+            ORDER  BY id
+            """,
+            new { PitchId = pitchId });
+    }
+
+    public async Task<IEnumerable<ScheduleRow>> GetScheduleAsync(int pitchId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QueryAsync<ScheduleRow>(
+            """
+            SELECT pitch_id,
+                   CAST(day_of_week AS INTEGER) AS day_of_week,
+                   open_time,
+                   close_time,
+                   is_active
+            FROM   pitch_weekly_schedules
+            WHERE  pitch_id = @PitchId
+            ORDER  BY day_of_week
+            """,
+            new { PitchId = pitchId });
+    }
+
     public async Task<(IEnumerable<PitchListRow> Items, long TotalCount)> ListAsync(PitchFilterParams filters)
     {
         using var connection = _connectionFactory.CreateConnection();
@@ -44,7 +98,7 @@ public class PitchRepository : IPitchRepository
         };
 
         if (!string.IsNullOrWhiteSpace(filters.Search))
-            conditions.Add("(LOWER(p.name) LIKE LOWER(@SearchPattern) ESCAPE '\\' OR LOWER(p.address) LIKE LOWER(@SearchPattern) ESCAPE '\\')");
+            conditions.Add("(LOWER(p.name) LIKE LOWER(@SearchPattern) ESCAPE '\' OR LOWER(p.address) LIKE LOWER(@SearchPattern) ESCAPE '\')");
 
         if (!string.IsNullOrWhiteSpace(filters.Sport))
             conditions.Add("LOWER(s.name) = LOWER(@Sport)");

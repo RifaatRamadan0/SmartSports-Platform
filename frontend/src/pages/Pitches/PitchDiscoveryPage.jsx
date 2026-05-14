@@ -27,7 +27,6 @@ export default function PitchDiscoveryPage() {
   const urlSortBy   = SORT_OPTIONS.some(o => o.value === rawSortBy) ? rawSortBy : 'newest'
   const urlPage     = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
 
-  const { token, roles } = useAuth()
   const [refreshKey, setRefreshKey] = useState(0)
 
   // Local search input state — debounced before it reaches the URL.
@@ -181,7 +180,7 @@ export default function PitchDiscoveryPage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {result.items.map(p => (
-                <PitchCard key={p.id} pitch={p} onBook={() => handleBook(p, navigate, token, roles)} />
+                <PitchCard key={p.id} pitch={p} onBook={() => handleBook(p, navigate)} />
               ))}
             </div>
 
@@ -202,26 +201,9 @@ export default function PitchDiscoveryPage() {
   )
 }
 
-// Route a "Book Now" click: guests → /login, players → booking, others → /dashboard.
-function handleBook(pitch, navigate, token, roles) {
-  if (!token) {
-    navigate('/login', { state: { from: `/book/${pitch.id}` } })
-    return
-  }
-  if (!roles.includes(ROLES.PLAYER)) {
-    navigate('/dashboard')
-    return
-  }
-  navigate(`/book/${pitch.id}`, {
-    state: {
-      pitchName:                 pitch.name,
-      sport:                     pitch.sportName,
-      pricePerHour:              Number(pitch.pricePerHour),
-      maxBookingDurationMinutes: pitch.maxBookingDurationMinutes,
-      rating:                    pitch.rating != null ? Number(pitch.rating) : undefined,
-      currency:                  '$',
-    },
-  })
+// Route a card click to the pitch detail page — auth and booking handled there.
+function handleBook(pitch, navigate) {
+  navigate(`/pitches/${pitch.id}`)
 }
 
 // ─── Navbar ──────────────────────────────────────────────────────────────────

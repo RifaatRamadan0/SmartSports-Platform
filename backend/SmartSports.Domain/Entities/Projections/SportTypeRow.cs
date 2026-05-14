@@ -1,3 +1,7 @@
 namespace SmartSports.Domain.Entities.Projections;
 
-public record SportTypeRow(int Id, string Name);
+public record SportTypeRow
+{
+    public int    Id   { get; init; }
+    public string Name { get; init; } = "";
+}

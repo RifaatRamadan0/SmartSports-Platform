@@ -14,6 +14,15 @@ public interface IPitchRepository
     Task<PitchEntity?> GetByIdAsync(int pitchId);
 
     /// <summary>
+    /// Returns full public detail for an active, approved pitch joined with sport type and city.
+    /// Returns null if the pitch does not exist, is inactive, or is not yet approved.
+    /// </summary>
+    Task<PitchDetailRow?> GetDetailAsync(int pitchId);
+
+    Task<IEnumerable<string>>      GetImagesAsync(int pitchId);
+    Task<IEnumerable<ScheduleRow>> GetScheduleAsync(int pitchId);
+
+    /// <summary>
     /// Returns a paged, filtered, sorted list of active and approved pitches.
     /// All filter fields in <paramref name="filters"/> are optional.
     /// </summary>

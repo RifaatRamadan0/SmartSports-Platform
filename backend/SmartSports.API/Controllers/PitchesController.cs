@@ -72,18 +72,17 @@ public class PitchesController : ControllerBase
 
     /// <summary>
     /// GET /api/pitches/{id}
-    /// Returns full pitch details (name, address, price/hr, max duration,
-    /// lat/lon, sport, city, owner id, approval/active state, created date).
-    /// Only active and approved pitches are returned; soft-deleted or unapproved → 404.
+    /// Returns full public detail: name, sport type, city, price, rating, images, weekly schedule, and up to 5 recent reviews.
+    /// 404 if the pitch does not exist, is inactive, or is not approved.
     /// </summary>
     [HttpGet("{id:int}")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(PitchResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PitchDetailResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id)
     {
-        var pitch = await _pitchService.GetByIdAsync(id);
-        return Ok(pitch);
+        var detail = await _pitchService.GetDetailAsync(id);
+        return Ok(detail);
     }
 
     /// <summary>

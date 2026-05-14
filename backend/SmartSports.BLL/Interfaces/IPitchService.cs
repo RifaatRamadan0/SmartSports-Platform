@@ -6,10 +6,10 @@ namespace SmartSports.BLL.Interfaces;
 public interface IPitchService
 {
     /// <summary>
-    /// Returns a pitch by id.
+    /// Returns full public detail for an active, approved pitch including images, schedule, and recent reviews.
     /// Throws KeyNotFoundException when the pitch does not exist or is inactive/unapproved.
     /// </summary>
-    Task<PitchResponse> GetByIdAsync(int pitchId);
+    Task<PitchDetailResponse> GetDetailAsync(int pitchId);
 
     /// <summary>
     /// Returns a filtered, sorted, paginated list of active and approved pitches.
