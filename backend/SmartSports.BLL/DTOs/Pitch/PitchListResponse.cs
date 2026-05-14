@@ -11,4 +11,6 @@ public class PitchListResponse
     public int      MaxBookingDurationMinutes { get; set; }
     public string   CityName                  { get; set; } = string.Empty;
     public string?  CoverImageUrl             { get; set; }
+    public bool     IsActive                  { get; set; }
+    public bool     IsApproved                { get; set; }
 }

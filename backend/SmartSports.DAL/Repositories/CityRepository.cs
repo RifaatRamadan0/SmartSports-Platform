@@ -14,10 +14,15 @@ public class CityRepository : ICityRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task<IEnumerable<LookupRow>> ListAsync()
+    public async Task<IEnumerable<CityRow>> ListAsync()
     {
         using var connection = _connectionFactory.CreateConnection();
-        return await connection.QueryAsync<LookupRow>(
-            "SELECT id, name FROM cities ORDER BY name");
+        return await connection.QueryAsync<CityRow>(
+            """
+            SELECT c.id, c.name, r.id AS region_id, r.name AS region_name
+            FROM   cities c
+            JOIN   regions r ON r.id = c.region_id
+            ORDER  BY c.name
+            """);
     }
 }

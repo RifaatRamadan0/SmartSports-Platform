@@ -33,7 +33,7 @@ export function useLoginForm() {
       login(data)
       const isPlayer     = data.roles?.includes(ROLES.PLAYER)
       const isPitchOwner = data.roles?.includes(ROLES.PITCH_OWNER)
-      const fallback     = isPitchOwner ? '/pending-approval' : '/dashboard'
+      const fallback     = isPitchOwner ? '/dashboard' : '/dashboard'
       const from = location.state?.from
       const safePath = typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')
       navigate(isPlayer && safePath ? from : fallback, { replace: true })

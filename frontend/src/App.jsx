@@ -18,6 +18,8 @@ import ForbiddenPage from './pages/Forbidden/ForbiddenPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
 import OwnerSchedulePage from './pages/Owner/OwnerSchedulePage'
 import OwnerBookingsPage from './pages/Owner/OwnerBookingsPage'
+import OwnerPitchesPage from './pages/Owner/OwnerPitchesPage'
+import OwnerPitchFormPage from './pages/Owner/OwnerPitchFormPage'
 import PlayerBookingsPage from './pages/Player/PlayerBookingsPage'
 import BookingPage from './pages/Player/BookingPage'
 import { ROLES } from './constants/roles'
@@ -56,6 +58,9 @@ function App() {
 
             {/* Protected: PitchOwner only */}
             <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER]} />}>
+              <Route path="/dashboard/pitches" element={<OwnerPitchesPage />} />
+              <Route path="/dashboard/pitches/new" element={<OwnerPitchFormPage />} />
+              <Route path="/dashboard/pitches/:pitchId/edit" element={<OwnerPitchFormPage />} />
               <Route path="/dashboard/pitches/:pitchId/schedule" element={<OwnerSchedulePage />} />
               <Route path="/dashboard/bookings" element={<OwnerBookingsPage />} />
             </Route>

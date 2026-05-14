@@ -275,7 +275,7 @@ function DiscoveryNavbar() {
                   My Bookings
                 </button>
               )}
-              {(isOwner || isAdmin) && (
+              {isOwner && (
                 <button
                   onClick={() => navigate('/dashboard/bookings')}
                   className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
@@ -313,16 +313,16 @@ function DiscoveryNavbar() {
                     </button>
                   )}
                   {(isOwner || isAdmin) && (
-                    <>
-                      <button onClick={() => { setMenuOpen(false); navigate('/pitches/manage') }}
-                        className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
-                        Manage Pitches
-                      </button>
-                      <button onClick={() => { setMenuOpen(false); navigate('/dashboard/bookings') }}
-                        className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
-                        Owner Dashboard
-                      </button>
-                    </>
+                    <button onClick={() => { setMenuOpen(false); navigate('/pitches/manage') }}
+                      className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
+                      Manage Pitches
+                    </button>
+                  )}
+                  {isOwner && (
+                    <button onClick={() => { setMenuOpen(false); navigate('/dashboard/bookings') }}
+                      className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
+                      Owner Dashboard
+                    </button>
                   )}
                   {isPlayer && (
                     <button onClick={() => { setMenuOpen(false); navigate('/dashboard') }}
