@@ -22,6 +22,7 @@ import OwnerPitchesPage from './pages/Owner/OwnerPitchesPage'
 import OwnerPitchFormPage from './pages/Owner/OwnerPitchFormPage'
 import PlayerBookingsPage from './pages/Player/PlayerBookingsPage'
 import BookingPage from './pages/Player/BookingPage'
+import AdminPitchApprovalsPage from './pages/Admin/AdminPitchApprovalsPage'
 import { ROLES } from './constants/roles'
 
 function App() {
@@ -53,7 +54,7 @@ function App() {
 
             {/* Protected: PitchOwner or Admin only */}
             <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER, ROLES.ADMIN]} />}>
-              <Route path="/pitches/manage" element={<HomePage />} />
+              <Route path="/pitches/manage" element={<AdminPitchApprovalsPage />} />
             </Route>
 
             {/* Protected: PitchOwner only */}
@@ -63,6 +64,11 @@ function App() {
               <Route path="/dashboard/pitches/:pitchId/edit" element={<OwnerPitchFormPage />} />
               <Route path="/dashboard/pitches/:pitchId/schedule" element={<OwnerSchedulePage />} />
               <Route path="/dashboard/bookings" element={<OwnerBookingsPage />} />
+            </Route>
+
+            {/* Protected: Admin only */}
+            <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]} />}>
+              <Route path="/admin/pitches" element={<AdminPitchApprovalsPage />} />
             </Route>
 
             {/* Protected: Player only */}

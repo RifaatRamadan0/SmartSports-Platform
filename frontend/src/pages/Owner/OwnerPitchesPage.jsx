@@ -50,10 +50,21 @@ function PitchCardSkeleton() {
   )
 }
 
+// 0 = PendingApproval, 1 = Approved, 2 = Rejected
+const PITCH_STATUS = { PENDING: 0, APPROVED: 1, REJECTED: 2 }
+
 // Status pill
 
-function StatusPill({ isActive, isApproved }) {
-  if (!isApproved) {
+function StatusPill({ isActive, status }) {
+  if (status === PITCH_STATUS.REJECTED) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold
+                       bg-red-500/10 text-red-400 border border-red-500/30">
+        Rejected
+      </span>
+    )
+  }
+  if (status === PITCH_STATUS.PENDING) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold
                        bg-amber-500/10 text-amber-400 border border-amber-500/30">
@@ -86,7 +97,7 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting }) {
   return (
     <div className="flex overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d]
                     hover:border-white/10 transition-colors">
-      <div className="hidden sm:flex w-[130px] flex-shrink-0 items-center justify-center bg-[#0a0a0a]">
+      <div className="hidden sm:flex w-32.5 shrink-0 items-center justify-center bg-[#0a0a0a]">
         <svg viewBox="0 0 200 130" fill="none" width="100" height="65" className="opacity-30">
           <rect x="2" y="2" width="196" height="126" rx="3" stroke="#4ade80" strokeWidth="2" />
           <line x1="100" y1="2" x2="100" y2="128" stroke="#4ade80" strokeWidth="1.2" />
@@ -112,7 +123,12 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting }) {
         </div>
 
         <div className="mt-3 flex items-center gap-2 flex-wrap">
-          <StatusPill isActive={pitch.isActive} isApproved={pitch.isApproved} />
+          <StatusPill isActive={pitch.isActive} status={pitch.status} />
+          {pitch.status === PITCH_STATUS.REJECTED && pitch.rejectionReason && (
+            <span className="text-[11px] text-red-400/80 italic truncate max-w-xs">
+              "{pitch.rejectionReason}"
+            </span>
+          )}
           {pitch.rating != null && (
             <span className="text-xs text-neutral-400">⭐ {pitch.rating}</span>
           )}
@@ -217,15 +233,17 @@ export default function OwnerPitchesPage() {
 
   const counts = {
     all:      pitches.length,
-    active:   pitches.filter(p => p.isApproved && p.isActive).length,
-    inactive: pitches.filter(p => p.isApproved && !p.isActive).length,
-    pending:  pitches.filter(p => !p.isApproved).length,
+    active:   pitches.filter(p => p.status === PITCH_STATUS.APPROVED && p.isActive).length,
+    inactive: pitches.filter(p => p.status === PITCH_STATUS.APPROVED && !p.isActive).length,
+    pending:  pitches.filter(p => p.status === PITCH_STATUS.PENDING).length,
+    rejected: pitches.filter(p => p.status === PITCH_STATUS.REJECTED).length,
   }
 
   const visiblePitches = pitches.filter(p => {
-    if (filter === 'active')   return p.isApproved && p.isActive
-    if (filter === 'inactive') return p.isApproved && !p.isActive
-    if (filter === 'pending')  return !p.isApproved
+    if (filter === 'active')   return p.status === PITCH_STATUS.APPROVED && p.isActive
+    if (filter === 'inactive') return p.status === PITCH_STATUS.APPROVED && !p.isActive
+    if (filter === 'pending')  return p.status === PITCH_STATUS.PENDING
+    if (filter === 'rejected') return p.status === PITCH_STATUS.REJECTED
     return true
   })
 
@@ -234,6 +252,7 @@ export default function OwnerPitchesPage() {
     { id: 'active',   label: 'Active',           count: counts.active   },
     { id: 'inactive', label: 'Inactive',         count: counts.inactive },
     { id: 'pending',  label: 'Pending Approval', count: counts.pending  },
+    { id: 'rejected', label: 'Rejected',         count: counts.rejected },
   ]
 
   return (
@@ -288,7 +307,7 @@ export default function OwnerPitchesPage() {
                 {t.label}
                 <span
                   className={
-                    'inline-flex items-center justify-center min-w-[20px] h-5 rounded-full px-1.5 text-[11px] font-bold ' +
+                    'inline-flex items-center justify-center min-w-5 h-5 rounded-full px-1.5 text-[11px] font-bold ' +
                     (isActive
                       ? 'bg-green-500/25 text-green-200'
                       : 'bg-[#1a1a1a] text-neutral-400')

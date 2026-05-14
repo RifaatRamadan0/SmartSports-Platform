@@ -3,6 +3,7 @@ using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Parameters;
 using SmartSports.Domain.Entities.Projections;
+using SmartSports.Domain.Enums;
 using PitchEntity = SmartSports.Domain.Entities.Pitch;
 
 namespace SmartSports.DAL.Repositories;
@@ -23,8 +24,8 @@ public class PitchRepository : IPitchRepository
             """
             SELECT id, owner_id, city_id, sport_type_id, name, address,
                    price_per_hour, rating, latitude, longitude,
-                   is_active, is_approved, max_booking_duration_minutes,
-                   created_at, deleted_at
+                   is_active, status, rejection_reason,
+                   max_booking_duration_minutes, created_at, deleted_at
             FROM pitches
             WHERE id = @PitchId
             """,
@@ -49,8 +50,8 @@ public class PitchRepository : IPitchRepository
             JOIN   sport_types s ON s.id = p.sport_type_id
             JOIN   cities      c ON c.id = p.city_id
             WHERE  p.id          = @PitchId
-              AND  p.is_active   = TRUE
-              AND  p.is_approved = TRUE
+              AND  p.is_active = TRUE
+              AND  p.status   = 1
             """,
             new { PitchId = pitchId });
     }
@@ -92,9 +93,9 @@ public class PitchRepository : IPitchRepository
         // Build WHERE clause — user values go through Dapper parameters, never interpolated.
         var conditions = new List<string>
         {
-            "p.is_active   = TRUE",
-            "p.is_approved = TRUE",
-            "p.deleted_at  IS NULL",
+            "p.is_active  = TRUE",
+            "p.status     = 1",
+            "p.deleted_at IS NULL",
         };
 
         if (!string.IsNullOrWhiteSpace(filters.Search))
@@ -148,7 +149,7 @@ public class PitchRepository : IPitchRepository
                     c.name              AS city_name,
                     cover.image_url     AS cover_image_url,
                     p.is_active,
-                    p.is_approved
+                    p.status
             FROM    pitches             p
             JOIN    sport_types         s    ON s.id = p.sport_type_id
             JOIN    cities              c    ON c.id = p.city_id
@@ -187,7 +188,7 @@ public class PitchRepository : IPitchRepository
                     c.name              AS city_name,
                     cover.image_url     AS cover_image_url,
                     p.is_active,
-                    p.is_approved
+                    p.status
             FROM    pitches             p
             JOIN    sport_types         s    ON s.id = p.sport_type_id
             JOIN    cities              c    ON c.id = p.city_id
@@ -216,12 +217,12 @@ public class PitchRepository : IPitchRepository
             INSERT INTO pitches (
                 owner_id, city_id, sport_type_id, name, address,
                 price_per_hour, latitude, longitude,
-                is_active, is_approved, max_booking_duration_minutes
+                is_active, status, max_booking_duration_minutes
             )
             VALUES (
                 @OwnerId, @CityId, @SportTypeId, @Name, @Address,
                 @PricePerHour, @Latitude, @Longitude,
-                @IsActive, @IsApproved, @MaxBookingDurationMinutes
+                @IsActive, @Status, @MaxBookingDurationMinutes
             )
             RETURNING id
             """,
@@ -264,6 +265,72 @@ public class PitchRepository : IPitchRepository
               AND  deleted_at IS NULL
             """,
             new { PitchId = pitchId });
+
+        return rows > 0;
+    }
+
+    public async Task<(IEnumerable<AdminPitchRow> Items, long TotalCount)> ListPendingAsync(int page, int pageSize)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        var parameters = new { PageSize = pageSize, Offset = (page - 1) * pageSize };
+
+        const string countSql = """
+            SELECT COUNT(*)
+            FROM   pitches p
+            WHERE  p.status    = 0
+              AND  p.deleted_at IS NULL
+            """;
+
+        const string dataSql = """
+            SELECT  p.id,
+                    p.name,
+                    p.address,
+                    p.price_per_hour,
+                    s.name          AS sport_name,
+                    c.name          AS city_name,
+                    u.username      AS owner_name,
+                    p.owner_id,
+                    p.status,
+                    p.created_at,
+                    cover.image_url AS cover_image_url
+            FROM    pitches         p
+            JOIN    sport_types     s    ON s.id = p.sport_type_id
+            JOIN    cities          c    ON c.id = p.city_id
+            JOIN    users           u    ON u.id = p.owner_id
+            LEFT JOIN LATERAL (
+                SELECT image_url
+                FROM   pitch_images
+                WHERE  pitch_id = p.id
+                ORDER BY id
+                LIMIT  1
+            ) cover ON TRUE
+            WHERE   p.status    = 0
+              AND   p.deleted_at IS NULL
+            ORDER BY p.created_at DESC
+            LIMIT  @PageSize
+            OFFSET @Offset
+            """;
+
+        var totalCount = await connection.ExecuteScalarAsync<long>(countSql, parameters);
+        var items      = await connection.QueryAsync<AdminPitchRow>(dataSql, parameters);
+
+        return (items, totalCount);
+    }
+
+    public async Task<bool> UpdateStatusAsync(int pitchId, PitchStatus status, string? rejectionReason = null)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        var rows = await connection.ExecuteAsync(
+            """
+            UPDATE pitches
+            SET    status           = @Status,
+                   rejection_reason = @RejectionReason
+            WHERE  id         = @PitchId
+              AND  deleted_at IS NULL
+            """,
+            new { PitchId = pitchId, Status = (short)status, RejectionReason = rejectionReason });
 
         return rows > 0;
     }

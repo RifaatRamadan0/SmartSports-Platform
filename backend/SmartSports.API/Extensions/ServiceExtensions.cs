@@ -207,6 +207,7 @@ public static class ServiceExtensions
         services.AddScoped<IReviewRepository, ReviewRepository>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IPitchService, PitchService>();
+        services.AddScoped<IAdminPitchService, AdminPitchService>();
 
         // Lookups
         services.AddScoped<ILookupRepository, LookupRepository>();

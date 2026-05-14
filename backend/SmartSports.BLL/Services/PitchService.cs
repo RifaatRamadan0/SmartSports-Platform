@@ -3,6 +3,7 @@ using SmartSports.BLL.DTOs.Pitch;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Parameters;
+using SmartSports.Domain.Enums;
 using SmartSports.Domain.Exceptions;
 using PitchEntity = SmartSports.Domain.Entities.Pitch;
 
@@ -87,8 +88,8 @@ public class PitchService : IPitchService
             MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
             CityName                  = r.CityName,
             CoverImageUrl             = r.CoverImageUrl,
-            IsActive                  = r.IsActive,
-            IsApproved                = r.IsApproved,
+            IsActive = r.IsActive,
+            Status   = r.Status,
         });
 
         return new PagedResult<PitchListResponse>
@@ -115,8 +116,8 @@ public class PitchService : IPitchService
             MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
             CityName                  = r.CityName,
             CoverImageUrl             = r.CoverImageUrl,
-            IsActive                  = r.IsActive,
-            IsApproved                = r.IsApproved,
+            IsActive = r.IsActive,
+            Status   = r.Status,
         });
     }
 
@@ -141,8 +142,8 @@ public class PitchService : IPitchService
             Latitude                  = request.Latitude,
             Longitude                 = request.Longitude,
             MaxBookingDurationMinutes = request.MaxBookingDurationMinutes,
-            IsActive                  = true,
-            IsApproved                = false,
+            IsActive = true,
+            Status   = PitchStatus.PendingApproval,
         };
 
         pitch.Id = await _pitchRepository.InsertAsync(pitch);
@@ -220,8 +221,9 @@ public class PitchService : IPitchService
         Latitude                  = pitch.Latitude,
         Longitude                 = pitch.Longitude,
         MaxBookingDurationMinutes = pitch.MaxBookingDurationMinutes,
-        IsActive                  = pitch.IsActive,
-        IsApproved                = pitch.IsApproved,
-        CreatedAt                 = pitch.CreatedAt,
+        IsActive        = pitch.IsActive,
+        Status          = pitch.Status,
+        RejectionReason = pitch.RejectionReason,
+        CreatedAt       = pitch.CreatedAt,
     };
 }
