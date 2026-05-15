@@ -3,6 +3,7 @@ using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Booking;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.Domain.Entities;
+using SmartSports.Domain.Enums;
 using SmartSports.Domain.Exceptions;
 
 namespace SmartSports.BLL.Services;
@@ -58,7 +59,7 @@ public class BookingService : IBookingService
         var pitch = await _pitchRepository.GetByIdAsync(request.PitchId)
             ?? throw new KeyNotFoundException($"Pitch {request.PitchId} was not found.");
 
-        if (!pitch.IsActive || !pitch.IsApproved)
+        if (!pitch.IsActive || pitch.Status != PitchStatus.Approved)
             throw new ArgumentException($"Pitch {request.PitchId} is not currently accepting bookings.");
 
         // 6. Duration must not exceed this pitch's configured maximum

@@ -1,3 +1,5 @@
+using SmartSports.Domain.Enums;
+
 namespace SmartSports.Domain.Entities.Projections;
 
 public record PitchListRow
@@ -11,6 +13,6 @@ public record PitchListRow
     public int      MaxBookingDurationMinutes { get; init; }
     public string   CityName                  { get; init; } = "";
     public string?  CoverImageUrl             { get; init; }
-    public bool     IsActive                  { get; init; }
-    public bool     IsApproved                { get; init; }
+    public bool        IsActive { get; init; }
+    public PitchStatus Status   { get; init; }
 }
