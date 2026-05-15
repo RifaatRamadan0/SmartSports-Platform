@@ -88,6 +88,7 @@ public class PitchService : IPitchService
             MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
             CityName                  = r.CityName,
             CoverImageUrl             = r.CoverImageUrl,
+            ImageCount                = r.ImageCount,
             IsActive = r.IsActive,
             Status   = r.Status,
         });
@@ -116,6 +117,7 @@ public class PitchService : IPitchService
             MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
             CityName                  = r.CityName,
             CoverImageUrl             = r.CoverImageUrl,
+            ImageCount                = r.ImageCount,
             IsActive = r.IsActive,
             Status   = r.Status,
         });

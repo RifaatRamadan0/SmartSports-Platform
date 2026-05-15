@@ -460,7 +460,7 @@ function PitchCard({ pitch, onClick }) {
                  hover:shadow-[0_30px_60px_-30px_var(--green-glow)]
                  transition-all duration-200 overflow-hidden flex flex-col"
     >
-      <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} className="h-40" />
+      <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} imageCount={pitch.imageCount} className="h-40" />
 
       <span className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest
                        bg-black/40 backdrop-blur text-white border border-white/10">

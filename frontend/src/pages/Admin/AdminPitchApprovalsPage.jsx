@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { listPendingPitches, approvePitch, rejectPitch } from '../../services/Admin/adminService'
 import { parseApiError } from '../../utils/errorUtils'
 import PitchCover from '../../components/Pitch/PitchCover'
-import ImageCarousel from '../../components/Pitch/ImageCarousel'
+import GalleryModal from '../../components/Pitch/GalleryModal'
 
 const PAGE_SIZE = 15
 
@@ -43,40 +43,6 @@ function CardSkeleton() {
   )
 }
 
-//  Gallery preview modal
-
-function GalleryModal({ images, onClose }) {
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        className="relative w-full max-w-3xl rounded-2xl overflow-hidden border border-white/10 bg-[#0a0a0a]"
-      >
-        <button
-          onClick={onClose}
-          aria-label="Close preview"
-          className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80
-                     text-white flex items-center justify-center text-lg"
-        >
-          ×
-        </button>
-        <ImageCarousel images={images} heightClass="h-64 sm:h-[480px]" />
-      </div>
-    </div>
-  )
-}
-
 //  Pitch Card
 
 function PitchApprovalCard({ pitch, onApprove, onReject, onPreview, isProcessing }) {
@@ -111,7 +77,12 @@ function PitchApprovalCard({ pitch, onApprove, onReject, onPreview, isProcessing
         className="hidden sm:block w-[130px] flex-shrink-0 bg-[#0a0a0a] group cursor-zoom-in
                    disabled:cursor-default"
       >
-        <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} className="w-full h-full" />
+        <PitchCover
+          imageUrl={pitch.coverImageUrl}
+          sport={pitch.sportName}
+          imageCount={pitch.images?.length ?? 0}
+          className="w-full h-full"
+        />
       </button>
 
       {/* Content */}
@@ -421,7 +392,11 @@ export default function AdminPitchApprovalsPage() {
       {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
 
       {previewPitch && (
-        <GalleryModal images={previewPitch.images ?? []} onClose={closePreview} />
+        <GalleryModal
+          images={previewPitch.images ?? []}
+          title={previewPitch.name}
+          onClose={closePreview}
+        />
       )}
     </div>
   )

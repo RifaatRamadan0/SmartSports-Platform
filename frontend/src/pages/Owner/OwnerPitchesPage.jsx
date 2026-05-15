@@ -99,7 +99,7 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting }) {
     <div className="flex overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d]
                     hover:border-white/10 transition-colors">
       <div className="hidden sm:block w-[130px] shrink-0 bg-[#0a0a0a]">
-        <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} className="w-full h-full" />
+        <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} imageCount={pitch.imageCount} className="w-full h-full" />
       </div>
 
       <div className="flex-1 p-4 sm:p-5">

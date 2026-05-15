@@ -149,6 +149,7 @@ public class PitchRepository : IPitchRepository
                     s.name              AS sport_name,
                     c.name              AS city_name,
                     cover.image_url     AS cover_image_url,
+                    (SELECT COUNT(*) FROM pitch_images WHERE pitch_id = p.id) AS image_count,
                     p.is_active,
                     p.status
             FROM    pitches             p
@@ -188,6 +189,7 @@ public class PitchRepository : IPitchRepository
                     p.max_booking_duration_minutes,
                     c.name              AS city_name,
                     cover.image_url     AS cover_image_url,
+                    (SELECT COUNT(*) FROM pitch_images WHERE pitch_id = p.id) AS image_count,
                     p.is_active,
                     p.status
             FROM    pitches             p

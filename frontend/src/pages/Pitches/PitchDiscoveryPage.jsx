@@ -486,7 +486,7 @@ function PitchCard({ pitch, onBook }) {
                  transition-all duration-200 overflow-hidden flex flex-col"
     >
       {/* Cover image or sport SVG fallback */}
-      <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} />
+      <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} imageCount={pitch.imageCount} />
 
       {/* Sport badge */}
       <span className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest

@@ -5,6 +5,8 @@ import { createBooking } from '../../services/Booking/bookingService'
 import { getPitchById } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
 import Toast from '../../components/ui/Toast'
+import PitchCover from '../../components/Pitch/PitchCover'
+import GalleryModal from '../../components/Pitch/GalleryModal'
 
 const SLOT_DURATION_MINUTES = 30
 const MAX_DAYS_AHEAD        = 30
@@ -81,24 +83,19 @@ export default function BookingPage() {
 
   const [pitch, setPitch] = useState(null)
   const [fetchError, setFetchError] = useState(false)
+  const [lightboxOpen,  setLightboxOpen]  = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
 
-  // Only fetch from the API when the router state is missing required fields.
-  // Cards pass pitchName, pricePerHour, and maxBookingDurationMinutes via state,
-  // so the network call is skipped on the normal navigation path.
+  // Always fetch full pitch detail — the optimistic state from the card
+  // (name, price, duration) drives the first paint while the network call
+  // hydrates the images array and any other up-to-date fields.
   useEffect(() => {
-    const needsFetch =
-      !pitchName ||
-      typeof pricePerHour !== 'number' ||
-      typeof stateMaxDuration !== 'number'
-
-    if (!needsFetch) return
-
     let cancelled = false
     getPitchById(pitchId)
       .then((p) => { if (!cancelled) setPitch(p) })
       .catch(() => { if (!cancelled) setFetchError(true) })
     return () => { cancelled = true }
-  }, [pitchId, pitchName, pricePerHour, stateMaxDuration])
+  }, [pitchId])
 
   const resolvedName     = pitchName     ?? pitch?.name
   const resolvedPrice    = typeof pricePerHour === 'number' ? pricePerHour : pitch?.pricePerHour
@@ -285,7 +282,11 @@ export default function BookingPage() {
 
         {/* Pitch info */}
         <div className="flex items-center gap-5 px-6 sm:px-8 py-5 border-b border-[#1a1f1c]">
-          <PitchIcon />
+          <PitchCover
+            imageUrl={pitch?.images?.[0]}
+            sport={sport ?? pitch?.sportTypeName}
+            className="w-40 h-28 sm:w-56 sm:h-36 rounded-xl overflow-hidden shrink-0"
+          />
           <div className="flex-1 min-w-0">
             <h2 className="text-lg sm:text-xl font-bold text-white">
               {resolvedName || 'Pitch'}
@@ -328,6 +329,14 @@ export default function BookingPage() {
             </div>
           )}
         </div>
+
+        {/* Gallery strip — only when there's more than one image */}
+        {pitch?.images && pitch.images.length > 1 && (
+          <GalleryStrip
+            images={pitch.images}
+            onOpen={(i) => { setLightboxIndex(i); setLightboxOpen(true) }}
+          />
+        )}
 
         {/* Two-column body */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 sm:px-8 py-6">
@@ -558,6 +567,15 @@ export default function BookingPage() {
           onClose={() => setToast(null)}
         />
       )}
+
+      {lightboxOpen && pitch?.images && (
+        <GalleryModal
+          images={pitch.images}
+          title={resolvedName}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   )
 }
@@ -605,17 +623,34 @@ function ArrowButton({ direction, onClick, disabled }) {
   )
 }
 
-function PitchIcon() {
+function GalleryStrip({ images, onOpen }) {
+  const visible  = images.slice(0, 3)
+  const overflow = images.length > 3
   return (
-    <div className="w-24 h-20 rounded-xl border border-[#1f3d26] bg-[#0a1a0e]
-                    flex items-center justify-center shrink-0">
-      <svg viewBox="0 0 80 56" className="w-16 h-12 text-green-700">
-        <rect x="2" y="2" width="76" height="52" rx="3" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <line x1="40" y1="2" x2="40" y2="54" stroke="currentColor" strokeWidth="1.5" />
-        <circle cx="40" cy="28" r="7" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <rect x="2" y="16" width="10" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <rect x="68" y="16" width="10" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      </svg>
+    <div className="flex gap-2 px-6 sm:px-8 pt-5 pb-5 overflow-x-auto">
+      {visible.map((url, i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onOpen(i)}
+          className={`relative w-12 h-12 rounded-lg overflow-hidden shrink-0
+                      ${i === 0 ? 'ring-2 ring-green-500' : 'ring-1 ring-white/10 hover:ring-white/30'}`}
+        >
+          <img src={url} alt="" className="w-full h-full object-cover" />
+        </button>
+      ))}
+      {overflow && (
+        <button
+          type="button"
+          onClick={() => onOpen(3)}
+          className="w-12 h-12 rounded-lg border-2 border-dashed border-white/15
+                     text-[10px] text-neutral-400 hover:text-white hover:border-white/30
+                     flex flex-col items-center justify-center gap-0.5 shrink-0"
+        >
+          <span>⤢</span>
+          View all
+        </button>
+      )}
     </div>
   )
 }
