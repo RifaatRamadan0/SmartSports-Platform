@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { listContainerVariants, listItemVariants } from '../../lib/motion'
 import { getOwnerBookings } from '../../services/Booking/bookingService'
 import StatusBadge from '../../components/ui/StatusBadge'
 import Toast from '../../components/ui/Toast'
@@ -15,9 +17,11 @@ function BookingSkeleton() {
   return (
     <div className="flex flex-col gap-3">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div
+        <motion.div
           key={i}
-          className="h-20 rounded-2xl bg-[#0f0f0f] border border-[#1a1a1a] animate-pulse"
+          className="h-20 rounded-2xl bg-[#0f0f0f] border border-[#1a1a1a]"
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
         />
       ))}
     </div>
@@ -181,26 +185,37 @@ export default function OwnerBookingsPage() {
 
       {/* Empty */}
       {!isLoading && !error && bookings.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl
-                        border border-[#1a1a1a] bg-[#0d0d0d] py-16 gap-3">
-          <span className="text-3xl">🏟️</span>
+        <motion.div
+          className="flex flex-col items-center justify-center rounded-2xl
+                     border border-[#1a1a1a] bg-[#0d0d0d] py-16 gap-3"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+        >
+          <span className="text-3xl floating inline-block">🏟️</span>
           <p className="text-sm font-semibold text-neutral-500">No bookings found</p>
           <p className="text-xs text-neutral-700">
             {hasActiveFilters
               ? 'Try adjusting your filters'
               : 'No bookings have been made on your pitches yet'}
           </p>
-        </div>
+        </motion.div>
       )}
 
       {/* List + Pagination */}
       {!isLoading && !error && bookings.length > 0 && (
         <>
           {/* TODO: /bookings/:id route and detail page — SPDBTCP-223 */}
-          <div className="flex flex-col gap-3">
+          <motion.div
+            className="flex flex-col gap-3"
+            variants={listContainerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {bookings.map(booking => (
-              <div
+              <motion.div
                 key={booking.id}
+                variants={listItemVariants}
                 onClick={() => navigate(`/bookings/${booking.id}`)}
                 className="flex items-center justify-between rounded-2xl p-4
                            border border-[#1a1a1a] bg-[#0d0d0d]
@@ -224,9 +239,9 @@ export default function OwnerBookingsPage() {
 
                 {/* Right — status */}
                 <StatusBadge status={booking.status} />
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           {/* Pagination */}
           {pagination?.totalPages > 1 && (

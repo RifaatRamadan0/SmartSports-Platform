@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { listMyPitches } from '../../services/Pitch/pitchService'
 import { getOwnerBookings } from '../../services/Booking/bookingService'
 import StatusBadge from '../../components/ui/StatusBadge'
@@ -126,34 +127,34 @@ function Navbar() {
               className="absolute right-0 top-12 w-52 rounded-xl border border-white/[0.07] bg-[var(--surface)] shadow-2xl py-2 text-[13px]"
               onMouseLeave={() => setMenuOpen(false)}
             >
-              <button onClick={() => { setMenuOpen(false); navigate('/dashboard/pitches') }}
+              <motion.button whileHover={{ x: 3 }} onClick={() => { setMenuOpen(false); navigate('/dashboard/pitches') }}
                 className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
                 My Pitches
-              </button>
-              <button onClick={() => { setMenuOpen(false); navigate('/dashboard/bookings') }}
+              </motion.button>
+              <motion.button whileHover={{ x: 3 }} onClick={() => { setMenuOpen(false); navigate('/dashboard/bookings') }}
                 className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
                 Bookings
-              </button>
+              </motion.button>
               {isPlayer && (
                 <>
-                  <button onClick={() => { setMenuOpen(false); navigate('/pitches') }}
+                  <motion.button whileHover={{ x: 3 }} onClick={() => { setMenuOpen(false); navigate('/pitches') }}
                     className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
                     Browse Pitches
-                  </button>
-                  <button onClick={() => { setMenuOpen(false); navigate('/my-bookings') }}
+                  </motion.button>
+                  <motion.button whileHover={{ x: 3 }} onClick={() => { setMenuOpen(false); navigate('/my-bookings') }}
                     className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
                     My Bookings
-                  </button>
+                  </motion.button>
                 </>
               )}
-              <button onClick={() => { setMenuOpen(false); navigate('/settings') }}
+              <motion.button whileHover={{ x: 3 }} onClick={() => { setMenuOpen(false); navigate('/settings') }}
                 className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
                 Settings
-              </button>
-              <button onClick={handleLogout}
+              </motion.button>
+              <motion.button whileHover={{ x: 3 }} onClick={handleLogout}
                 className="w-full text-left px-3 py-2 hover:bg-[var(--red-muted)] text-[var(--text2)] hover:text-[oklch(0.62_0.2_25)] transition-colors border-t border-white/[0.06] mt-1 pt-2">
                 Sign out
-              </button>
+              </motion.button>
             </div>
           )}
         </div>

@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import PageWrapper from '@/components/routing/PageWrapper'
+import { cardVariants, cardHover, cardTap, listContainerVariants } from '@/lib/motion'
 import { useAuth } from '../../hooks/useAuth'
 import { ROLES } from '../../constants/roles'
 import { listPitches } from '../../services/Pitch/pitchService'
@@ -127,7 +130,7 @@ export default function PitchDiscoveryPage() {
   const hasActiveFilters = urlSearch || urlSport || urlCity || urlMaxPrice || (urlSortBy && urlSortBy !== 'newest')
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+    <PageWrapper className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       <DiscoveryNavbar />
 
       {/* Page header */}
@@ -178,11 +181,16 @@ export default function PitchDiscoveryPage() {
 
         {!isLoading && !error && result?.items?.length > 0 && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+              variants={listContainerVariants}
+              initial="hidden"
+              animate="visible"
+            >
               {result.items.map(p => (
                 <PitchCard key={p.id} pitch={p} onBook={() => handleBook(p, navigate)} />
               ))}
-            </div>
+            </motion.div>
 
             <Pagination
               page={result.page}
@@ -197,7 +205,7 @@ export default function PitchDiscoveryPage() {
       </main>
 
       <DiscoveryFooter />
-    </div>
+    </PageWrapper>
   )
 }
 
@@ -313,7 +321,7 @@ function DiscoveryNavbar() {
                     </button>
                   )}
                   {(isOwner || isAdmin) && (
-                    <button onClick={() => { setMenuOpen(false); navigate('/pitches/manage') }}
+                    <button onClick={() => { setMenuOpen(false); navigate('/dashboard/pitches') }}
                       className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
                       Manage Pitches
                     </button>
@@ -477,12 +485,15 @@ function PitchCard({ pitch, onBook }) {
   const price  = Number(pitch.pricePerHour)
 
   return (
-    <button
+    <motion.button
       onClick={onBook}
+      variants={cardVariants}
+      whileHover={cardHover}
+      whileTap={cardTap}
       className="group relative text-left rounded-3xl bg-[var(--surface)] border border-white/[0.06]
                  hover:border-[var(--green-border)] hover:bg-[var(--bg3)]
                  hover:shadow-[0_30px_60px_-30px_var(--green-glow)]
-                 transition-all duration-200 overflow-hidden flex flex-col"
+                 transition-colors duration-200 overflow-hidden flex flex-col"
     >
       {/* Cover image or sport SVG fallback */}
       <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} />
@@ -529,7 +540,7 @@ function PitchCard({ pitch, onBook }) {
           </span>
         </div>
       </div>
-    </button>
+    </motion.button>
   )
 }
 
@@ -621,7 +632,12 @@ function PitchesSkeleton() {
   return (
     <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-[320px] rounded-3xl border border-white/[0.06] bg-[var(--surface)] animate-pulse" />
+        <motion.div
+          key={i}
+          className="h-[320px] rounded-3xl border border-white/[0.06] bg-[var(--surface)]"
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
+        />
       ))}
     </div>
   )
@@ -643,8 +659,14 @@ function ErrorBanner({ message, onRetry }) {
 
 function EmptyState({ hasFilters, onClear }) {
   return (
-    <div className="mt-6 rounded-2xl border border-white/[0.06] bg-[var(--surface)] py-20 text-center">
-      <p className="text-sm text-[var(--text2)]">
+    <motion.div
+      className="mt-6 rounded-2xl border border-white/[0.06] bg-[var(--surface)] py-20 text-center"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+    >
+      <span className="text-4xl floating inline-block">🏟️</span>
+      <p className="mt-4 text-sm text-[var(--text2)]">
         {hasFilters ? 'No pitches match your filters.' : 'No pitches available yet. Check back soon.'}
       </p>
       {hasFilters && (
@@ -652,7 +674,7 @@ function EmptyState({ hasFilters, onClear }) {
           Clear filters
         </button>
       )}
-    </div>
+    </motion.div>
   )
 }
 

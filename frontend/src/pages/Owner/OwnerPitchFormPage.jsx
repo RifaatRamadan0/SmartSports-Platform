@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { buttonHover, buttonTap } from '../../lib/motion'
 import {
   createPitch,
   updatePitch,
@@ -413,17 +415,18 @@ export default function OwnerPitchFormPage() {
           )}
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <button
+            <motion.button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-xl px-5 py-2.5 text-sm font-semibold
-                         bg-green-500 text-black hover:bg-green-400
-                         disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              whileHover={buttonHover}
+              whileTap={buttonTap}
+              className="rounded-xl px-5 py-2.5 text-sm font-semibold shimmer-btn
+                         text-black disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting
                 ? (isEdit ? 'Saving…' : 'Creating…')
                 : (isEdit ? 'Save changes' : 'Create pitch')}
-            </button>
+            </motion.button>
             <button
               type="button"
               onClick={() => navigate('/dashboard/pitches')}

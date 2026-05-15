@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import PageWrapper from '@/components/routing/PageWrapper'
+import { buttonHover, buttonTap } from '../../lib/motion'
 import { useAuth } from '../../hooks/useAuth'
 import { ROLES } from '../../constants/roles'
 import { getPitchById } from '../../services/Pitch/pitchService'
@@ -242,7 +245,7 @@ export default function PitchDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+    <PageWrapper className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       <DetailNavbar />
 
       {loading && <DetailSkeleton />}
@@ -319,15 +322,17 @@ export default function PitchDetailPage() {
                 )}
               </div>
 
-              <button
+              <motion.button
                 onClick={handleBookNow}
                 disabled={authLoading}
-                className="rounded-full bg-[var(--green)] px-7 py-3 text-[13px] font-bold
+                whileHover={buttonHover}
+                whileTap={buttonTap}
+                className="shimmer-btn rounded-full px-7 py-3 text-[13px] font-bold
                            text-[var(--primary-foreground)] shadow-[0_4px_16px_var(--green-glow)]
-                           hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                           disabled:opacity-50"
               >
                 Book Now
-              </button>
+              </motion.button>
             </div>
 
             {/* Weekly schedule */}
@@ -363,7 +368,7 @@ export default function PitchDetailPage() {
       )}
 
       <DetailFooter />
-    </div>
+    </PageWrapper>
   )
 }
 

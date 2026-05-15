@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { cardVariants, cardHover, cardTap, listContainerVariants } from '../../lib/motion'
 import { useAuth } from '../../hooks/useAuth'
 import { ROLES } from '../../constants/roles'
 import { getRoleHomePath } from '../../utils/roleUtils'
@@ -180,49 +182,55 @@ function Navbar() {
                 <p className="text-white font-semibold mt-0.5">{roles.join(', ') || 'User'}</p>
               </div>
               {isPlayer && (
-                <button
+                <motion.button
+                  whileHover={{ x: 3 }}
                   onClick={() => { setMenuOpen(false); navigate('/my-bookings') }}
                   className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
                 >
                   My Bookings
-                </button>
+                </motion.button>
               )}
               {isOwner && (
                 <>
-                  <button
+                  <motion.button
+                    whileHover={{ x: 3 }}
                     onClick={() => { setMenuOpen(false); navigate('/dashboard/pitches') }}
                     className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
                   >
                     My Pitches
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ x: 3 }}
                     onClick={() => { setMenuOpen(false); navigate('/dashboard/bookings') }}
                     className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
                   >
                     Owner Dashboard
-                  </button>
+                  </motion.button>
                 </>
               )}
               {isAdmin && (
-                <button
+                <motion.button
+                  whileHover={{ x: 3 }}
                   onClick={() => { setMenuOpen(false); navigate('/admin/pitches') }}
                   className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
                 >
                   Pitch Approvals
-                </button>
+                </motion.button>
               )}
-              <button
+              <motion.button
+                whileHover={{ x: 3 }}
                 onClick={() => { setMenuOpen(false); navigate('/settings') }}
                 className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
               >
                 Settings
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileHover={{ x: 3 }}
                 onClick={handleLogout}
                 className="w-full text-left px-3 py-2 hover:bg-[var(--red-muted)] text-[var(--text2)] hover:text-[oklch(0.62_0.2_25)] transition-colors border-t border-white/[0.06] mt-1 pt-2"
               >
                 Sign out
-              </button>
+              </motion.button>
             </div>
           )}
         </div>
@@ -440,11 +448,16 @@ function PitchesSection({
         )}
 
         {!isLoading && !error && pitches.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+            variants={listContainerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {pitches.map(p => (
               <PitchCard key={p.id} pitch={p} onClick={() => onSelect(p)} onDetail={() => onDetail(p)} canBook={canBook} />
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </section>
@@ -455,9 +468,11 @@ function PitchesSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div
+        <motion.div
           key={i}
-          className="h-[300px] rounded-3xl border border-white/[0.06] bg-[var(--surface)] animate-pulse"
+          className="h-[300px] rounded-3xl border border-white/[0.06] bg-[var(--surface)]"
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
         />
       ))}
     </div>
@@ -474,11 +489,14 @@ function PitchCard({ pitch, onClick, onDetail, canBook }) {
   }
 
   return (
-    <div
+    <motion.div
+      variants={cardVariants}
+      whileHover={cardHover}
+      whileTap={cardTap}
       className="group relative text-left rounded-3xl bg-[var(--surface)] border border-white/[0.06]
                  hover:border-[var(--green-border)] hover:bg-[var(--bg3)]
                  hover:shadow-[0_30px_60px_-30px_var(--green-glow)]
-                 transition-all duration-200 overflow-hidden flex flex-col"
+                 transition-colors duration-200 overflow-hidden flex flex-col"
     >
       <button onClick={handleDetail} className="block w-full text-left focus:outline-none">
         <PitchThumbnail sport={pitch.sportName} />
@@ -529,7 +547,7 @@ function PitchCard({ pitch, onClick, onDetail, canBook }) {
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 

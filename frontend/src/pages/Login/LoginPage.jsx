@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import PageWrapper from '@/components/routing/PageWrapper'
+import { buttonHover, buttonTap } from '@/lib/motion'
 import { Eye, EyeOff, MailWarning } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +14,7 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-[#0f1a12] to-background px-4 py-10">
+    <PageWrapper className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-[#0f1a12] to-background px-4 py-10">
       {/* subtle grid overlay */}
       <div
         aria-hidden
@@ -136,13 +139,15 @@ function LoginPage() {
                 </div>
               )}
 
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="mt-1 h-10 w-full rounded-[0.625rem] bg-primary text-[0.9375rem] font-bold tracking-tight text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
-              >
-                {isSubmitting ? 'Signing in…' : 'Sign In'}
-              </Button>
+              <motion.div whileHover={buttonHover} whileTap={buttonTap} className="w-full mt-1">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-10 w-full rounded-[0.625rem] bg-primary text-[0.9375rem] font-bold tracking-tight text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
+                >
+                  {isSubmitting ? 'Signing in…' : 'Sign In'}
+                </Button>
+              </motion.div>
 
             </form>
 
@@ -158,7 +163,7 @@ function LoginPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageWrapper>
   )
 }
 
