@@ -51,7 +51,7 @@ public class PitchRepository : IPitchRepository
             JOIN   cities      c ON c.id = p.city_id
             WHERE  p.id          = @PitchId
               AND  p.is_active = TRUE
-              AND  p.status   = 1
+              AND  p.status   = 1  /* PitchStatus.Approved */
             """,
             new { PitchId = pitchId });
     }
@@ -94,7 +94,7 @@ public class PitchRepository : IPitchRepository
         var conditions = new List<string>
         {
             "p.is_active  = TRUE",
-            "p.status     = 1",
+            "p.status     = 1  /* PitchStatus.Approved */",
             "p.deleted_at IS NULL",
         };
 
@@ -244,7 +244,9 @@ public class PitchRepository : IPitchRepository
                    latitude                     = @Latitude,
                    longitude                    = @Longitude,
                    max_booking_duration_minutes = @MaxBookingDurationMinutes,
-                   is_active                    = @IsActive
+                   is_active                    = @IsActive,
+                   status                       = @Status,
+                   rejection_reason             = @RejectionReason
             WHERE  id         = @Id
               AND  deleted_at IS NULL
             """,
@@ -278,7 +280,7 @@ public class PitchRepository : IPitchRepository
         const string countSql = """
             SELECT COUNT(*)
             FROM   pitches p
-            WHERE  p.status    = 0
+            WHERE  p.status    = 0  /* PitchStatus.PendingApproval */
               AND  p.deleted_at IS NULL
             """;
 
@@ -305,7 +307,7 @@ public class PitchRepository : IPitchRepository
                 ORDER BY id
                 LIMIT  1
             ) cover ON TRUE
-            WHERE   p.status    = 0
+            WHERE   p.status    = 0  /* PitchStatus.PendingApproval */
               AND   p.deleted_at IS NULL
             ORDER BY p.created_at DESC
             LIMIT  @PageSize

@@ -192,35 +192,42 @@ function PitchApprovalsTab({ setToast }) {
 
   useEffect(() => { fetchPending(page) }, [fetchPending, page])
 
-  const removeFromList = (id) => setPitches(prev => prev.filter(p => p.id !== id))
+  // After a mutation: if we just cleared the last item on a non-first page,
+  // step back one page (the useEffect will refetch). Otherwise refetch the
+  // current page so a row from page N+1 rotates up into the now-empty slot.
+  const refreshAfterMutation = useCallback(async () => {
+    if (pitches.length === 1 && page > 1) {
+      setPage(p => p - 1)
+    } else {
+      await fetchPending(page)
+    }
+  }, [pitches.length, page, fetchPending])
 
   const handleApprove = useCallback(async (id) => {
     setProcessingId(id)
     try {
       await approvePitch(id)
-      removeFromList(id)
-      setTotalPending(n => Math.max(0, n - 1))
       setToast({ message: 'Pitch approved — it is now live on the platform.', type: 'success' })
+      await refreshAfterMutation()
     } catch (err) {
       setToast({ message: parseApiError(err, 'Failed to approve pitch.'), type: 'error' })
     } finally {
       setProcessingId(null)
     }
-  }, [setToast])
+  }, [refreshAfterMutation, setToast])
 
   const handleReject = useCallback(async (id, reason) => {
     setProcessingId(id)
     try {
       await rejectPitch(id, reason)
-      removeFromList(id)
-      setTotalPending(n => Math.max(0, n - 1))
-      setToast({ message: 'Pitch rejected.', type: 'success' })
+      setToast({ message: 'Pitch rejected. The owner has been notified.', type: 'success' })
+      await refreshAfterMutation()
     } catch (err) {
       setToast({ message: parseApiError(err, 'Failed to reject pitch.'), type: 'error' })
     } finally {
       setProcessingId(null)
     }
-  }, [setToast])
+  }, [refreshAfterMutation, setToast])
 
   return (
     <>

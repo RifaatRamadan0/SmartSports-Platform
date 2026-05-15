@@ -170,6 +170,8 @@ public class PitchService : IPitchService
         existing.Longitude                 = request.Longitude;
         existing.MaxBookingDurationMinutes = request.MaxBookingDurationMinutes;
         existing.IsActive                  = request.IsActive;
+        existing.Status                    = PitchStatus.PendingApproval;
+        existing.RejectionReason           = null;
 
         var updated = await _pitchRepository.UpdateAsync(existing);
         if (!updated)
