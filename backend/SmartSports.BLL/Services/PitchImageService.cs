@@ -10,6 +10,11 @@ public class PitchImageService : IPitchImageService
 {
     private const int MaxImagesPerPitch = 8;
 
+    // Only accept URLs hosted on ImageKit so the only path into pitch_images
+    // is through our signed upload flow. Blocks hotlinking to third-party
+    // hosts and SSRF-style submissions to internal addresses.
+    private static readonly string[] AllowedImageHosts = { "ik.imagekit.io" };
+
     private readonly IPitchRepository _pitchRepository;
 
     public PitchImageService(IPitchRepository pitchRepository)
@@ -34,10 +39,14 @@ public class PitchImageService : IPitchImageService
             throw new ArgumentException("Image URL is required.");
         if (url.Length > 2048)
             throw new ArgumentException("Image URL is too long.");
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var parsed) ||
-            (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps))
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var parsed) || parsed.Scheme != Uri.UriSchemeHttps)
         {
-            throw new ArgumentException("Image URL must be an absolute http(s) URL.");
+            throw new ArgumentException("Image URL must be an absolute https URL.");
+        }
+
+        if (!AllowedImageHosts.Contains(parsed.Host, StringComparer.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Image URL must be hosted on an approved provider.");
         }
 
         var count = await _pitchRepository.CountPitchImagesAsync(pitchId);

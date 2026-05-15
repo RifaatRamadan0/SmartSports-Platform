@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SmartSports.BLL.DTOs.Upload;
 using SmartSports.BLL.Interfaces;
 
@@ -24,9 +25,11 @@ public class UploadsController : ControllerBase
     /// </summary>
     [HttpGet("imagekit-auth")]
     [Authorize(Policy = "PitchOwnerOnly")]
+    [EnableRateLimiting("imagekit-auth")]
     [ProducesResponseType(typeof(ImageKitAuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public IActionResult ImageKitAuth()
     {
         var auth = _imageKitAuthService.GenerateAuthParams();

@@ -17,7 +17,6 @@ export default function PitchImageGallery({ pitchId }) {
   const [images,      setImages]      = useState([])
   const [isLoading,   setIsLoading]   = useState(true)
   const [loadError,   setLoadError]   = useState(null)
-  const [urlInput,    setUrlInput]    = useState('')
   const [isBusy,      setIsBusy]      = useState(false)
   const [actionError, setActionError] = useState(null)
   const [confirmId,   setConfirmId]   = useState(null)
@@ -38,33 +37,6 @@ export default function PitchImageGallery({ pitchId }) {
   useEffect(() => { reload() }, [reload])
 
   const atLimit = images.length >= MAX_IMAGES
-
-  // — Add by URL —
-  const handleAddUrl = async () => {
-    const trimmed = urlInput.trim()
-    if (!trimmed) return
-    try {
-      new URL(trimmed)
-    } catch {
-      setActionError('That does not look like a valid URL.')
-      return
-    }
-
-    setIsBusy(true)
-    setActionError(null)
-    try {
-      const created = await addImage(pitchId, {
-        imageUrl: trimmed,
-        isCover:  images.length === 0,
-      })
-      setImages(prev => [...prev, created])
-      setUrlInput('')
-    } catch (err) {
-      setActionError(parseApiError(err, 'Failed to add the image.'))
-    } finally {
-      setIsBusy(false)
-    }
-  }
 
   // — Upload via file picker —
   const handlePickFile = () => fileInputRef.current?.click()
@@ -150,7 +122,8 @@ export default function PitchImageGallery({ pitchId }) {
 
       {!uploadReady && (
         <p className="text-xs text-amber-300 rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-          ImageKit isn't configured — file upload is disabled. You can still paste image URLs.
+          ImageKit isn't configured — image upload is disabled. Set the
+          VITE_IMAGEKIT_URL_ENDPOINT and VITE_IMAGEKIT_PUBLIC_KEY env vars.
         </p>
       )}
 
@@ -174,29 +147,6 @@ export default function PitchImageGallery({ pitchId }) {
             className="hidden"
             onChange={handleFileChange}
           />
-          <span className="text-xs text-neutral-500">or</span>
-          <input
-            type="url"
-            value={urlInput}
-            onChange={e => setUrlInput(e.target.value)}
-            placeholder="Paste an image URL"
-            disabled={atLimit || isBusy}
-            className="flex-1 min-w-[200px] rounded-xl px-3.5 py-2 text-sm
-                       bg-[#0a0a0a] border border-[#1f1f1f] text-white
-                       placeholder:text-neutral-600 focus:outline-none focus:border-green-500/60
-                       disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          />
-          <button
-            type="button"
-            onClick={handleAddUrl}
-            disabled={atLimit || isBusy || !urlInput.trim()}
-            className="rounded-xl px-4 py-2 text-xs font-semibold
-                       bg-[#141414] border border-[#1f1f1f] text-white
-                       hover:border-white/15
-                       disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Add URL
-          </button>
         </div>
 
         {atLimit && (
