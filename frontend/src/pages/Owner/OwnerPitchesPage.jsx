@@ -271,6 +271,14 @@ export default function OwnerPitchesPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => navigate('/dashboard/owner')}
+            className="rounded-xl px-4 py-2.5 text-sm font-semibold
+                       bg-[#0d0d0d] border border-[#1f1f1f] text-neutral-300
+                       hover:text-white hover:border-white/15 transition-colors"
+          >
+            ← Dashboard
+          </button>
+          <button
             onClick={() => navigate('/dashboard/bookings')}
             className="rounded-xl px-4 py-2.5 text-sm font-semibold
                        bg-[#0d0d0d] border border-[#1f1f1f] text-neutral-300

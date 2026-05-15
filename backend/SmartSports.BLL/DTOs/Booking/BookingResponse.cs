@@ -12,4 +12,5 @@ public class BookingResponse
     public decimal TotalPrice { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime BookedAt { get; set; }
+    public string? CancellationReason { get; set; }
 }

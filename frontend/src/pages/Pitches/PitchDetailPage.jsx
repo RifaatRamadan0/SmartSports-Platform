@@ -435,7 +435,7 @@ function DetailNavbar() {
               )}
               {(isOwner || isAdmin) && (
                 <button
-                  onClick={() => navigate('/dashboard/bookings')}
+                  onClick={() => navigate('/dashboard/owner')}
                   className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
                 >
                   Owner Dashboard
@@ -472,11 +472,11 @@ function DetailNavbar() {
                   )}
                   {(isOwner || isAdmin) && (
                     <>
-                      <button onClick={() => { setMenuOpen(false); navigate('/pitches/manage') }}
+                      <button onClick={() => { setMenuOpen(false); navigate('/dashboard/pitches') }}
                         className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
                         Manage Pitches
                       </button>
-                      <button onClick={() => { setMenuOpen(false); navigate('/dashboard/bookings') }}
+                      <button onClick={() => { setMenuOpen(false); navigate('/dashboard/owner') }}
                         className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
                         Owner Dashboard
                       </button>

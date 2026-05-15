@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { AuthContext } from './AuthContext'
-import api, { setAccessToken } from '../services/api'
+import api, { setAccessToken, refreshSession } from '../services/api'
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null)
@@ -11,15 +11,14 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     async function restoreSession() {
       try {
-        const { data } = await api.post('/api/auth/refresh')
+        const { data } = await refreshSession()
         setAccessToken(data.accessToken)
         setToken(data.accessToken)
         setRoles(data.roles ?? [])
       } catch {
-        // no valid refresh token, user is not logged in
         setAccessToken(null)
       } finally {
-        setIsLoading(false) // unblock the UI
+        setIsLoading(false)
       }
     }
     restoreSession()

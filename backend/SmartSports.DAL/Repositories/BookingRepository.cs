@@ -111,10 +111,11 @@ public class BookingRepository : IBookingRepository
                     b.start_time,
                     b.end_time,
                     b.total_price,
-                    b.status::TEXT  AS status,
+                    b.status::TEXT      AS status,
                     b.booked_at,
-                    p.name          AS pitch_name,
-                    p.owner_id      AS pitch_owner_id
+                    b.cancellation_reason,
+                    p.name              AS pitch_name,
+                    p.owner_id          AS pitch_owner_id
             FROM    bookings b
             JOIN    pitches  p ON p.id = b.pitch_id
             WHERE   b.id = @BookingId

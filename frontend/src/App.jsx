@@ -20,9 +20,12 @@ import OwnerSchedulePage from './pages/Owner/OwnerSchedulePage'
 import OwnerBookingsPage from './pages/Owner/OwnerBookingsPage'
 import OwnerPitchesPage from './pages/Owner/OwnerPitchesPage'
 import OwnerPitchFormPage from './pages/Owner/OwnerPitchFormPage'
+import OwnerDashboardPage from './pages/Owner/OwnerDashboardPage'
 import PlayerBookingsPage from './pages/Player/PlayerBookingsPage'
 import BookingPage from './pages/Player/BookingPage'
 import AdminPitchApprovalsPage from './pages/Admin/AdminPitchApprovalsPage'
+import SettingsPage from './pages/Settings/SettingsPage'
+import BookingDetailPage from './pages/Booking/BookingDetailPage'
 import { ROLES } from './constants/roles'
 
 function App() {
@@ -50,15 +53,13 @@ function App() {
             {/* Protected: any authenticated user */}
             <Route element={<PrivateRoute />}>
               <Route path="/dashboard" element={<HomePage />} />
-            </Route>
-
-            {/* Protected: PitchOwner or Admin only */}
-            <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER, ROLES.ADMIN]} />}>
-              <Route path="/pitches/manage" element={<HomePage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/bookings/:id" element={<BookingDetailPage />} />
             </Route>
 
             {/* Protected: PitchOwner only */}
             <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER]} />}>
+              <Route path="/dashboard/owner" element={<OwnerDashboardPage />} />
               <Route path="/dashboard/pitches" element={<OwnerPitchesPage />} />
               <Route path="/dashboard/pitches/new" element={<OwnerPitchFormPage />} />
               <Route path="/dashboard/pitches/:pitchId/edit" element={<OwnerPitchFormPage />} />

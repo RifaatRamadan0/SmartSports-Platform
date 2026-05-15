@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { ROLES } from '../../constants/roles'
+import { getRoleHomePath } from '../../utils/roleUtils'
 import { listPitches } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
 
@@ -10,6 +11,8 @@ const SPORT_FILTERS = ['All', 'Football', 'Futsal', 'Basketball', 'Tennis']
 export default function HomePage() {
   const navigate   = useNavigate()
   const pitchesRef = useRef(null)
+  const { roles }  = useAuth()
+  const isPlayer   = roles.includes(ROLES.PLAYER)
 
   const [activeSport, setActiveSport] = useState('All')
   const [pitches,     setPitches]     = useState([])
@@ -37,17 +40,23 @@ export default function HomePage() {
   }
 
   const goToPitch = (pitch) => {
-    navigate(`/book/${pitch.id}`, {
-      state: {
-        pitchName:                pitch.name,
-        sport:                    pitch.sportName,
-        pricePerHour:             Number(pitch.pricePerHour),
-        maxBookingDurationMinutes: pitch.maxBookingDurationMinutes,
-        rating:                   pitch.rating != null ? Number(pitch.rating) : undefined,
-        currency:                 '$',
-      },
-    })
+    if (isPlayer) {
+      navigate(`/book/${pitch.id}`, {
+        state: {
+          pitchName:                 pitch.name,
+          sport:                     pitch.sportName,
+          pricePerHour:              Number(pitch.pricePerHour),
+          maxBookingDurationMinutes: pitch.maxBookingDurationMinutes,
+          rating:                    pitch.rating != null ? Number(pitch.rating) : undefined,
+          currency:                  '$',
+        },
+      })
+    } else {
+      navigate(`/pitches/${pitch.id}`)
+    }
   }
+
+  const goToDetail = (pitch) => navigate(`/pitches/${pitch.id}`)
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
@@ -64,6 +73,8 @@ export default function HomePage() {
         error={error}
         onRetry={() => fetchPitches(activeSport)}
         onSelect={goToPitch}
+        onDetail={goToDetail}
+        canBook={isPlayer}
       />
       <HowItWorksSection />
       <Footer />
@@ -92,7 +103,7 @@ function Navbar() {
     <header className="sticky top-0 z-40 backdrop-blur-md bg-[var(--bg)]/80 border-b border-white/[0.06]">
       <nav className="mx-auto max-w-[1280px] px-6 h-16 flex items-center justify-between">
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate(getRoleHomePath(roles))}
           className="flex items-center gap-2 group"
         >
           <span className="w-2.5 h-2.5 rounded-full bg-[var(--green)] shadow-[0_0_12px_var(--green-glow)]" />
@@ -200,6 +211,12 @@ function Navbar() {
                   Pitch Approvals
                 </button>
               )}
+              <button
+                onClick={() => { setMenuOpen(false); navigate('/settings') }}
+                className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
+              >
+                Settings
+              </button>
               <button
                 onClick={handleLogout}
                 className="w-full text-left px-3 py-2 hover:bg-[var(--red-muted)] text-[var(--text2)] hover:text-[oklch(0.62_0.2_25)] transition-colors border-t border-white/[0.06] mt-1 pt-2"
@@ -349,7 +366,7 @@ function SearchField({ className = '', label, placeholder }) {
 // Pitches section
 
 function PitchesSection({
-  sectionRef, filters, active, onFilter, pitches, isLoading, error, onRetry, onSelect,
+  sectionRef, filters, active, onFilter, pitches, isLoading, error, onRetry, onSelect, onDetail, canBook,
 }) {
   return (
     <section ref={sectionRef} id="pitches" className="px-6 py-16 sm:py-20 scroll-mt-20">
@@ -425,7 +442,7 @@ function PitchesSection({
         {!isLoading && !error && pitches.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {pitches.map(p => (
-              <PitchCard key={p.id} pitch={p} onClick={() => onSelect(p)} />
+              <PitchCard key={p.id} pitch={p} onClick={() => onSelect(p)} onDetail={() => onDetail(p)} canBook={canBook} />
             ))}
           </div>
         )}
@@ -447,19 +464,25 @@ function PitchesSkeleton() {
   )
 }
 
-function PitchCard({ pitch, onClick }) {
+function PitchCard({ pitch, onClick, onDetail, canBook }) {
   const rating  = pitch.rating != null ? Number(pitch.rating) : null
   const price   = Number(pitch.pricePerHour)
 
+  const handleDetail = (e) => {
+    e.stopPropagation()
+    onDetail()
+  }
+
   return (
-    <button
-      onClick={onClick}
+    <div
       className="group relative text-left rounded-3xl bg-[var(--surface)] border border-white/[0.06]
                  hover:border-[var(--green-border)] hover:bg-[var(--bg3)]
                  hover:shadow-[0_30px_60px_-30px_var(--green-glow)]
                  transition-all duration-200 overflow-hidden flex flex-col"
     >
-      <PitchThumbnail sport={pitch.sportName} />
+      <button onClick={handleDetail} className="block w-full text-left focus:outline-none">
+        <PitchThumbnail sport={pitch.sportName} />
+      </button>
 
       <span className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest
                        bg-black/40 backdrop-blur text-white border border-white/10">
@@ -469,7 +492,13 @@ function PitchCard({ pitch, onClick }) {
       <div className="p-5 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="text-[17px] font-bold text-white truncate">{pitch.name}</h3>
+            <button
+              onClick={handleDetail}
+              className="text-[17px] font-bold text-white truncate block w-full text-left
+                         hover:text-[var(--green)] transition-colors focus:outline-none"
+            >
+              {pitch.name}
+            </button>
             <p className="text-[12px] text-[var(--text2)] mt-0.5 truncate">
               {pitch.address || pitch.sportName}
             </p>
@@ -491,15 +520,16 @@ function PitchCard({ pitch, onClick }) {
               <span className="text-[var(--text3)] text-xs font-medium"> /hr</span>
             </p>
           </div>
-          <span
+          <button
+            onClick={onClick}
             className="rounded-full bg-[var(--green)] text-[var(--primary-foreground)]
-                       px-4 py-2 text-xs font-bold group-hover:brightness-110 transition-all"
+                       px-4 py-2 text-xs font-bold hover:brightness-110 transition-all"
           >
-            Book Now →
-          </span>
+            {canBook ? 'Book Now →' : 'View Details →'}
+          </button>
         </div>
       </div>
-    </button>
+    </div>
   )
 }
 
