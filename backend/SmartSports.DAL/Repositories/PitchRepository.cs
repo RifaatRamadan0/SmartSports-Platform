@@ -296,7 +296,13 @@ public class PitchRepository : IPitchRepository
                     p.owner_id,
                     p.status,
                     p.created_at,
-                    cover.image_url AS cover_image_url
+                    cover.image_url AS cover_image_url,
+                    COALESCE(
+                        (SELECT array_agg(image_url ORDER BY is_cover DESC, display_order, id)
+                         FROM   pitch_images
+                         WHERE  pitch_id = p.id),
+                        ARRAY[]::text[]
+                    )               AS images
             FROM    pitches         p
             JOIN    sport_types     s    ON s.id = p.sport_type_id
             JOIN    cities          c    ON c.id = p.city_id
@@ -305,7 +311,7 @@ public class PitchRepository : IPitchRepository
                 SELECT image_url
                 FROM   pitch_images
                 WHERE  pitch_id = p.id
-                ORDER BY id
+                ORDER BY is_cover DESC, display_order, id
                 LIMIT  1
             ) cover ON TRUE
             WHERE   p.status    = 0  /* PitchStatus.PendingApproval */

@@ -37,7 +37,7 @@ public interface IPitchRepository
     Task<IEnumerable<PitchListRow>> ListByOwnerAsync(int ownerId);
 
     /// <summary>
-    /// Inserts a new pitch. Server controls owner_id / is_active / is_approved /
+    /// Inserts a new pitch. Server controls owner_id / is_active / status /
     /// created_at — callers must populate those on the entity before calling.
     /// Returns the new pitch id.
     /// </summary>

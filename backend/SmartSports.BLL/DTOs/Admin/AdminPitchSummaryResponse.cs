@@ -14,5 +14,6 @@ public class AdminPitchSummaryResponse
     public int         OwnerId       { get; set; }
     public PitchStatus Status        { get; set; }
     public DateTime    CreatedAt     { get; set; }
-    public string?     CoverImageUrl { get; set; }
+    public string?       CoverImageUrl { get; set; }
+    public IEnumerable<string> Images  { get; set; } = Array.Empty<string>();
 }

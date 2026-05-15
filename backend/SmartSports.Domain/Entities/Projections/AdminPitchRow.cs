@@ -15,4 +15,5 @@ public record AdminPitchRow
     public PitchStatus Status        { get; init; }
     public DateTime    CreatedAt     { get; init; }
     public string?     CoverImageUrl { get; init; }
+    public string[]    Images        { get; init; } = Array.Empty<string>();
 }

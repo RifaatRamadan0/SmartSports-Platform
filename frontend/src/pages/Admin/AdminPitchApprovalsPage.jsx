@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { listPendingPitches, approvePitch, rejectPitch } from '../../services/Admin/adminService'
 import { parseApiError } from '../../utils/errorUtils'
+import PitchCover from '../../components/Pitch/PitchCover'
+import ImageCarousel from '../../components/Pitch/ImageCarousel'
 
 const PAGE_SIZE = 15
 
@@ -41,24 +43,43 @@ function CardSkeleton() {
   )
 }
 
-//  Pitch Field SVG 
+//  Gallery preview modal
 
-function PitchIllustration() {
+function GalleryModal({ images, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   return (
-    <svg viewBox="0 0 200 130" fill="none" width="100" height="65" className="opacity-30">
-      <rect x="2" y="2" width="196" height="126" rx="3" stroke="#4ade80" strokeWidth="2" />
-      <line x1="100" y1="2" x2="100" y2="128" stroke="#4ade80" strokeWidth="1.2" />
-      <circle cx="100" cy="65" r="20" stroke="#4ade80" strokeWidth="1.2" />
-      <circle cx="100" cy="65" r="3" fill="#4ade80" />
-      <rect x="2" y="38" width="28" height="54" stroke="#4ade80" strokeWidth="1.2" />
-      <rect x="170" y="38" width="28" height="54" stroke="#4ade80" strokeWidth="1.2" />
-    </svg>
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        className="relative w-full max-w-3xl rounded-2xl overflow-hidden border border-white/10 bg-[#0a0a0a]"
+      >
+        <button
+          onClick={onClose}
+          aria-label="Close preview"
+          className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80
+                     text-white flex items-center justify-center text-lg"
+        >
+          ×
+        </button>
+        <ImageCarousel images={images} heightClass="h-64 sm:h-[480px]" />
+      </div>
+    </div>
   )
 }
 
 //  Pitch Card
 
-function PitchApprovalCard({ pitch, onApprove, onReject, isProcessing }) {
+function PitchApprovalCard({ pitch, onApprove, onReject, onPreview, isProcessing }) {
   const [rejecting, setRejecting] = useState(false)
   const [reason,    setReason]    = useState('')
 
@@ -81,10 +102,17 @@ function PitchApprovalCard({ pitch, onApprove, onReject, isProcessing }) {
     <div className="flex overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d]
                     hover:border-white/10 transition-colors">
 
-      {/* Left illustration panel */}
-      <div className="hidden sm:flex w-[130px] flex-shrink-0 items-center justify-center bg-[#0a0a0a]">
-        <PitchIllustration />
-      </div>
+      {/* Left cover image — click to open full gallery */}
+      <button
+        type="button"
+        onClick={() => onPreview(pitch)}
+        disabled={!pitch.images || pitch.images.length === 0}
+        aria-label={`Preview images for ${pitch.name}`}
+        className="hidden sm:block w-[130px] flex-shrink-0 bg-[#0a0a0a] group cursor-zoom-in
+                   disabled:cursor-default"
+      >
+        <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} className="w-full h-full" />
+      </button>
 
       {/* Content */}
       <div className="flex-1 p-4 sm:p-5">
@@ -258,8 +286,10 @@ export default function AdminPitchApprovalsPage() {
   const [totalPending, setTotalPending] = useState(0)
   const [processingId, setProcessingId] = useState(null)
   const [toast,        setToast]        = useState(null)
+  const [previewPitch, setPreviewPitch] = useState(null)
 
-  const closeToast = useCallback(() => setToast(null), [])
+  const closeToast   = useCallback(() => setToast(null), [])
+  const closePreview = useCallback(() => setPreviewPitch(null), [])
 
   const fetchPending = useCallback(async (targetPage) => {
     setIsLoading(true)
@@ -373,6 +403,7 @@ export default function AdminPitchApprovalsPage() {
                 pitch={p}
                 onApprove={handleApprove}
                 onReject={handleReject}
+                onPreview={setPreviewPitch}
                 isProcessing={processingId === p.id}
               />
             ))}
@@ -388,6 +419,10 @@ export default function AdminPitchApprovalsPage() {
       )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+
+      {previewPitch && (
+        <GalleryModal images={previewPitch.images ?? []} onClose={closePreview} />
+      )}
     </div>
   )
 }
