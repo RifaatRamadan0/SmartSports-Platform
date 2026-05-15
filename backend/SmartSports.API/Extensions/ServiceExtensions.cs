@@ -209,6 +209,7 @@ public static class ServiceExtensions
         services.AddScoped<IPitchService, PitchService>();
         services.AddScoped<IPitchImageService, PitchImageService>();
         services.AddSingleton<IImageKitAuthService, ImageKitAuthService>();
+        services.AddScoped<IAdminPitchService, AdminPitchService>();
 
         // Lookups
         services.AddScoped<ILookupRepository, LookupRepository>();

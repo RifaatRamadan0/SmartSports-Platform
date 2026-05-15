@@ -1,3 +1,5 @@
+using SmartSports.Domain.Enums;
+
 namespace SmartSports.BLL.DTOs.Pitch;
 
 public class PitchResponse
@@ -12,7 +14,8 @@ public class PitchResponse
     public decimal?  Latitude                  { get; set; }
     public decimal?  Longitude                 { get; set; }
     public int       MaxBookingDurationMinutes { get; set; }
-    public bool      IsActive                  { get; set; }
-    public bool      IsApproved                { get; set; }
-    public DateTime  CreatedAt                 { get; set; }
+    public bool        IsActive         { get; set; }
+    public PitchStatus Status           { get; set; }
+    public string?     RejectionReason  { get; set; }
+    public DateTime    CreatedAt        { get; set; }
 }

@@ -1,6 +1,7 @@
 using SmartSports.DAL.Parameters;
 using SmartSports.Domain.Entities;
 using SmartSports.Domain.Entities.Projections;
+using SmartSports.Domain.Enums;
 using PitchEntity = SmartSports.Domain.Entities.Pitch;
 
 namespace SmartSports.DAL.Interfaces.Pitch;
@@ -55,7 +56,6 @@ public interface IPitchRepository
     /// </summary>
     Task<bool> SoftDeleteAsync(int pitchId);
 
-    /// <summary>
     /// Returns all images for a pitch ordered cover-first, then by display_order, then id.
     /// </summary>
     Task<IEnumerable<PitchImage>> GetPitchImagesAsync(int pitchId);
@@ -89,4 +89,16 @@ public interface IPitchRepository
     /// Deletes a single image scoped to its pitch. Returns false when no row matched.
     /// </summary>
     Task<bool> DeletePitchImageAsync(int pitchId, int imageId);
+
+    /// <summary>
+    /// Returns a paged list of non-deleted pitches with status = PendingApproval,
+    /// joined with owner, city, and sport type — for the admin review queue.
+    /// </summary>
+    Task<(IEnumerable<AdminPitchRow> Items, long TotalCount)> ListPendingAsync(int page, int pageSize);
+
+    /// <summary>
+    /// Sets the status of a non-deleted pitch. Returns true when a row was updated.
+    /// Used exclusively by the admin approval workflow.
+    /// </summary>
+    Task<bool> UpdateStatusAsync(int pitchId, PitchStatus status, string? rejectionReason = null);
 }

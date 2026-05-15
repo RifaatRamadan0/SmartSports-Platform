@@ -1,3 +1,5 @@
+using SmartSports.Domain.Enums;
+
 namespace SmartSports.Domain.Entities;
 
 public class Pitch
@@ -12,9 +14,10 @@ public class Pitch
     public decimal? Rating { get; set; }
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
-    public bool IsActive { get; set; }
-    public bool IsApproved { get; set; }
-    public int MaxBookingDurationMinutes { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? DeletedAt { get; set; }
+    public bool        IsActive         { get; set; }
+    public PitchStatus Status           { get; set; }
+    public string?     RejectionReason  { get; set; }
+    public int         MaxBookingDurationMinutes { get; set; }
+    public DateTime    CreatedAt        { get; set; }
+    public DateTime?   DeletedAt        { get; set; }
 }
