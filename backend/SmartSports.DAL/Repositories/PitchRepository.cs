@@ -378,15 +378,7 @@ public class PitchRepository : IPitchRepository
             new { PitchId = pitchId, ImageId = imageId });
     }
 
-    public async Task<int> CountPitchImagesAsync(int pitchId)
-    {
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<int>(
-            "SELECT COUNT(*) FROM pitch_images WHERE pitch_id = @PitchId",
-            new { PitchId = pitchId });
-    }
-
-    public async Task<PitchImage> AddPitchImageAsync(int pitchId, string imageUrl, bool isCover)
+    public async Task<PitchImage?> AddPitchImageAsync(int pitchId, string imageUrl, bool isCover, int maxImages)
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
@@ -400,25 +392,26 @@ public class PitchRepository : IPitchRepository
                 tx);
         }
 
-        var row = await connection.QuerySingleAsync<PitchImage>(
+        // Cap check + insert are a single statement so concurrent requests cannot
+        // both pass the guard and exceed the limit.
+        var row = await connection.QuerySingleOrDefaultAsync<PitchImage>(
             """
             INSERT INTO pitch_images (pitch_id, image_url, is_cover, display_order)
-            VALUES (
-                @PitchId,
-                @ImageUrl,
-                @IsCover,
-                COALESCE((SELECT MAX(display_order) FROM pitch_images WHERE pitch_id = @PitchId), -1) + 1
-            )
+            SELECT @PitchId,
+                   @ImageUrl,
+                   @IsCover,
+                   COALESCE((SELECT MAX(display_order) FROM pitch_images WHERE pitch_id = @PitchId), -1) + 1
+            WHERE  (SELECT COUNT(*) FROM pitch_images WHERE pitch_id = @PitchId) < @MaxImages
             RETURNING id, pitch_id, image_url, is_cover, display_order, created_at
             """,
-            new { PitchId = pitchId, ImageUrl = imageUrl, IsCover = isCover },
+            new { PitchId = pitchId, ImageUrl = imageUrl, IsCover = isCover, MaxImages = maxImages },
             tx);
 
         await tx.CommitAsync();
         return row;
     }
 
-    public async Task<bool> SetPitchImageCoverAsync(int pitchId, int imageId)
+    public async Task<PitchImage?> SetPitchImageCoverAsync(int pitchId, int imageId)
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
@@ -429,18 +422,19 @@ public class PitchRepository : IPitchRepository
             new { PitchId = pitchId },
             tx);
 
-        var updated = await connection.ExecuteAsync(
+        var row = await connection.QuerySingleOrDefaultAsync<PitchImage>(
             """
             UPDATE pitch_images
             SET    is_cover = TRUE
             WHERE  pitch_id = @PitchId
               AND  id       = @ImageId
+            RETURNING id, pitch_id, image_url, is_cover, display_order, created_at
             """,
             new { PitchId = pitchId, ImageId = imageId },
             tx);
 
         await tx.CommitAsync();
-        return updated > 0;
+        return row;
     }
 
     public async Task<bool> DeletePitchImageAsync(int pitchId, int imageId)

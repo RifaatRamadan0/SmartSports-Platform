@@ -40,21 +40,17 @@ public class PitchImageService : IPitchImageService
         if (url.Length > 2048)
             throw new ArgumentException("Image URL is too long.");
         if (!Uri.TryCreate(url, UriKind.Absolute, out var parsed) || parsed.Scheme != Uri.UriSchemeHttps)
-        {
             throw new ArgumentException("Image URL must be an absolute https URL.");
-        }
-
         if (!AllowedImageHosts.Contains(parsed.Host, StringComparer.OrdinalIgnoreCase))
-        {
             throw new ArgumentException("Image URL must be hosted on an approved provider.");
-        }
-
-        var count = await _pitchRepository.CountPitchImagesAsync(pitchId);
-        if (count >= MaxImagesPerPitch)
-            throw new ArgumentException($"A pitch can have at most {MaxImagesPerPitch} images.");
 
         var isCover = request.IsCover ?? false;
-        var row = await _pitchRepository.AddPitchImageAsync(pitchId, url, isCover);
+
+        // Cap is enforced atomically inside the INSERT — no separate count query.
+        var row = await _pitchRepository.AddPitchImageAsync(pitchId, url, isCover, MaxImagesPerPitch);
+        if (row is null)
+            throw new ArgumentException($"A pitch can have at most {MaxImagesPerPitch} images.");
+
         return ToResponse(row);
     }
 
@@ -62,19 +58,12 @@ public class PitchImageService : IPitchImageService
     {
         await EnsureOwnedAsync(ownerId, pitchId);
 
-        var image = await _pitchRepository.GetPitchImageAsync(pitchId, imageId)
+        // SetPitchImageCoverAsync clears the old cover and sets the new one atomically,
+        // returning the updated row via RETURNING — no separate fetch needed.
+        var row = await _pitchRepository.SetPitchImageCoverAsync(pitchId, imageId)
             ?? throw new KeyNotFoundException($"Image {imageId} was not found for this pitch.");
 
-        if (!image.IsCover)
-        {
-            var updated = await _pitchRepository.SetPitchImageCoverAsync(pitchId, imageId);
-            if (!updated)
-                throw new KeyNotFoundException($"Image {imageId} was not found for this pitch.");
-        }
-
-        var fresh = await _pitchRepository.GetPitchImageAsync(pitchId, imageId)
-            ?? throw new KeyNotFoundException($"Image {imageId} was not found for this pitch.");
-        return ToResponse(fresh);
+        return ToResponse(row);
     }
 
     public async Task DeleteAsync(int ownerId, int pitchId, int imageId)

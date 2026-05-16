@@ -67,23 +67,19 @@ public interface IPitchRepository
     Task<PitchImage?> GetPitchImageAsync(int pitchId, int imageId);
 
     /// <summary>
-    /// Counts images currently attached to a pitch — used to enforce the per-pitch cap.
+    /// Inserts a new image, enforcing the per-pitch cap atomically inside the transaction.
+    /// When <paramref name="isCover"/> is true, any existing cover is unset in the same
+    /// transaction. display_order is assigned as MAX(display_order) + 1 within the pitch.
+    /// Returns null when the cap has been reached (caller should throw 400).
     /// </summary>
-    Task<int> CountPitchImagesAsync(int pitchId);
-
-    /// <summary>
-    /// Inserts a new image. When <paramref name="isCover"/> is true, any existing
-    /// cover for the pitch is unset in the same transaction. display_order is
-    /// assigned as MAX(display_order) + 1 within the pitch.
-    /// </summary>
-    Task<PitchImage> AddPitchImageAsync(int pitchId, string imageUrl, bool isCover);
+    Task<PitchImage?> AddPitchImageAsync(int pitchId, string imageUrl, bool isCover, int maxImages);
 
     /// <summary>
     /// Sets <paramref name="imageId"/> as the cover for <paramref name="pitchId"/>,
-    /// clearing any prior cover in the same transaction. Returns false when the
-    /// image does not belong to the pitch.
+    /// clearing any prior cover in the same transaction. Returns the updated image row,
+    /// or null when the image does not belong to the pitch.
     /// </summary>
-    Task<bool> SetPitchImageCoverAsync(int pitchId, int imageId);
+    Task<PitchImage?> SetPitchImageCoverAsync(int pitchId, int imageId);
 
     /// <summary>
     /// Deletes a single image scoped to its pitch. Returns false when no row matched.

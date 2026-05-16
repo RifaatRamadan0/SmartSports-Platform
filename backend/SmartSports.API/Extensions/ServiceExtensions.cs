@@ -253,7 +253,7 @@ public static class ServiceExtensions
                         QueueLimit = 0
                     }));
 
-            // Caps the ImageKit signing endpoint so a compromised owner account
+            // Caps the ImageKit signing endpoint per IP so a single source
             // can't pound the upload quota or host arbitrary content via our keys.
             options.AddPolicy("imagekit-auth", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
