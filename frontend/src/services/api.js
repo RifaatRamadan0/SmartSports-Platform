@@ -45,22 +45,34 @@ const authEndpointsSkipRefresh = [
 // This prevents React StrictMode's double-invoke from sending two refresh
 // requests and racing against a rotated token.
 let refreshPromise = null
-
-export function refreshSession() {
-  if (!refreshPromise) {
-    refreshPromise = api.post('/api/auth/refresh').finally(() => {
-      refreshPromise = null
-    })
-  }
-  return refreshPromise
-}
-
-// Response interceptor — silent refresh on 401
 let failedQueue = []
 
 function processQueue(error, token = null) {
   failedQueue.forEach((prom) => { error ? prom.reject(error) : prom.resolve(token) })
   failedQueue = []
+}
+
+export function refreshSession() {
+  if (!refreshPromise) {
+    // Wrap so any caller (AuthProvider mount, 401 interceptor) drains the
+    // shared failedQueue when this single refresh resolves/rejects. Without
+    // this, requests queued by the interceptor while AuthProvider's refresh
+    // is in flight would hang forever.
+    refreshPromise = api.post('/api/auth/refresh')
+      .then((response) => {
+        setAccessToken(response.data.accessToken)
+        processQueue(null, response.data.accessToken)
+        return response
+      })
+      .catch((err) => {
+        processQueue(err, null)
+        throw err
+      })
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+  return refreshPromise
 }
 
 api.interceptors.response.use(
@@ -92,12 +104,9 @@ api.interceptors.response.use(
 
     try {
       const { data } = await refreshSession()
-      setAccessToken(data.accessToken)
-      processQueue(null, data.accessToken)
       originalRequest.headers['Authorization'] = 'Bearer ' + data.accessToken
       return api(originalRequest)
     } catch (refreshError) {
-      processQueue(refreshError, null)
       setAccessToken(null)
       window.location.href = '/login'
       return Promise.reject(refreshError)

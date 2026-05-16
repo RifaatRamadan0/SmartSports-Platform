@@ -8,11 +8,12 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true)
 
   // on mount: restore session from httpOnly cookie
+  // refreshSession() owns setAccessToken + draining the failed-request queue;
+  // we only mirror the token/roles into React state here.
   useEffect(() => {
     async function restoreSession() {
       try {
         const { data } = await refreshSession()
-        setAccessToken(data.accessToken)
         setToken(data.accessToken)
         setRoles(data.roles ?? [])
       } catch {

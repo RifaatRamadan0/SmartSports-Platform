@@ -5,7 +5,7 @@ import { ROLES } from '../../constants/roles'
 import { getRoleHomePath } from '../../utils/roleUtils'
 import { requestPitchOwnerRole, addPlayerRoleInstantly, getMyRoleRequests } from '../../services/Settings/settingsService'
 import { parseApiError } from '../../utils/errorUtils'
-import api, { setAccessToken } from '../../services/api'
+import { refreshSession } from '../../services/api'
 
 // ── Status badge for role requests ───────────────────────────────────────────
 
@@ -135,8 +135,11 @@ export default function SettingsPage() {
     setActionLoading(true)
     try {
       await addPlayerRoleInstantly()
-      const { data } = await api.post('/api/auth/refresh')
-      setAccessToken(data.accessToken)
+      // Backend mutates user_roles but our current JWT still lacks the Player
+      // claim — force a refresh so the new claim is reflected in-place. Use
+      // the shared refreshSession() singleton so it coalesces with any other
+      // in-flight refresh (StrictMode mount, 401 interceptor).
+      const { data } = await refreshSession()
       login(data)
       navigate('/dashboard')
     } catch (err) {
