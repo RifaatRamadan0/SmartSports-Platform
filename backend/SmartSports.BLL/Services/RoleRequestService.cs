@@ -20,10 +20,15 @@ public class RoleRequestService : IRoleRequestService
         _userRepository        = userRepository;
     }
 
-    public async Task RequestRoleAsync(int userId, IEnumerable<string> currentRoles, string requestedRole)
+    public async Task RequestRoleAsync(int userId, string requestedRole)
     {
         if (!RequestableRoles.Contains(requestedRole))
             throw new ArgumentException($"Role '{requestedRole}' cannot be requested.");
+
+        // Re-read from DB rather than trusting JWT claims: the access token can outlive
+        // a role revocation by up to its expiry window, so claim-based checks let
+        // already-revoked users pass authorization guards. The DB is the source of truth.
+        var currentRoles = (await _userRepository.GetUserRolesAsync(userId)).ToHashSet(StringComparer.Ordinal);
 
         if (currentRoles.Contains(requestedRole))
             throw new ArgumentException($"You already have the '{requestedRole}' role.");
@@ -31,8 +36,11 @@ public class RoleRequestService : IRoleRequestService
         await _roleRequestRepository.CreateAsync(userId, requestedRole);
     }
 
-    public async Task AddPlayerRoleInstantlyAsync(int userId, IEnumerable<string> currentRoles)
+    public async Task AddPlayerRoleInstantlyAsync(int userId)
     {
+        // See RequestRoleAsync for why claims are not used here.
+        var currentRoles = (await _userRepository.GetUserRolesAsync(userId)).ToHashSet(StringComparer.Ordinal);
+
         if (!currentRoles.Contains("PitchOwner"))
             throw new ArgumentException("Only Pitch Owners can add Player access instantly.");
 

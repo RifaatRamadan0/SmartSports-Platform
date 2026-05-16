@@ -21,9 +21,6 @@ public class RoleController : ControllerBase
     private int CurrentUserId =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-    private IEnumerable<string> CurrentRoles =>
-        User.FindAll(ClaimTypes.Role).Select(c => c.Value);
-
     /// <summary>
     /// POST /api/roles/request
     /// Submits a role upgrade request (e.g., Player → PitchOwner). Requires admin approval.
@@ -34,7 +31,7 @@ public class RoleController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RequestRole([FromBody] RequestRoleRequest request)
     {
-        await _roleRequestService.RequestRoleAsync(CurrentUserId, CurrentRoles, request.RequestedRole);
+        await _roleRequestService.RequestRoleAsync(CurrentUserId, request.RequestedRole);
         return NoContent();
     }
 
@@ -47,7 +44,7 @@ public class RoleController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddPlayerRole()
     {
-        await _roleRequestService.AddPlayerRoleInstantlyAsync(CurrentUserId, CurrentRoles);
+        await _roleRequestService.AddPlayerRoleInstantlyAsync(CurrentUserId);
         return NoContent();
     }
 

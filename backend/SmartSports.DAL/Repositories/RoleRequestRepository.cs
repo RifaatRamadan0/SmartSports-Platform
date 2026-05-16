@@ -92,23 +92,20 @@ public class RoleRequestRepository : IRoleRequestRepository
         using var transaction = await connection.BeginTransactionAsync();
         try
         {
-            var request = await connection.QuerySingleOrDefaultAsync<RoleRequest>(
-                "SELECT id, user_id, status FROM role_requests WHERE id = @RequestId",
-                new { RequestId = requestId }, transaction);
-
-            if (request is null)
-                throw new KeyNotFoundException("Role request not found.");
-
-            if (request.Status != RoleRequestStatus.Pending)
-                throw new ArgumentException("Role request is no longer pending.");
-
-            await connection.ExecuteAsync(
+            // Conditional UPDATE — only the first concurrent caller flips the row
+            // from Pending; the rest get null back and bail out. RETURNING avoids
+            // a separate SELECT and closes the TOCTOU window the prior version had.
+            var userId = await connection.ExecuteScalarAsync<int?>(
                 """
                 UPDATE role_requests
                 SET    status = 1, processed_at = NOW(), processed_by = @AdminId
-                WHERE  id = @RequestId
+                WHERE  id = @RequestId AND status = 0
+                RETURNING user_id
                 """,
                 new { RequestId = requestId, AdminId = adminId }, transaction);
+
+            if (userId is null)
+                throw new KeyNotFoundException("Role request not found or already processed.");
 
             await connection.ExecuteAsync(
                 """
@@ -116,7 +113,7 @@ public class RoleRequestRepository : IRoleRequestRepository
                 VALUES (@UserId, @RoleId)
                 ON CONFLICT DO NOTHING
                 """,
-                new { UserId = request.UserId, RoleId = roleId }, transaction);
+                new { UserId = userId.Value, RoleId = roleId }, transaction);
 
             await transaction.CommitAsync();
         }
