@@ -1,6 +1,6 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.RoleRequest;
 using SmartSports.BLL.Interfaces;
 
@@ -12,14 +12,18 @@ namespace SmartSports.API.Controllers;
 public class RoleController : ControllerBase
 {
     private readonly IRoleRequestService _roleRequestService;
+    private readonly ICurrentUserService _currentUser;
 
-    public RoleController(IRoleRequestService roleRequestService)
+    public RoleController(
+        IRoleRequestService roleRequestService,
+        ICurrentUserService currentUser)
     {
         _roleRequestService = roleRequestService;
+        _currentUser        = currentUser;
     }
 
     private int CurrentUserId =>
-        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        _currentUser.GetUserId() ?? throw new UnauthorizedAccessException();
 
     /// <summary>
     /// POST /api/roles/request

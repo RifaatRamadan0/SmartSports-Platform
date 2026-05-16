@@ -18,6 +18,7 @@ using SmartSports.DAL.Interfaces.Lookup;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Interfaces.Review;
 using SmartSports.DAL.Interfaces.RoleRequests;
+using SmartSports.API.Services;
 using SmartSports.DAL.Repositories;
 
 namespace SmartSports.API.Extensions;
@@ -93,8 +94,8 @@ public static class ServiceExtensions
             {
                 policy
                     .WithOrigins(allowedOrigins)
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
+                    .WithHeaders("Content-Type", "Authorization", "X-Requested-With")
+                    .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                     .AllowCredentials();
             });
         });
@@ -181,6 +182,9 @@ public static class ServiceExtensions
         });
         services.AddHttpClient<IResend, ResendClient>();
 
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
@@ -254,6 +258,19 @@ public static class ServiceExtensions
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 30,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            // Static lookup data (cities, sport types) rarely changes. 60 req/min
+            // is generous for legitimate use but prevents scraping loops.
+            options.AddPolicy("lookups", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 60,
                         Window = TimeSpan.FromMinutes(1),
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                         QueueLimit = 0

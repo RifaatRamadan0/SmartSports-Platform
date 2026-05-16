@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using SmartSports.BLL.DTOs.Availability;
 using SmartSports.BLL.Interfaces;
 
@@ -23,6 +24,7 @@ namespace SmartSports.API.Controllers
         /// </summary>
         [HttpGet("{id:int}/availability")]
         [AllowAnonymous]
+        [EnableRateLimiting("availability")]
         [ProducesResponseType(typeof(IEnumerable<SlotResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

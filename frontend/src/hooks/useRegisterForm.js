@@ -288,6 +288,7 @@ export function useRegisterForm() {
 
     try {
       await api.post('/api/auth/register', payload)
+      setForm(prev => ({ ...prev, password: '' }))
       navigate('/verify-email', { state: { email: form.email }, replace: true })
     } catch (err) {
       const msg = parseApiError(err, 'Registration failed. Please try again.')

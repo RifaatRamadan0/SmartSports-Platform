@@ -1,6 +1,6 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.Admin;
 using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.RoleRequest;
@@ -15,13 +15,16 @@ public class AdminController : ControllerBase
 {
     private readonly IAdminPitchService       _adminPitchService;
     private readonly IAdminRoleRequestService _adminRoleRequestService;
+    private readonly ICurrentUserService      _currentUser;
 
     public AdminController(
         IAdminPitchService       adminPitchService,
-        IAdminRoleRequestService adminRoleRequestService)
+        IAdminRoleRequestService adminRoleRequestService,
+        ICurrentUserService      currentUser)
     {
         _adminPitchService       = adminPitchService;
         _adminRoleRequestService = adminRoleRequestService;
+        _currentUser             = currentUser;
     }
 
     /// <summary>
@@ -93,7 +96,7 @@ public class AdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ApproveRoleRequest(int id)
     {
-        var adminId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var adminId = _currentUser.GetUserId() ?? throw new UnauthorizedAccessException();
         await _adminRoleRequestService.ApproveRequestAsync(id, adminId);
         return NoContent();
     }
@@ -107,7 +110,7 @@ public class AdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RejectRoleRequest(int id, [FromBody] RejectRoleRequestRequest request)
     {
-        var adminId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var adminId = _currentUser.GetUserId() ?? throw new UnauthorizedAccessException();
         await _adminRoleRequestService.RejectRequestAsync(id, adminId, request.Reason);
         return NoContent();
     }

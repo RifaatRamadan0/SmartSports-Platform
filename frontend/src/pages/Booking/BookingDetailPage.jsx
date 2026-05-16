@@ -5,7 +5,7 @@ import { ROLES } from '../../constants/roles'
 import { getBookingById, cancelBooking } from '../../services/Booking/bookingService'
 import { parseApiError } from '../../utils/errorUtils'
 
-const CANCEL_BUFFER_MS = 60 * 60 * 1000
+import { CANCEL_BUFFER_MS } from '../../constants'
 
 const fmtDate = d =>
   new Date(d + 'T00:00:00').toLocaleDateString('en-GB', {

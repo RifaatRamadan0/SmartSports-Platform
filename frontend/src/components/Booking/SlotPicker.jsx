@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getAvailableSlots } from '../../services/Availability/availabilityService';
 import { parseApiError } from '../../utils/errorUtils';
 
-// Constants 
-const SLOT_DURATION_MINUTES = 30;
-const MIN_BOOKING_SLOTS     = 2;  // 1 hour minimum = 2 slots
-const MAX_DAYS_AHEAD        = 30;
+import { SLOT_DURATION_MINUTES, DAY_NAMES_SHORT } from '../../constants';
 
-const DAY_NAMES   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+// Constants
+const MIN_BOOKING_SLOTS = 2;  // 1 hour minimum = 2 slots
+const MAX_DAYS_AHEAD    = 30;
+
+const DAY_NAMES   = DAY_NAMES_SHORT;
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun',
                      'Jul','Aug','Sep','Oct','Nov','Dec'];
 

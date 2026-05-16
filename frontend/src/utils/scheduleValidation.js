@@ -5,9 +5,11 @@
  * @param {Array} schedule
  * @returns {string[]}
  */
+import { DAY_NAMES_LONG } from '../constants'
+
 export const validateSchedule = (schedule) => {
   const errors = [];
-  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const DAY_NAMES = DAY_NAMES_LONG;
 
   for (const day of schedule) {
     // Skip closed days — no time validation needed

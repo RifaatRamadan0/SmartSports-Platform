@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SmartSports.BLL.DTOs.Lookup;
 using SmartSports.BLL.Interfaces;
 
@@ -22,6 +23,8 @@ public class CitiesController : ControllerBase
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
+    [EnableRateLimiting("lookups")]
+    [ResponseCache(Duration = 3600)]
     [ProducesResponseType(typeof(IEnumerable<CityResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List()
     {

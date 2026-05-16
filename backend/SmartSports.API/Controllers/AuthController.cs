@@ -208,6 +208,14 @@ public class AuthController : ControllerBase
 
     private void SetRefreshTokenCookie(string refreshToken, DateTime expiresAt)
     {
+        // SameSite=None is intentional.
+        // SameSite=Strict/Lax was attempted but rejected: browsers classify hard refreshes
+        // and direct URL navigation as cross-site requests, blocking the cookie on the
+        // /api/auth/refresh call and returning 403. SameSite=None keeps the flow working.
+        // CSRF risk is acceptable here because:
+        //   - The cookie is HttpOnly (unreachable by JS)
+        //   - This endpoint only issues a new access token; it performs no state mutation
+        //   - Access tokens expire in 15 minutes, limiting blast radius
         Response.Cookies.Append(RefreshTokenCookieName, refreshToken, new CookieOptions
         {
             HttpOnly = true,

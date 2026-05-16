@@ -14,6 +14,7 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
 
+        builder.Services.AddResponseCaching();
         builder.Services.AddSwaggerConfiguration();
         builder.Services.AddCorsConfiguration(builder.Configuration);
         builder.Services.AddJwtAuthentication(builder.Configuration);
@@ -25,6 +26,16 @@ public class Program
 
         // ── Build ────────────────────────────────────────────────
         var app = builder.Build();
+
+        // Fail fast if the JWT secret is too short — minimum 32 bytes (256 bits),
+        // recommended 48+ bytes. Catches misconfigured deployments at startup.
+        var jwtSecret = builder.Configuration["Jwt:Secret"] ?? string.Empty;
+        var secretBytes = Convert.TryFromBase64String(jwtSecret, new byte[512], out var bytesWritten)
+            ? bytesWritten
+            : System.Text.Encoding.UTF8.GetByteCount(jwtSecret);
+        if (secretBytes < 32)
+            throw new InvalidOperationException(
+                $"Jwt:Secret is too short ({secretBytes} bytes). Minimum is 32 bytes; 48+ bytes recommended.");
 
         // Tell Dapper to map snake_case column names to PascalCase properties
         // e.g. password_hash → PasswordHash, created_at → CreatedAt
@@ -56,6 +67,8 @@ public class Program
         app.UseHttpsRedirection();
 
         app.UseCors("SmartSportsCorsPolicy");
+
+        app.UseResponseCaching();
 
         app.UseRateLimiter();
 

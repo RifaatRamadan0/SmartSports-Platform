@@ -105,8 +105,9 @@ export default function SettingsPage() {
     try {
       const data = await getMyRoleRequests()
       setRequests(data ?? [])
-    } catch {
-      // non-critical, fail silently
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('Failed to load role requests:', err)
+      setToast({ message: 'Could not load your role requests.', type: 'error' })
     } finally {
       setIsLoadingReqs(false)
     }

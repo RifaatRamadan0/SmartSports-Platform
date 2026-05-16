@@ -52,9 +52,9 @@ public class PitchRepository : IPitchRepository
             JOIN   cities      c ON c.id = p.city_id
             WHERE  p.id          = @PitchId
               AND  p.is_active = TRUE
-              AND  p.status   = 1  /* PitchStatus.Approved */
+              AND  p.status   = @Status
             """,
-            new { PitchId = pitchId });
+            new { PitchId = pitchId, Status = (int)PitchStatus.Approved });
     }
 
     public async Task<IEnumerable<string>> GetImagesAsync(int pitchId)
@@ -87,6 +87,51 @@ public class PitchRepository : IPitchRepository
             new { PitchId = pitchId });
     }
 
+    public async Task<(PitchDetailRow? Detail, IEnumerable<string> Images, IEnumerable<ScheduleRow> Schedule)>
+        GetDetailWithDataAsync(int pitchId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        using var multi = await connection.QueryMultipleAsync(
+            """
+            SELECT p.id,
+                   p.owner_id,
+                   p.name,
+                   s.name  AS sport_type_name,
+                   c.name  AS city_name,
+                   p.address,
+                   p.price_per_hour,
+                   p.rating,
+                   p.max_booking_duration_minutes
+            FROM   pitches     p
+            JOIN   sport_types s ON s.id = p.sport_type_id
+            JOIN   cities      c ON c.id = p.city_id
+            WHERE  p.id       = @PitchId
+              AND  p.is_active = TRUE
+              AND  p.status   = @Status;
+
+            SELECT image_url
+            FROM   pitch_images
+            WHERE  pitch_id = @PitchId
+            ORDER  BY is_cover DESC, display_order, id;
+
+            SELECT pitch_id,
+                   CAST(day_of_week AS INTEGER) AS day_of_week,
+                   open_time,
+                   close_time,
+                   is_active
+            FROM   pitch_weekly_schedules
+            WHERE  pitch_id = @PitchId
+            ORDER  BY day_of_week
+            """,
+            new { PitchId = pitchId, Status = (int)PitchStatus.Approved });
+
+        var detail   = await multi.ReadSingleOrDefaultAsync<PitchDetailRow>();
+        var images   = (await multi.ReadAsync<string>()).ToList();
+        var schedule = (await multi.ReadAsync<ScheduleRow>()).ToList();
+
+        return (detail, images, schedule);
+    }
+
     public async Task<(IEnumerable<PitchListRow> Items, long TotalCount)> ListAsync(PitchFilterParams filters)
     {
         using var connection = _connectionFactory.CreateConnection();
@@ -95,7 +140,7 @@ public class PitchRepository : IPitchRepository
         var conditions = new List<string>
         {
             "p.is_active  = TRUE",
-            "p.status     = 1  /* PitchStatus.Approved */",
+            "p.status     = @ApprovedStatus",
             "p.deleted_at IS NULL",
         };
 
@@ -123,12 +168,13 @@ public class PitchRepository : IPitchRepository
         var whereClause = string.Join(" AND ", conditions);
         var parameters  = new
         {
-            SearchPattern = $"%{EscapeLike(filters.Search?.Trim())}%",
-            Sport         = filters.Sport,
-            City          = filters.City,
-            MaxPrice      = filters.MaxPrice,
-            PageSize      = filters.PageSize,
-            Offset        = (filters.Page - 1) * filters.PageSize,
+            SearchPattern  = $"%{EscapeLike(filters.Search?.Trim())}%",
+            Sport          = filters.Sport,
+            City           = filters.City,
+            MaxPrice       = filters.MaxPrice,
+            PageSize       = filters.PageSize,
+            Offset         = (filters.Page - 1) * filters.PageSize,
+            ApprovedStatus = (int)PitchStatus.Approved,
         };
 
         var countSql = $"""
@@ -278,12 +324,12 @@ public class PitchRepository : IPitchRepository
     {
         using var connection = _connectionFactory.CreateConnection();
 
-        var parameters = new { PageSize = pageSize, Offset = (page - 1) * pageSize };
+        var parameters = new { PageSize = pageSize, Offset = (page - 1) * pageSize, PendingStatus = (int)PitchStatus.PendingApproval };
 
         const string countSql = """
             SELECT COUNT(*)
             FROM   pitches p
-            WHERE  p.status    = 0  /* PitchStatus.PendingApproval */
+            WHERE  p.status    = @PendingStatus
               AND  p.deleted_at IS NULL
             """;
 
@@ -316,7 +362,7 @@ public class PitchRepository : IPitchRepository
                 ORDER BY is_cover DESC, display_order, id
                 LIMIT  1
             ) cover ON TRUE
-            WHERE   p.status    = 0  /* PitchStatus.PendingApproval */
+            WHERE   p.status    = @PendingStatus
               AND   p.deleted_at IS NULL
             ORDER BY p.created_at DESC
             LIMIT  @PageSize

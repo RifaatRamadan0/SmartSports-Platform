@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SmartSports.BLL.DTOs.Lookup;
 using SmartSports.BLL.Interfaces;
 
@@ -23,6 +24,8 @@ public class LookupsController : ControllerBase
     /// </summary>
     [HttpGet("cities")]
     [AllowAnonymous]
+    [EnableRateLimiting("lookups")]
+    [ResponseCache(Duration = 3600)]
     [ProducesResponseType(typeof(IEnumerable<CityResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListCities()
         => Ok(await _lookupService.ListCitiesAsync());
@@ -33,6 +36,8 @@ public class LookupsController : ControllerBase
     /// </summary>
     [HttpGet("sport-types")]
     [AllowAnonymous]
+    [EnableRateLimiting("lookups")]
+    [ResponseCache(Duration = 3600)]
     [ProducesResponseType(typeof(IEnumerable<SportTypeResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListSportTypes()
         => Ok(await _lookupService.ListSportTypesAsync());

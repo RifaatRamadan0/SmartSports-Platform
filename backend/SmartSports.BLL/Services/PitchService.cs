@@ -22,14 +22,12 @@ public class PitchService : IPitchService
 
     public async Task<PitchDetailResponse> GetDetailAsync(int pitchId)
     {
-        var detail = await _pitchRepository.GetDetailAsync(pitchId)
-            ?? throw new KeyNotFoundException($"Pitch with ID {pitchId} was not found.");
+        var (detail, images, schedule) = await _pitchRepository.GetDetailWithDataAsync(pitchId);
 
-        var imagesTask   = _pitchRepository.GetImagesAsync(pitchId);
-        var scheduleTask = _pitchRepository.GetScheduleAsync(pitchId);
-        var reviewsTask  = _reviewService.GetRecentByPitchAsync(pitchId, 5);
+        if (detail is null)
+            throw new KeyNotFoundException($"Pitch with ID {pitchId} was not found.");
 
-        await Task.WhenAll(imagesTask, scheduleTask, reviewsTask);
+        var reviews = await _reviewService.GetRecentByPitchAsync(pitchId, 5);
 
         return new PitchDetailResponse
         {
@@ -42,15 +40,15 @@ public class PitchService : IPitchService
             PricePerHour              = detail.PricePerHour,
             Rating                    = detail.Rating,
             MaxBookingDurationMinutes = detail.MaxBookingDurationMinutes,
-            Images                    = imagesTask.Result,
-            Schedule                  = scheduleTask.Result.Select(s => new ScheduleDayResponse
+            Images                    = images,
+            Schedule                  = schedule.Select(s => new ScheduleDayResponse
             {
                 DayOfWeek = s.DayOfWeek,
                 OpenTime  = s.OpenTime,
                 CloseTime = s.CloseTime,
                 IsActive  = s.IsActive,
             }),
-            RecentReviews             = reviewsTask.Result,
+            RecentReviews             = reviews,
         };
     }
 

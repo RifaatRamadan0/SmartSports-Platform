@@ -58,7 +58,7 @@ export default function PitchDiscoveryPage() {
         setCities(c)
       })
       .catch(err => {
-        console.error('Failed to load filter options:', err)
+        if (import.meta.env.DEV) console.error('Failed to load filter options:', err)
         setLookupError('Could not load filter options.')
       })
   }, [])

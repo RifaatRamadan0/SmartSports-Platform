@@ -1,6 +1,6 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Pitch;
 using SmartSports.BLL.Interfaces;
@@ -11,13 +11,18 @@ namespace SmartSports.API.Controllers;
 [Route("api/pitches")]
 public class PitchesController : ControllerBase
 {
-    private readonly IPitchService      _pitchService;
-    private readonly IPitchImageService _pitchImageService;
+    private readonly IPitchService        _pitchService;
+    private readonly IPitchImageService   _pitchImageService;
+    private readonly ICurrentUserService  _currentUser;
 
-    public PitchesController(IPitchService pitchService, IPitchImageService pitchImageService)
+    public PitchesController(
+        IPitchService       pitchService,
+        IPitchImageService  pitchImageService,
+        ICurrentUserService currentUser)
     {
         _pitchService      = pitchService;
         _pitchImageService = pitchImageService;
+        _currentUser       = currentUser;
     }
 
     /// <summary>
@@ -45,10 +50,10 @@ public class PitchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ListMine()
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
-            return Unauthorized();
+        var ownerId = _currentUser.GetUserId();
+        if (ownerId is null) return Unauthorized();
 
-        var result = await _pitchService.ListMineAsync(ownerId);
+        var result = await _pitchService.ListMineAsync(ownerId.Value);
         return Ok(result);
     }
 
@@ -65,10 +70,10 @@ public class PitchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetMineById(int id)
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
-            return Unauthorized();
+        var ownerId = _currentUser.GetUserId();
+        if (ownerId is null) return Unauthorized();
 
-        var pitch = await _pitchService.GetOwnedByIdAsync(ownerId, id);
+        var pitch = await _pitchService.GetOwnedByIdAsync(ownerId.Value, id);
         return Ok(pitch);
     }
 
@@ -100,10 +105,10 @@ public class PitchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create([FromBody] CreatePitchRequest request)
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
-            return Unauthorized();
+        var ownerId = _currentUser.GetUserId();
+        if (ownerId is null) return Unauthorized();
 
-        var created = await _pitchService.CreateAsync(ownerId, request);
+        var created = await _pitchService.CreateAsync(ownerId.Value, request);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
@@ -120,10 +125,10 @@ public class PitchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdatePitchRequest request)
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
-            return Unauthorized();
+        var ownerId = _currentUser.GetUserId();
+        if (ownerId is null) return Unauthorized();
 
-        var updated = await _pitchService.UpdateAsync(ownerId, id, request);
+        var updated = await _pitchService.UpdateAsync(ownerId.Value, id, request);
         return Ok(updated);
     }
 
@@ -139,10 +144,10 @@ public class PitchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
-            return Unauthorized();
+        var ownerId = _currentUser.GetUserId();
+        if (ownerId is null) return Unauthorized();
 
-        await _pitchService.SoftDeleteAsync(ownerId, id);
+        await _pitchService.SoftDeleteAsync(ownerId.Value, id);
         return NoContent();
     }
 
@@ -160,10 +165,10 @@ public class PitchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ListImages(int pitchId)
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
-            return Unauthorized();
+        var ownerId = _currentUser.GetUserId();
+        if (ownerId is null) return Unauthorized();
 
-        var images = await _pitchImageService.ListAsync(ownerId, pitchId);
+        var images = await _pitchImageService.ListAsync(ownerId.Value, pitchId);
         return Ok(images);
     }
 
@@ -181,10 +186,10 @@ public class PitchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AddImage(int pitchId, [FromBody] AddPitchImageRequest request)
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
-            return Unauthorized();
+        var ownerId = _currentUser.GetUserId();
+        if (ownerId is null) return Unauthorized();
 
-        var created = await _pitchImageService.AddAsync(ownerId, pitchId, request);
+        var created = await _pitchImageService.AddAsync(ownerId.Value, pitchId, request);
         return CreatedAtAction(nameof(ListImages), new { pitchId }, created);
     }
 
@@ -200,10 +205,10 @@ public class PitchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetCover(int pitchId, int imageId)
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
-            return Unauthorized();
+        var ownerId = _currentUser.GetUserId();
+        if (ownerId is null) return Unauthorized();
 
-        var updated = await _pitchImageService.SetCoverAsync(ownerId, pitchId, imageId);
+        var updated = await _pitchImageService.SetCoverAsync(ownerId.Value, pitchId, imageId);
         return Ok(updated);
     }
 
@@ -220,10 +225,10 @@ public class PitchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteImage(int pitchId, int imageId)
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
-            return Unauthorized();
+        var ownerId = _currentUser.GetUserId();
+        if (ownerId is null) return Unauthorized();
 
-        await _pitchImageService.DeleteAsync(ownerId, pitchId, imageId);
+        await _pitchImageService.DeleteAsync(ownerId.Value, pitchId, imageId);
         return NoContent();
     }
 }
