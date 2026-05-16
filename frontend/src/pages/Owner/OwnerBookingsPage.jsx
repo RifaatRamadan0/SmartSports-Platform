@@ -7,7 +7,9 @@ import StatusBadge from '../../components/ui/StatusBadge'
 import Toast from '../../components/ui/Toast'
 import { parseApiError } from '../../utils/errorUtils'
 
-const PAGE_SIZE = 10
+import { BOOKINGS_PAGE_SIZE } from '../../constants'
+
+const PAGE_SIZE = BOOKINGS_PAGE_SIZE
 
 const fmtTime = t => t.slice(0, 5)
 

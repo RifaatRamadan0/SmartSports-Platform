@@ -9,16 +9,14 @@ import Toast from '../../components/ui/Toast'
 import { springTransition, stepVariants, confirmCardVariants, buttonHover, buttonTap } from '../../lib/motion'
 import PitchCover from '../../components/Pitch/PitchCover'
 import GalleryModal from '../../components/Pitch/GalleryModal'
+import { SLOT_DURATION_MINUTES, DAY_NAMES_ABBR, MONTH_NAMES } from '../../constants'
 
-const SLOT_DURATION_MINUTES = 30
 const MAX_DAYS_AHEAD        = 30
 const VISIBLE_DATES         = 7
 const INITIAL_VISIBLE_SLOTS = 8
 const DEFAULT_MAX_DURATION  = 120  // fallback until pitch data arrives
 
-const DAY_NAMES   = ['SUN','MON','TUE','WED','THU','FRI','SAT']
-const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN',
-                     'JUL','AUG','SEP','OCT','NOV','DEC']
+const DAY_NAMES = DAY_NAMES_ABBR
 
 // Helpers
 const toApiDate = (date) => {
@@ -71,9 +69,7 @@ export default function BookingPage() {
   const navigate = useNavigate()
 
   const {
-    pricePerHour,
     pitchName,
-    maxBookingDurationMinutes: stateMaxDuration,
     sport,
     surface,
     format,
@@ -99,12 +95,12 @@ export default function BookingPage() {
     return () => { cancelled = true }
   }, [pitchId])
 
-  const resolvedName     = pitchName     ?? pitch?.name
-  const resolvedPrice    = typeof pricePerHour === 'number' ? pricePerHour : pitch?.pricePerHour
-  const resolvedMaxDuration =
-    typeof stateMaxDuration === 'number'
-      ? stateMaxDuration
-      : (pitch?.maxBookingDurationMinutes ?? DEFAULT_MAX_DURATION)
+  // Use optimistic name/display info from location.state for fast first paint.
+  // Price and duration limits come exclusively from the API response to prevent
+  // spoofed location.state from ever showing a wrong price to the user.
+  const resolvedName        = pitch?.name ?? pitchName
+  const resolvedPrice       = pitch?.pricePerHour ?? null
+  const resolvedMaxDuration = pitch?.maxBookingDurationMinutes ?? DEFAULT_MAX_DURATION
 
   const allDurationOptions = useMemo(
     () => buildDurationOptions(resolvedMaxDuration),

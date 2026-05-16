@@ -1,6 +1,6 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.Interfaces;
 
@@ -12,11 +12,15 @@ namespace SmartSports.API.Controllers;
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class BookingController : ControllerBase
 {
-    private readonly IBookingService _bookingService;
+    private readonly IBookingService     _bookingService;
+    private readonly ICurrentUserService _currentUser;
 
-    public BookingController(IBookingService bookingService)
+    public BookingController(
+        IBookingService     bookingService,
+        ICurrentUserService currentUser)
     {
         _bookingService = bookingService;
+        _currentUser    = currentUser;
     }
 
     // SPDBTCP-166 — Rifaat
@@ -107,14 +111,5 @@ public class BookingController : ControllerBase
         return Ok(result);
     }
 
-    // private helpers
-    /// <summary>
-    /// Extracts the authenticated user's ID from JWT claims.
-    /// Returns null if the claim is missing (misconfigured token).
-    /// </summary>
-    private int? GetUserId()
-    {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        return int.TryParse(claim, out var id) ? id : null;
-    }
+    private int? GetUserId() => _currentUser.GetUserId();
 }

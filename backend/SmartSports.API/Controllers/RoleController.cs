@@ -1,6 +1,6 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.RoleRequest;
 using SmartSports.BLL.Interfaces;
 
@@ -12,14 +12,15 @@ namespace SmartSports.API.Controllers;
 public class RoleController : ControllerBase
 {
     private readonly IRoleRequestService _roleRequestService;
+    private readonly ICurrentUserService _currentUser;
 
-    public RoleController(IRoleRequestService roleRequestService)
+    public RoleController(
+        IRoleRequestService roleRequestService,
+        ICurrentUserService currentUser)
     {
         _roleRequestService = roleRequestService;
+        _currentUser        = currentUser;
     }
-
-    private int CurrentUserId =>
-        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     /// <summary>
     /// POST /api/roles/request
@@ -31,7 +32,10 @@ public class RoleController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RequestRole([FromBody] RequestRoleRequest request)
     {
-        await _roleRequestService.RequestRoleAsync(CurrentUserId, request.RequestedRole);
+        var userId = _currentUser.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        await _roleRequestService.RequestRoleAsync(userId.Value, request.RequestedRole);
         return NoContent();
     }
 
@@ -44,7 +48,10 @@ public class RoleController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddPlayerRole()
     {
-        await _roleRequestService.AddPlayerRoleInstantlyAsync(CurrentUserId);
+        var userId = _currentUser.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        await _roleRequestService.AddPlayerRoleInstantlyAsync(userId.Value);
         return NoContent();
     }
 
@@ -56,7 +63,10 @@ public class RoleController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<RoleRequestResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyRequests()
     {
-        var result = await _roleRequestService.GetMyRequestsAsync(CurrentUserId);
+        var userId = _currentUser.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var result = await _roleRequestService.GetMyRequestsAsync(userId.Value);
         return Ok(result);
     }
 }

@@ -58,7 +58,7 @@ export default function PitchDiscoveryPage() {
         setCities(c)
       })
       .catch(err => {
-        console.error('Failed to load filter options:', err)
+        if (import.meta.env.DEV) console.error('Failed to load filter options:', err)
         setLookupError('Could not load filter options.')
       })
   }, [])
@@ -402,7 +402,7 @@ function FilterBar({
             value={city}
             onChange={onCityChange}
             placeholder="All cities"
-            options={cities.map(c => ({ value: c.name, label: c.name }))}
+            options={[...new Map(cities.map(c => [c.name, c])).values()].map(c => ({ value: c.name, label: c.name }))}
           />
 
           {/* Max price */}

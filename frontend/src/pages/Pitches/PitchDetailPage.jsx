@@ -8,96 +8,9 @@ import { ROLES } from '../../constants/roles'
 import { getPitchById } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
 import ImageCarousel from '../../components/Pitch/ImageCarousel'
-
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-
-function formatTime(timeSpan) {
-  return timeSpan ? timeSpan.substring(0, 5) : ''
-}
-
-function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
-// Star rating
-
-function StarRating({ value }) {
-  const rounded = Math.round(value ?? 0)
-  return (
-    <span className="flex items-center gap-0.5 text-base leading-none">
-      {[1, 2, 3, 4, 5].map(i => (
-        <span key={i} className={i <= rounded ? 'text-yellow-400' : 'text-[var(--text3)]'}>
-          ★
-        </span>
-      ))}
-    </span>
-  )
-}
-
-// Weekly schedule 
-
-function WeeklySchedule({ schedule }) {
-  const slotMap = Object.fromEntries(schedule.map(s => [s.dayOfWeek, s]))
-
-  return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[var(--surface)] overflow-hidden">
-      {DAY_NAMES.map((day, i) => {
-        const slot = slotMap[i]
-        const open = slot?.isActive
-
-        return (
-          <div
-            key={i}
-            className={`flex items-center justify-between px-4 py-3 border-b border-white/[0.05] last:border-b-0 ${
-              open ? '' : 'opacity-40'
-            }`}
-          >
-            <span className={`text-sm font-medium ${open ? 'text-white' : 'text-[var(--text2)]'}`}>
-              {day}
-            </span>
-            {open ? (
-              <span className="text-sm text-[var(--green)] font-medium tabular-nums">
-                {formatTime(slot.openTime)} – {formatTime(slot.closeTime)}
-              </span>
-            ) : (
-              <span className="text-sm text-[var(--text3)]">Closed</span>
-            )}
-          </div>
-        )
-      })}
-      {schedule.length === 0 && (
-        <p className="px-4 py-6 text-sm text-[var(--text3)] text-center">No schedule published yet.</p>
-      )}
-    </div>
-  )
-}
-
-// Review card
-
-function ReviewCard({ review }) {
-  const initial = review.reviewerName ? review.reviewerName[0].toUpperCase() : '?'
-
-  return (
-    <div className="rounded-xl border border-white/[0.07] bg-[var(--surface)] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[var(--green)] flex items-center justify-center
-                          text-xs font-bold text-[var(--primary-foreground)] shrink-0">
-            {initial}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-white leading-tight">{review.reviewerName}</p>
-            <p className="text-[11px] text-[var(--text3)] mt-0.5">{formatDate(review.createdAt)}</p>
-          </div>
-        </div>
-        <StarRating value={review.rating} />
-      </div>
-      {review.comment && (
-        <p className="mt-3 text-sm text-[var(--text2)] leading-relaxed">{review.comment}</p>
-      )}
-    </div>
-  )
-}
+import WeeklySchedule from '../../components/Pitch/WeeklySchedule'
+import ReviewCard from '../../components/Pitch/ReviewCard'
+import StarRating from '../../components/ui/StarRating'
 
 // Loading skeleton
 

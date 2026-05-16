@@ -11,7 +11,9 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    console.error('Uncaught error:', error, info)
+    if (import.meta.env.DEV) {
+      console.error('Uncaught error:', error, info)
+    }
   }
 
   render() {

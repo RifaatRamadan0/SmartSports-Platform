@@ -1,4 +1,4 @@
-CREATE TABLE role_requests (
+CREATE TABLE IF NOT EXISTS role_requests (
     id               SERIAL PRIMARY KEY,
     user_id          INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     requested_role   VARCHAR(50) NOT NULL,
@@ -10,8 +10,8 @@ CREATE TABLE role_requests (
 );
 
 -- Prevent duplicate pending requests for the same role per user
-CREATE UNIQUE INDEX idx_role_requests_pending_unique
+CREATE UNIQUE INDEX IF NOT EXISTS idx_role_requests_pending_unique
     ON role_requests(user_id, requested_role)
     WHERE status = 0;
 
-CREATE INDEX idx_role_requests_status ON role_requests(status) WHERE status = 0;
+CREATE INDEX IF NOT EXISTS idx_role_requests_status ON role_requests(status) WHERE status = 0;

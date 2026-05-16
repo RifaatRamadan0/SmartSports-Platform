@@ -1,6 +1,6 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.Schedule;
 using SmartSports.BLL.Interfaces;
 
@@ -11,10 +11,14 @@ namespace SmartSports.API.Controllers;
 public class PitchScheduleController : ControllerBase
 {
     private readonly IPitchScheduleService _scheduleService;
+    private readonly ICurrentUserService   _currentUser;
 
-    public PitchScheduleController(IPitchScheduleService scheduleService)
+    public PitchScheduleController(
+        IPitchScheduleService scheduleService,
+        ICurrentUserService   currentUser)
     {
         _scheduleService = scheduleService;
+        _currentUser     = currentUser;
     }
 
     /// <summary>
@@ -48,10 +52,10 @@ public class PitchScheduleController : ControllerBase
         int pitchId,
         [FromBody] UpsertScheduleRequest request)
     {
-        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ownerId))
-            return Unauthorized();
+        var ownerId = _currentUser.GetUserId();
+        if (ownerId is null) return Unauthorized();
 
-        await _scheduleService.UpsertScheduleAsync(ownerId, pitchId, request);
+        await _scheduleService.UpsertScheduleAsync(ownerId.Value, pitchId, request);
         return NoContent();
     }
 }

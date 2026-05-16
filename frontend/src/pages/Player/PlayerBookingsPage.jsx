@@ -7,8 +7,9 @@ import StatusBadge from '../../components/ui/StatusBadge'
 import Toast from '../../components/ui/Toast'
 import { parseApiError } from '../../utils/errorUtils'
 
-const PAGE_SIZE = 10
-const CANCEL_BUFFER_MS = 60 * 60 * 1000 // 1h — mirrors backend rule
+import { BOOKINGS_PAGE_SIZE, CANCEL_BUFFER_MS } from '../../constants'
+
+const PAGE_SIZE = BOOKINGS_PAGE_SIZE
 
 const fmtTime = t => t.slice(0, 5)
 
@@ -234,7 +235,6 @@ export default function PlayerBookingsPage() {
       {/* List + Pagination */}
       {!isLoading && !error && bookings.length > 0 && (
         <>
-          {/* TODO: /bookings/:id route and detail page — SPDBTCP-223 */}
           <motion.div
             className="flex flex-col gap-3"
             variants={listContainerVariants}

@@ -9,16 +9,16 @@ services:
     # Always restart the container if it stops unexpectedly
     restart: unless-stopped
     
-    # Database credentials and name
-    # These must match your appsettings.Development.json connection string
+    # Database credentials — loaded from .env (gitignored). Copy .env.example → .env.
+    # These must match your appsettings.Development.json connection string.
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: SmartSportsDb
-    
-    # Expose PostgreSQL port to your local machine
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+    # Bind to localhost only — prevents external network access to the database.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     
     # Persist data so it survives docker compose down
     volumes:
@@ -33,9 +33,9 @@ services:
     restart: unless-stopped
     
     environment:
-      # Login credentials for pgAdmin UI
-      PGADMIN_DEFAULT_EMAIL: admin@smartsports.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      # Login credentials for pgAdmin UI — loaded from .env (gitignored).
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     
     # pgAdmin will be accessible at http://localhost:5050
     ports:

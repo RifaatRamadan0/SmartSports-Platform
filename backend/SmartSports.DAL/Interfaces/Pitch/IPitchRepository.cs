@@ -21,6 +21,13 @@ public interface IPitchRepository
     /// </summary>
     Task<PitchDetailRow?> GetDetailAsync(int pitchId);
 
+    /// <summary>
+    /// Returns pitch detail, images, and schedule in a single DB round-trip using
+    /// QueryMultiple. Returns (null, empty, empty) when the pitch is not found/active/approved.
+    /// </summary>
+    Task<(PitchDetailRow? Detail, IEnumerable<string> Images, IEnumerable<ScheduleRow> Schedule)>
+        GetDetailWithDataAsync(int pitchId);
+
     Task<IEnumerable<string>>      GetImagesAsync(int pitchId);
     Task<IEnumerable<ScheduleRow>> GetScheduleAsync(int pitchId);
 

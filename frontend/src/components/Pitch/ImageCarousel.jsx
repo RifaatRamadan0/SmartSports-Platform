@@ -24,6 +24,7 @@ export default function ImageCarousel({ images, heightClass = 'h-72 sm:h-[420px]
       <img
         src={images[idx]}
         alt={`Pitch image ${idx + 1}`}
+        loading="lazy"
         className="w-full h-full object-cover transition-opacity duration-300"
       />
 

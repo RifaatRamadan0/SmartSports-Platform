@@ -14,6 +14,28 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
 
+        // Fail fast if the JWT signing key is not a base64-encoded value of at least
+        // 32 raw bytes (256 bits — the HS256 minimum). Runs before AddJwtAuthentication
+        // so we never wire the auth pipeline against an invalid key.
+        // Generate one with:  openssl rand -base64 48
+        var jwtSecret = builder.Configuration["Jwt:Secret"] ?? string.Empty;
+        byte[] decodedSecret;
+        try
+        {
+            decodedSecret = Convert.FromBase64String(jwtSecret);
+        }
+        catch (FormatException)
+        {
+            throw new InvalidOperationException(
+                "Jwt:Secret must be a base64-encoded value (not a passphrase). " +
+                "Generate one with:  openssl rand -base64 48");
+        }
+        if (decodedSecret.Length < 32)
+            throw new InvalidOperationException(
+                $"Jwt:Secret decodes to {decodedSecret.Length} bytes; minimum is 32 bytes (256 bits) for HS256. " +
+                "Generate one with:  openssl rand -base64 48");
+
+        builder.Services.AddResponseCaching();
         builder.Services.AddSwaggerConfiguration();
         builder.Services.AddCorsConfiguration(builder.Configuration);
         builder.Services.AddJwtAuthentication(builder.Configuration);
@@ -56,6 +78,8 @@ public class Program
         app.UseHttpsRedirection();
 
         app.UseCors("SmartSportsCorsPolicy");
+
+        app.UseResponseCaching();
 
         app.UseRateLimiter();
 
