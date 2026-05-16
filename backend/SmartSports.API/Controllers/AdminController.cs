@@ -96,8 +96,10 @@ public class AdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ApproveRoleRequest(int id)
     {
-        var adminId = _currentUser.GetUserId() ?? throw new UnauthorizedAccessException();
-        await _adminRoleRequestService.ApproveRequestAsync(id, adminId);
+        var adminId = _currentUser.GetUserId();
+        if (adminId is null) return Unauthorized();
+
+        await _adminRoleRequestService.ApproveRequestAsync(id, adminId.Value);
         return NoContent();
     }
 
@@ -110,8 +112,10 @@ public class AdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RejectRoleRequest(int id, [FromBody] RejectRoleRequestRequest request)
     {
-        var adminId = _currentUser.GetUserId() ?? throw new UnauthorizedAccessException();
-        await _adminRoleRequestService.RejectRequestAsync(id, adminId, request.Reason);
+        var adminId = _currentUser.GetUserId();
+        if (adminId is null) return Unauthorized();
+
+        await _adminRoleRequestService.RejectRequestAsync(id, adminId.Value, request.Reason);
         return NoContent();
     }
 }

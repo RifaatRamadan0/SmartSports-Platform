@@ -50,9 +50,10 @@ public class PitchRepository : IPitchRepository
             FROM   pitches     p
             JOIN   sport_types s ON s.id = p.sport_type_id
             JOIN   cities      c ON c.id = p.city_id
-            WHERE  p.id          = @PitchId
-              AND  p.is_active = TRUE
-              AND  p.status   = @Status
+            WHERE  p.id         = @PitchId
+              AND  p.is_active  = TRUE
+              AND  p.status     = @Status
+              AND  p.deleted_at IS NULL
             """,
             new { PitchId = pitchId, Status = (int)PitchStatus.Approved });
     }
@@ -105,9 +106,10 @@ public class PitchRepository : IPitchRepository
             FROM   pitches     p
             JOIN   sport_types s ON s.id = p.sport_type_id
             JOIN   cities      c ON c.id = p.city_id
-            WHERE  p.id       = @PitchId
-              AND  p.is_active = TRUE
-              AND  p.status   = @Status;
+            WHERE  p.id         = @PitchId
+              AND  p.is_active  = TRUE
+              AND  p.status     = @Status
+              AND  p.deleted_at IS NULL;
 
             SELECT image_url
             FROM   pitch_images

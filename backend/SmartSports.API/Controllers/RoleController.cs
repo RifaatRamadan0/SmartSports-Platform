@@ -22,9 +22,6 @@ public class RoleController : ControllerBase
         _currentUser        = currentUser;
     }
 
-    private int CurrentUserId =>
-        _currentUser.GetUserId() ?? throw new UnauthorizedAccessException();
-
     /// <summary>
     /// POST /api/roles/request
     /// Submits a role upgrade request (e.g., Player → PitchOwner). Requires admin approval.
@@ -35,7 +32,10 @@ public class RoleController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RequestRole([FromBody] RequestRoleRequest request)
     {
-        await _roleRequestService.RequestRoleAsync(CurrentUserId, request.RequestedRole);
+        var userId = _currentUser.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        await _roleRequestService.RequestRoleAsync(userId.Value, request.RequestedRole);
         return NoContent();
     }
 
@@ -48,7 +48,10 @@ public class RoleController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddPlayerRole()
     {
-        await _roleRequestService.AddPlayerRoleInstantlyAsync(CurrentUserId);
+        var userId = _currentUser.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        await _roleRequestService.AddPlayerRoleInstantlyAsync(userId.Value);
         return NoContent();
     }
 
@@ -60,7 +63,10 @@ public class RoleController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<RoleRequestResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyRequests()
     {
-        var result = await _roleRequestService.GetMyRequestsAsync(CurrentUserId);
+        var userId = _currentUser.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var result = await _roleRequestService.GetMyRequestsAsync(userId.Value);
         return Ok(result);
     }
 }
