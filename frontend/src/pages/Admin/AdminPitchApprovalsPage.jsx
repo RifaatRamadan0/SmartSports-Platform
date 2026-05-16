@@ -4,6 +4,8 @@ import {
   listPendingRoleRequests, approveRoleRequest, rejectRoleRequest,
 } from '../../services/Admin/adminService'
 import { parseApiError } from '../../utils/errorUtils'
+import PitchCover from '../../components/Pitch/PitchCover'
+import GalleryModal from '../../components/Pitch/GalleryModal'
 
 const PITCH_PAGE_SIZE = 15
 const ROLE_PAGE_SIZE  = 15
@@ -71,20 +73,7 @@ function Pagination({ page, totalPages, onPrev, onNext }) {
 
 // ── Pitch Approvals tab ───────────────────────────────────────────────────────
 
-function PitchIllustration() {
-  return (
-    <svg viewBox="0 0 200 130" fill="none" width="100" height="65" className="opacity-30">
-      <rect x="2" y="2" width="196" height="126" rx="3" stroke="#4ade80" strokeWidth="2" />
-      <line x1="100" y1="2" x2="100" y2="128" stroke="#4ade80" strokeWidth="1.2" />
-      <circle cx="100" cy="65" r="20" stroke="#4ade80" strokeWidth="1.2" />
-      <circle cx="100" cy="65" r="3" fill="#4ade80" />
-      <rect x="2" y="38" width="28" height="54" stroke="#4ade80" strokeWidth="1.2" />
-      <rect x="170" y="38" width="28" height="54" stroke="#4ade80" strokeWidth="1.2" />
-    </svg>
-  )
-}
-
-function PitchApprovalCard({ pitch, onApprove, onReject, isProcessing }) {
+function PitchApprovalCard({ pitch, onApprove, onReject, onPreview, isProcessing }) {
   const [rejecting, setRejecting] = useState(false)
   const [reason,    setReason]    = useState('')
 
@@ -100,9 +89,21 @@ function PitchApprovalCard({ pitch, onApprove, onReject, isProcessing }) {
 
   return (
     <div className="flex overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d] hover:border-white/10 transition-colors">
-      <div className="hidden sm:flex w-[130px] flex-shrink-0 items-center justify-center bg-[#0a0a0a]">
-        <PitchIllustration />
-      </div>
+      <button
+        type="button"
+        onClick={() => onPreview(pitch)}
+        disabled={!pitch.images || pitch.images.length === 0}
+        aria-label={`Preview images for ${pitch.name}`}
+        className="hidden sm:block w-[130px] flex-shrink-0 bg-[#0a0a0a] group cursor-zoom-in
+                   disabled:cursor-default"
+      >
+        <PitchCover
+          imageUrl={pitch.coverImageUrl}
+          sport={pitch.sportName}
+          imageCount={pitch.images?.length ?? 0}
+          className="w-full h-full"
+        />
+      </button>
       <div className="flex-1 p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -174,6 +175,9 @@ function PitchApprovalsTab({ setToast }) {
   const [totalPages,   setTotalPages]   = useState(1)
   const [totalPending, setTotalPending] = useState(0)
   const [processingId, setProcessingId] = useState(null)
+  const [previewPitch, setPreviewPitch] = useState(null)
+
+  const closePreview = useCallback(() => setPreviewPitch(null), [])
 
   const fetchPending = useCallback(async (targetPage) => {
     setIsLoading(true)
@@ -268,6 +272,7 @@ function PitchApprovalsTab({ setToast }) {
             {pitches.map(p => (
               <PitchApprovalCard key={p.id} pitch={p}
                 onApprove={handleApprove} onReject={handleReject}
+                onPreview={setPreviewPitch}
                 isProcessing={processingId === p.id} />
             ))}
           </div>
@@ -275,6 +280,14 @@ function PitchApprovalsTab({ setToast }) {
             onPrev={() => setPage(n => Math.max(1, n - 1))}
             onNext={() => setPage(n => n + 1)} />
         </>
+      )}
+
+      {previewPitch && (
+        <GalleryModal
+          images={previewPitch.images ?? []}
+          title={previewPitch.name}
+          onClose={closePreview}
+        />
       )}
     </>
   )

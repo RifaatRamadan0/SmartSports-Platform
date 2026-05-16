@@ -32,7 +32,7 @@ public interface IPitchService
 
     /// <summary>
     /// Creates a new pitch owned by <paramref name="ownerId"/>. The server sets
-    /// owner_id, is_active=true, is_approved=false, created_at=NOW(). Approval
+    /// owner_id, is_active=true, status=PendingApproval, created_at=NOW(). Approval
     /// flows through the admin workflow.
     /// </summary>
     Task<PitchResponse> CreateAsync(int ownerId, CreatePitchRequest request);

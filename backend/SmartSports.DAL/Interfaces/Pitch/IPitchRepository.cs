@@ -1,4 +1,5 @@
 using SmartSports.DAL.Parameters;
+using SmartSports.Domain.Entities;
 using SmartSports.Domain.Entities.Projections;
 using SmartSports.Domain.Enums;
 using PitchEntity = SmartSports.Domain.Entities.Pitch;
@@ -36,7 +37,7 @@ public interface IPitchRepository
     Task<IEnumerable<PitchListRow>> ListByOwnerAsync(int ownerId);
 
     /// <summary>
-    /// Inserts a new pitch. Server controls owner_id / is_active / is_approved /
+    /// Inserts a new pitch. Server controls owner_id / is_active / status /
     /// created_at — callers must populate those on the entity before calling.
     /// Returns the new pitch id.
     /// </summary>
@@ -54,6 +55,36 @@ public interface IPitchRepository
     /// row was updated (already-deleted rows return false).
     /// </summary>
     Task<bool> SoftDeleteAsync(int pitchId);
+
+    /// Returns all images for a pitch ordered cover-first, then by display_order, then id.
+    /// </summary>
+    Task<IEnumerable<PitchImage>> GetPitchImagesAsync(int pitchId);
+
+    /// <summary>
+    /// Returns one image row scoped to the given pitch, or null if it does not
+    /// belong to that pitch (or does not exist).
+    /// </summary>
+    Task<PitchImage?> GetPitchImageAsync(int pitchId, int imageId);
+
+    /// <summary>
+    /// Inserts a new image, enforcing the per-pitch cap atomically inside the transaction.
+    /// When <paramref name="isCover"/> is true, any existing cover is unset in the same
+    /// transaction. display_order is assigned as MAX(display_order) + 1 within the pitch.
+    /// Returns null when the cap has been reached (caller should throw 400).
+    /// </summary>
+    Task<PitchImage?> AddPitchImageAsync(int pitchId, string imageUrl, bool isCover, int maxImages);
+
+    /// <summary>
+    /// Sets <paramref name="imageId"/> as the cover for <paramref name="pitchId"/>,
+    /// clearing any prior cover in the same transaction. Returns the updated image row,
+    /// or null when the image does not belong to the pitch.
+    /// </summary>
+    Task<PitchImage?> SetPitchImageCoverAsync(int pitchId, int imageId);
+
+    /// <summary>
+    /// Deletes a single image scoped to its pitch. Returns false when no row matched.
+    /// </summary>
+    Task<bool> DeletePitchImageAsync(int pitchId, int imageId);
 
     /// <summary>
     /// Returns a paged list of non-deleted pitches with status = PendingApproval,

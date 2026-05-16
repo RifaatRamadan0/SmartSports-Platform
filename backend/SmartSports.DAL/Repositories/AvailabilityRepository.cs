@@ -48,7 +48,7 @@ namespace SmartSports.DAL.Repositories
                 FROM    pitches
                 WHERE   id        = @PitchId
                 AND     is_active = TRUE
-                AND     status    = 1
+                AND     status    = 1  /* PitchStatus.Approved */
                 """,
                 new { PitchId = pitchId });
         }
