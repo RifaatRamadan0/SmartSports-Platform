@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
+import PageWrapper from '@/components/routing/PageWrapper'
 
 function ForbiddenPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background text-center px-4">
+    <PageWrapper className="flex flex-col items-center justify-center min-h-screen bg-background text-center px-4">
       <h1 className="text-9xl font-extrabold text-destructive/30">403</h1>
       <h2 className="text-2xl font-bold text-foreground mt-4">Access Denied</h2>
       <p className="text-muted-foreground mt-2 max-w-sm">
@@ -14,7 +15,7 @@ function ForbiddenPage() {
       >
         Go Back Home
       </Link>
-    </div>
+    </PageWrapper>
   )
 }
 

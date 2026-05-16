@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { AuthContext } from './AuthContext'
-import api, { setAccessToken } from '../services/api'
+import api, { setAccessToken, refreshSession } from '../services/api'
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null)
@@ -8,18 +8,18 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true)
 
   // on mount: restore session from httpOnly cookie
+  // refreshSession() owns setAccessToken + draining the failed-request queue;
+  // we only mirror the token/roles into React state here.
   useEffect(() => {
     async function restoreSession() {
       try {
-        const { data } = await api.post('/api/auth/refresh')
-        setAccessToken(data.accessToken)
+        const { data } = await refreshSession()
         setToken(data.accessToken)
         setRoles(data.roles ?? [])
       } catch {
-        // no valid refresh token, user is not logged in
         setAccessToken(null)
       } finally {
-        setIsLoading(false) // unblock the UI
+        setIsLoading(false)
       }
     }
     restoreSession()

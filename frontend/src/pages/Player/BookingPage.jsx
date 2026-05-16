@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { getAvailableSlots } from '../../services/Availability/availabilityService'
 import { createBooking } from '../../services/Booking/bookingService'
 import { getPitchById } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
 import Toast from '../../components/ui/Toast'
+import { springTransition, stepVariants, confirmCardVariants, buttonHover, buttonTap } from '../../lib/motion'
 import PitchCover from '../../components/Pitch/PitchCover'
 import GalleryModal from '../../components/Pitch/GalleryModal'
 
@@ -121,6 +123,8 @@ export default function BookingPage() {
   const [showAllSlots,  setShowAllSlots]  = useState(false)
   const [isSubmitting,  setIsSubmitting]  = useState(false)
   const [toast,         setToast]         = useState(null)
+  const [confirmed,     setConfirmed]     = useState(false)
+  const [confirmedDetails, setConfirmedDetails] = useState(null)
 
   const visibleDates = dates.slice(dateOffset, dateOffset + VISIBLE_DATES)
   const canPrevDate  = dateOffset > 0
@@ -210,9 +214,13 @@ export default function BookingPage() {
         startTime: selectedSlot.startTime,
         durationInMinutes: duration,
       })
-      setToast({ type: 'success', message: 'Booking confirmed' })
-      // Navigate immediately; no delay needed since the toast provides feedback.
-      navigate('/my-bookings', { replace: true })
+      setConfirmedDetails({
+        pitchName: resolvedName || `Pitch #${pitchId}`,
+        date: formatDateSummary(selectedDate),
+        time: formatTime(selectedSlot.startTime),
+        total: totalPrice !== null ? formatPrice(totalPrice, currency) : null,
+      })
+      setConfirmed(true)
     } catch (err) {
       const status = err?.response?.status
       if (status === 409) {
@@ -259,6 +267,15 @@ export default function BookingPage() {
       }}
     >
       <div className="w-full max-w-5xl rounded-3xl border border-[#1a1f1c] bg-[#0a0d0b] shadow-2xl overflow-hidden">
+      <AnimatePresence mode="wait">
+      {confirmed && confirmedDetails ? (
+        <SuccessScreen
+          key="success"
+          details={confirmedDetails}
+          onViewBookings={() => navigate('/my-bookings', { replace: true })}
+        />
+      ) : (
+        <motion.div key="form" variants={stepVariants} initial="initial" animate="animate" exit="exit">
         {/* Header */}
         <div className="flex items-start justify-between px-6 sm:px-8 py-5 border-b border-[#1a1f1c]">
           <div>
@@ -543,30 +560,34 @@ export default function BookingPage() {
             />
           </div>
 
-          <button
+          <motion.button
             onClick={handleConfirm}
             disabled={!selectedSlot || isSubmitting}
+            whileHover={selectedSlot && !isSubmitting ? buttonHover : {}}
+            whileTap={selectedSlot && !isSubmitting ? buttonTap : {}}
             className={`
               rounded-xl px-6 py-3 text-sm font-bold tracking-wide
-              transition-all duration-150
               ${selectedSlot && !isSubmitting
-                ? 'bg-green-500 text-black hover:bg-green-400 active:scale-95'
+                ? 'shimmer-btn text-black'
                 : 'bg-[#0f1a12] text-neutral-600 border border-[#1f3d26] cursor-not-allowed'
               }
             `}
           >
             {ctaLabel}
-          </button>
+          </motion.button>
         </div>
-      </div>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+        </motion.div>
       )}
+      </AnimatePresence>
+      </div>
 
       {lightboxOpen && pitch?.images && (
         <GalleryModal
@@ -655,13 +676,99 @@ function GalleryStrip({ images, onOpen }) {
   )
 }
 
+const CONFETTI_COLORS = ['#1DB954', '#FFD700', '#00B4D8', '#FFFFFF', '#7BC67E', '#FFB703']
+
+function SuccessScreen({ details, onViewBookings }) {
+  const particles = Array.from({ length: 12 }, (_, i) => ({
+    id: i,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    left: `${((i / 12) * 90) + 5}%`,
+    delay: `${(i * 0.06).toFixed(2)}s`,
+  }))
+
+  return (
+    <motion.div
+      key="success"
+      variants={stepVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="relative flex flex-col items-center justify-center py-16 px-8 overflow-hidden"
+    >
+      {particles.map(p => (
+        <span
+          key={p.id}
+          className="confetti-particle"
+          style={{ backgroundColor: p.color, left: p.left, top: '10%', animationDelay: p.delay }}
+        />
+      ))}
+
+      {/* Animated checkmark */}
+      <svg width="120" height="120" viewBox="0 0 52 52" className="mb-6">
+        <motion.circle
+          cx="26" cy="26" r="24"
+          fill="none" stroke="var(--green)" strokeWidth="2"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={springTransition}
+        />
+        <motion.path
+          fill="none" stroke="var(--green)" strokeWidth="3"
+          strokeLinecap="round" strokeLinejoin="round"
+          d="M14 27l8 8 16-16"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.45, delay: 0.35, ease: 'easeInOut' }}
+        />
+      </svg>
+
+      <motion.div
+        variants={confirmCardVariants}
+        initial="hidden"
+        animate="visible"
+        className="flex flex-col items-center text-center"
+      >
+        <h2 className="text-2xl font-bold text-white mb-1">Booking Confirmed!</h2>
+        <p className="text-neutral-400 mb-6 text-sm">Your pitch is booked. See you there!</p>
+
+        <div className="rounded-2xl border border-[var(--green-border)] bg-[var(--bg2)] p-6 mb-6 w-full max-w-xs text-left space-y-3">
+          {details.pitchName && <DetailRow label="Pitch" value={details.pitchName} />}
+          {details.date      && <DetailRow label="Date"  value={details.date} />}
+          {details.time      && <DetailRow label="Time"  value={details.time} />}
+          {details.total     && <DetailRow label="Total" value={details.total} accent />}
+        </div>
+
+        <motion.button
+          onClick={onViewBookings}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.95 }}
+          className="shimmer-btn rounded-xl px-8 py-3 text-sm font-bold text-[var(--primary-foreground)]"
+        >
+          View My Bookings →
+        </motion.button>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+function DetailRow({ label, value, accent = false }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-[10px] font-bold tracking-widest uppercase text-neutral-500">{label}</span>
+      <span className={`text-sm font-bold ${accent ? 'text-[var(--green)]' : 'text-white'}`}>{value}</span>
+    </div>
+  )
+}
+
 function SlotSkeleton() {
   return (
     <div className="grid grid-cols-3 gap-2.5">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div
+        <motion.div
           key={i}
-          className="h-14.5 rounded-xl bg-[#0f1411] border border-[#161a18] animate-pulse"
+          className="h-14.5 rounded-xl bg-[#0f1411] border border-[#161a18]"
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
         />
       ))}
     </div>

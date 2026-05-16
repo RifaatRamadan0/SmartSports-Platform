@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import PageWrapper from '@/components/routing/PageWrapper'
+import { buttonHover, buttonTap } from '@/lib/motion'
 import { Eye, EyeOff, ChevronRight, AlertCircle, Loader2, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -117,7 +120,7 @@ function RegisterPage() {
   const shake = otpState === 'error'
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-[#0f1a12] to-background px-4 py-10">
+    <PageWrapper className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-[#0f1a12] to-background px-4 py-10">
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-size-[60px_60px]"
@@ -413,21 +416,23 @@ function RegisterPage() {
                   )}
                 </div>
 
-                <Button
-                  type="submit"
-                  disabled={
-                    availability.username    === 'checking' ||
-                    availability.email       === 'checking' ||
-                    availability.phoneNumber === 'checking' ||
-                    availability.username    === 'taken'    ||
-                    availability.email       === 'taken'    ||
-                    availability.phoneNumber === 'taken'    ||
-                    otpState !== 'verified'
-                  }
-                  className="mt-1 h-10 w-full rounded-[0.625rem] bg-primary text-[0.9375rem] font-bold tracking-tight text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
-                >
-                  Continue <ChevronRight size={14} />
-                </Button>
+                <motion.div whileHover={buttonHover} whileTap={buttonTap} className="w-full mt-1">
+                  <Button
+                    type="submit"
+                    disabled={
+                      availability.username    === 'checking' ||
+                      availability.email       === 'checking' ||
+                      availability.phoneNumber === 'checking' ||
+                      availability.username    === 'taken'    ||
+                      availability.email       === 'taken'    ||
+                      availability.phoneNumber === 'taken'    ||
+                      otpState !== 'verified'
+                    }
+                    className="h-10 w-full rounded-[0.625rem] bg-primary text-[0.9375rem] font-bold tracking-tight text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
+                  >
+                    Continue <ChevronRight size={14} />
+                  </Button>
+                </motion.div>
               </form>
             )}
 
@@ -494,17 +499,19 @@ function RegisterPage() {
                   </div>
                 )}
 
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="mt-1 h-10 w-full rounded-[0.625rem] bg-primary text-[0.9375rem] font-bold tracking-tight text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
-                >
-                  {isSubmitting ? (
-                    <><Loader2 size={16} className="animate-spin" /> Creating account…</>
-                  ) : (
-                    <>Create Account <ChevronRight size={14} /></>
-                  )}
-                </Button>
+                <motion.div whileHover={buttonHover} whileTap={buttonTap} className="w-full mt-1">
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-10 w-full rounded-[0.625rem] bg-primary text-[0.9375rem] font-bold tracking-tight text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
+                  >
+                    {isSubmitting ? (
+                      <><Loader2 size={16} className="animate-spin" /> Creating account…</>
+                    ) : (
+                      <>Create Account <ChevronRight size={14} /></>
+                    )}
+                  </Button>
+                </motion.div>
 
                 <button
                   type="button"
@@ -531,7 +538,7 @@ function RegisterPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageWrapper>
   )
 }
 

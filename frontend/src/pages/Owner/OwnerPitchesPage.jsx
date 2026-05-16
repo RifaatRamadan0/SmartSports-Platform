@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { cardVariants, cardHover, cardTap, listContainerVariants } from '../../lib/motion'
 import { listMyPitches, deletePitch } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
 import PitchCover from '../../components/Pitch/PitchCover'
@@ -42,9 +44,11 @@ function PitchCardSkeleton() {
   return (
     <div className="flex flex-col gap-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div
+        <motion.div
           key={i}
-          className="h-32 rounded-2xl bg-[#0f0f0f] border border-[#1a1a1a] animate-pulse"
+          className="h-32 rounded-2xl bg-[#0f0f0f] border border-[#1a1a1a]"
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
         />
       ))}
     </div>
@@ -96,7 +100,11 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting }) {
   const [confirming, setConfirming] = useState(false)
 
   return (
-    <div className="flex overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d]
+    <motion.div
+      variants={cardVariants}
+      whileHover={cardHover}
+      whileTap={cardTap}
+      className="flex overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d]
                     hover:border-white/10 transition-colors">
       <div className="hidden sm:block w-[130px] h-full shrink-0 bg-[#0a0a0a]">
         <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} imageCount={pitch.imageCount} className="w-full h-full" />
@@ -179,7 +187,7 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting }) {
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -264,6 +272,14 @@ export default function OwnerPitchesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/dashboard/owner')}
+            className="rounded-xl px-4 py-2.5 text-sm font-semibold
+                       bg-[#0d0d0d] border border-[#1f1f1f] text-neutral-300
+                       hover:text-white hover:border-white/15 transition-colors"
+          >
+            ← Dashboard
+          </button>
           <button
             onClick={() => navigate('/dashboard/bookings')}
             className="rounded-xl px-4 py-2.5 text-sm font-semibold
@@ -365,7 +381,12 @@ export default function OwnerPitchesPage() {
       )}
 
       {!isLoading && !error && visiblePitches.length > 0 && (
-        <div className="flex flex-col gap-3">
+        <motion.div
+          className="flex flex-col gap-3"
+          variants={listContainerVariants}
+          initial="hidden"
+          animate="visible"
+        >
           {visiblePitches.map(p => (
             <PitchCard
               key={p.id}
@@ -375,7 +396,7 @@ export default function OwnerPitchesPage() {
               isDeleting={deletingId === p.id}
             />
           ))}
-        </div>
+        </motion.div>
       )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}

@@ -168,4 +168,18 @@ public class UserRepository : IUserRepository
             """,
             new { UserId = userId });
     }
+
+    // -- Role management --
+
+    public async Task AddRoleAsync(int userId, int roleId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        await connection.ExecuteAsync(
+            """
+            INSERT INTO user_roles (user_id, role_id)
+            VALUES (@UserId, @RoleId)
+            ON CONFLICT DO NOTHING
+            """,
+            new { UserId = userId, RoleId = roleId });
+    }
 }

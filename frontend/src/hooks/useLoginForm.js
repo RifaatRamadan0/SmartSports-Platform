@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './useAuth'
 import { ROLES } from '../constants/roles'
+import { getRoleHomePath } from '../utils/roleUtils'
 import api from '../services/api'
 import { parseApiError } from '../utils/errorUtils'
 
@@ -31,10 +32,10 @@ export function useLoginForm() {
     try {
       const { data } = await api.post('/api/auth/login', form)
       login(data)
-      const isPlayer     = data.roles?.includes(ROLES.PLAYER)
-      const isPitchOwner = data.roles?.includes(ROLES.PITCH_OWNER)
-      const fallback     = isPitchOwner ? '/dashboard' : '/dashboard'
-      const from = location.state?.from
+      const roles    = data.roles ?? []
+      const isPlayer = roles.includes(ROLES.PLAYER)
+      const fallback = getRoleHomePath(roles)
+      const from     = location.state?.from
       const safePath = typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')
       navigate(isPlayer && safePath ? from : fallback, { replace: true })
     } catch (err) {

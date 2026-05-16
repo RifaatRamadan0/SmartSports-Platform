@@ -22,4 +22,7 @@ public interface IUserRepository
 
     // -- Email verification --
     Task VerifyEmailAsync(int userId);
+
+    // -- Role management --
+    Task AddRoleAsync(int userId, int roleId);
 }

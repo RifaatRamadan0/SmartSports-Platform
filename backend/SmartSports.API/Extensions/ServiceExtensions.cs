@@ -17,6 +17,7 @@ using SmartSports.DAL.Interfaces.Booking;
 using SmartSports.DAL.Interfaces.Lookup;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Interfaces.Review;
+using SmartSports.DAL.Interfaces.RoleRequests;
 using SmartSports.DAL.Repositories;
 
 namespace SmartSports.API.Extensions;
@@ -210,6 +211,11 @@ public static class ServiceExtensions
         services.AddScoped<IPitchImageService, PitchImageService>();
         services.AddSingleton<IImageKitAuthService, ImageKitAuthService>();
         services.AddScoped<IAdminPitchService, AdminPitchService>();
+
+        // Role requests
+        services.AddScoped<IRoleRequestRepository, RoleRequestRepository>();
+        services.AddScoped<IRoleRequestService, RoleRequestService>();
+        services.AddScoped<IAdminRoleRequestService, AdminRoleRequestService>();
 
         // Lookups
         services.AddScoped<ILookupRepository, LookupRepository>();

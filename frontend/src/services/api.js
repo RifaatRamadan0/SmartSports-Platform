@@ -27,10 +27,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response interceptor — silent refresh on 401
-let isRefreshing = false
-let failedQueue = [] // requests that failed while token is being refreshed
-
 // Auth endpoints whose 401s represent a real failure, not an expired access token.
 // These must never trigger the refresh-and-retry flow.
 const authEndpointsSkipRefresh = [
@@ -44,18 +40,46 @@ const authEndpointsSkipRefresh = [
   '/api/auth/resend-verification',
 ]
 
+// Shared refresh gate — one in-flight refresh at a time, shared between
+// AuthProvider (restoreSession on mount) and the 401 interceptor.
+// This prevents React StrictMode's double-invoke from sending two refresh
+// requests and racing against a rotated token.
+let refreshPromise = null
+let failedQueue = []
+
 function processQueue(error, token = null) {
-  failedQueue.forEach((prom) => {error ? prom.reject(error) : prom.resolve(token)})
+  failedQueue.forEach((prom) => { error ? prom.reject(error) : prom.resolve(token) })
   failedQueue = []
 }
 
+export function refreshSession() {
+  if (!refreshPromise) {
+    // Wrap so any caller (AuthProvider mount, 401 interceptor) drains the
+    // shared failedQueue when this single refresh resolves/rejects. Without
+    // this, requests queued by the interceptor while AuthProvider's refresh
+    // is in flight would hang forever.
+    refreshPromise = api.post('/api/auth/refresh')
+      .then((response) => {
+        setAccessToken(response.data.accessToken)
+        processQueue(null, response.data.accessToken)
+        return response
+      })
+      .catch((err) => {
+        processQueue(err, null)
+        throw err
+      })
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+  return refreshPromise
+}
+
 api.interceptors.response.use(
-  // If response is successful just return it
   (response) => response,
   async (error) => {
     const originalRequest = error.config
 
-    // only attempt refresh if we get 401, haven't already retried, and the failing request is not an auth endpoint
     if (
       error.response?.status !== 401 ||
       originalRequest._retry ||
@@ -64,34 +88,28 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    if(isRefreshing) {
-      // another request is already refreshing the token, queue this one up to retry once it's done
+    if (refreshPromise) {
+      // Refresh already in flight — queue this request to retry once it resolves
       return new Promise((resolve, reject) => {
-        failedQueue.push({resolve, reject})
+        failedQueue.push({ resolve, reject })
       })
-      .then((token) => {
+        .then((token) => {
           originalRequest.headers['Authorization'] = 'Bearer ' + token
-        return api(originalRequest)
-      })
-      .catch((err) => Promise.reject(err))
+          return api(originalRequest)
+        })
+        .catch((err) => Promise.reject(err))
     }
 
     originalRequest._retry = true
-    isRefreshing = true
 
-    try{
-      const { data } = await api.post('/api/auth/refresh')
-      setAccessToken(data.accessToken)
-      processQueue(null, data.accessToken)
+    try {
+      const { data } = await refreshSession()
       originalRequest.headers['Authorization'] = 'Bearer ' + data.accessToken
-      return api(originalRequest) // retry the original request with new token
-    }catch (refreshError) {
-      processQueue(refreshError, null)
-      setAccessToken(null) // clear token on refresh failure
-      window.location.href = '/login' // refresh token also expired, force user to login again
+      return api(originalRequest)
+    } catch (refreshError) {
+      setAccessToken(null)
+      window.location.href = '/login'
       return Promise.reject(refreshError)
-    } finally {
-      isRefreshing = false
     }
   }
 )

@@ -104,7 +104,7 @@ public class AuthController : ControllerBase
         {
             HttpOnly = true,
             Secure   = true,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.None,
             Path     = "/api/auth"
         });
 
@@ -212,7 +212,7 @@ public class AuthController : ControllerBase
         {
             HttpOnly = true,
             Secure   = true,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.None,
             Expires  = expiresAt,
             Path     = "/api/auth"
         });

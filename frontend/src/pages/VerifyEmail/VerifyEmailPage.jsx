@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import PageWrapper from '@/components/routing/PageWrapper'
 import { MailCheck, AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -53,7 +54,7 @@ function VerifyEmailPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-[#0f1a12] to-background px-4 py-10">
+    <PageWrapper className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-[#0f1a12] to-background px-4 py-10">
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-size-[60px_60px]"
@@ -144,7 +145,7 @@ function VerifyEmailPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageWrapper>
   )
 }
 

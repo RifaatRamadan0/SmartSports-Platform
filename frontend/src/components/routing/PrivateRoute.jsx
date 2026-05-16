@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import Spinner from '../Spinner'
+import PageWrapper from './PageWrapper'
 
 function PrivateRoute() {
   const { token, isLoading } = useAuth()
@@ -9,7 +10,7 @@ function PrivateRoute() {
 
   if (!token) return <Navigate to="/login" replace />
 
-  return <Outlet />
+  return <PageWrapper><Outlet /></PageWrapper>
 }
 
 export default PrivateRoute
