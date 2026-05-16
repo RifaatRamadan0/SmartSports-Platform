@@ -13,6 +13,7 @@ public record PitchListRow
     public int      MaxBookingDurationMinutes { get; init; }
     public string   CityName                  { get; init; } = "";
     public string?  CoverImageUrl             { get; init; }
+    public int      ImageCount                { get; init; }
     public bool        IsActive { get; init; }
     public PitchStatus Status   { get; init; }
 }

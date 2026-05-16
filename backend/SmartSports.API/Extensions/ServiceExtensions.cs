@@ -207,6 +207,8 @@ public static class ServiceExtensions
         services.AddScoped<IReviewRepository, ReviewRepository>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IPitchService, PitchService>();
+        services.AddScoped<IPitchImageService, PitchImageService>();
+        services.AddSingleton<IImageKitAuthService, ImageKitAuthService>();
         services.AddScoped<IAdminPitchService, AdminPitchService>();
 
         // Lookups
@@ -241,6 +243,19 @@ public static class ServiceExtensions
                     }));
 
             options.AddPolicy("availability", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 30,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            // Caps the ImageKit signing endpoint per IP so a single source
+            // can't pound the upload quota or host arbitrary content via our keys.
+            options.AddPolicy("imagekit-auth", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: IpPartition(httpContext),
                     factory: _ => new FixedWindowRateLimiterOptions

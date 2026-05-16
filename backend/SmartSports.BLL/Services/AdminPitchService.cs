@@ -36,6 +36,7 @@ public class AdminPitchService : IAdminPitchService
             Status        = r.Status,
             CreatedAt     = r.CreatedAt,
             CoverImageUrl = r.CoverImageUrl,
+            Images        = r.Images,
         });
 
         return new PagedResult<AdminPitchSummaryResponse>

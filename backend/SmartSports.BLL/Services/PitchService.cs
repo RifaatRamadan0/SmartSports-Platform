@@ -88,6 +88,7 @@ public class PitchService : IPitchService
             MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
             CityName                  = r.CityName,
             CoverImageUrl             = r.CoverImageUrl,
+            ImageCount                = r.ImageCount,
             IsActive = r.IsActive,
             Status   = r.Status,
         });
@@ -116,6 +117,7 @@ public class PitchService : IPitchService
             MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
             CityName                  = r.CityName,
             CoverImageUrl             = r.CoverImageUrl,
+            ImageCount                = r.ImageCount,
             IsActive = r.IsActive,
             Status   = r.Status,
         });
@@ -161,6 +163,11 @@ public class PitchService : IPitchService
 
         var existing = await GetOwnedPitchOrThrowAsync(ownerId, pitchId);
 
+        // No-op save: nothing the owner can edit changed, so don't write — and
+        // crucially don't reset Status to PendingApproval for an already-approved pitch.
+        if (!HasOwnerEditableChanges(existing, request))
+            return ToResponse(existing);
+
         existing.CityId                    = request.CityId;
         existing.SportTypeId               = request.SportTypeId;
         existing.Name                      = request.Name.Trim();
@@ -182,6 +189,17 @@ public class PitchService : IPitchService
 
         return ToResponse(fresh);
     }
+
+    private static bool HasOwnerEditableChanges(PitchEntity existing, UpdatePitchRequest request) =>
+        existing.CityId                    != request.CityId
+        || existing.SportTypeId            != request.SportTypeId
+        || existing.Name                   != request.Name.Trim()
+        || existing.Address                != request.Address.Trim()
+        || existing.PricePerHour           != request.PricePerHour
+        || existing.Latitude               != request.Latitude
+        || existing.Longitude              != request.Longitude
+        || existing.MaxBookingDurationMinutes != request.MaxBookingDurationMinutes
+        || existing.IsActive               != request.IsActive;
 
     public async Task SoftDeleteAsync(int ownerId, int pitchId)
     {

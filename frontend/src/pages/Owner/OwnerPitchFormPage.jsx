@@ -7,6 +7,7 @@ import {
 } from '../../services/Pitch/pitchService'
 import { listCities, listSportTypes } from '../../services/Lookup/lookupService'
 import { parseApiError } from '../../utils/errorUtils'
+import PitchImageGallery from './PitchImageGallery'
 
 const DURATION_OPTIONS = []
 for (let m = 60; m <= 480; m += 30) DURATION_OPTIONS.push(m)
@@ -410,6 +411,16 @@ export default function OwnerPitchFormPage() {
             <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">
               {submitError}
             </div>
+          )}
+
+          {isEdit ? (
+            <div className="pt-4 border-t border-[#1a1a1a]">
+              <PitchImageGallery pitchId={pitchId} />
+            </div>
+          ) : (
+            <p className="text-xs text-neutral-500 rounded-xl border border-[#1a1a1a] bg-[#0d0d0d] px-3 py-2">
+              Save the pitch first to add images.
+            </p>
           )}
 
           <div className="flex flex-wrap items-center gap-3 pt-2">

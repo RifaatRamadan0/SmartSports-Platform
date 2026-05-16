@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { listMyPitches, deletePitch } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
+import PitchCover from '../../components/Pitch/PitchCover'
 
 // Toast
 
@@ -97,15 +98,8 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting }) {
   return (
     <div className="flex overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d]
                     hover:border-white/10 transition-colors">
-      <div className="hidden sm:flex w-[130px] shrink-0 items-center justify-center bg-[#0a0a0a]">
-        <svg viewBox="0 0 200 130" fill="none" width="100" height="65" className="opacity-30">
-          <rect x="2" y="2" width="196" height="126" rx="3" stroke="#4ade80" strokeWidth="2" />
-          <line x1="100" y1="2" x2="100" y2="128" stroke="#4ade80" strokeWidth="1.2" />
-          <circle cx="100" cy="65" r="20" stroke="#4ade80" strokeWidth="1.2" />
-          <circle cx="100" cy="65" r="3" fill="#4ade80" />
-          <rect x="2" y="38" width="28" height="54" stroke="#4ade80" strokeWidth="1.2" />
-          <rect x="170" y="38" width="28" height="54" stroke="#4ade80" strokeWidth="1.2" />
-        </svg>
+      <div className="hidden sm:block w-[130px] h-full shrink-0 bg-[#0a0a0a]">
+        <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} imageCount={pitch.imageCount} className="w-full h-full" />
       </div>
 
       <div className="flex-1 p-4 sm:p-5">

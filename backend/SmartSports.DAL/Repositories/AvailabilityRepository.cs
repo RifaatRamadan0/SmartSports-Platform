@@ -46,9 +46,9 @@ namespace SmartSports.DAL.Repositories
                 """
                 SELECT  max_booking_duration_minutes
                 FROM    pitches
-                WHERE   id          = @PitchId
-                AND     is_active   = TRUE
-                AND     is_approved = TRUE
+                WHERE   id        = @PitchId
+                AND     is_active = TRUE
+                AND     status    = 1  /* PitchStatus.Approved */
                 """,
                 new { PitchId = pitchId });
         }
