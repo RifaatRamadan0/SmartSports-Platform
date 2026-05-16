@@ -402,7 +402,7 @@ function FilterBar({
             value={city}
             onChange={onCityChange}
             placeholder="All cities"
-            options={cities.map(c => ({ value: c.name, label: c.name }))}
+            options={[...new Map(cities.map(c => [c.name, c])).values()].map(c => ({ value: c.name, label: c.name }))}
           />
 
           {/* Max price */}
