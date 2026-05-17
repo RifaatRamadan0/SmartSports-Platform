@@ -21,7 +21,7 @@ public class MatchService : IMatchService
         return match is null ? null : MapToResponse(match);
     }
 
-    // SPDBTCP-246 — Rifaat
+    // SPDBTCP-246
     public async Task<MatchResponse> UpdateVisibilityAsync(int callerUserId, int matchId, bool isOpenToJoin)
     {
         var match = await _matchRepository.GetByIdAsync(matchId)

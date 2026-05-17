@@ -23,7 +23,7 @@ public class MatchesController : ControllerBase
         _currentUser  = currentUser;
     }
 
-    // SPDBTCP-246 — Rifaat
+    // SPDBTCP-246
     [HttpPatch("{id:int}/visibility")]
     [Authorize(Policy = "PlayerOnly")]
     [ProducesResponseType(typeof(MatchResponse), StatusCodes.Status200OK)]
@@ -32,13 +32,10 @@ public class MatchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateVisibility(int id, [FromBody] UpdateVisibilityRequest request)
     {
-        var userId = _currentUser.GetUserId();
-        if (userId is null)
-            return Unauthorized();
-
         // [Required] on a nullable bool catches missing values; .Value is safe here.
+        // [Authorize] guarantees GetUserId() is non-null for authenticated players.
         var response = await _matchService.UpdateVisibilityAsync(
-            userId.Value, id, request.IsOpenToJoin!.Value);
+            _currentUser.GetUserId()!.Value, id, request.IsOpenToJoin!.Value);
 
         return Ok(response);
     }

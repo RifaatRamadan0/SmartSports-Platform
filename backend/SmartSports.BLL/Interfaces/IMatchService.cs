@@ -4,7 +4,7 @@ namespace SmartSports.BLL.Interfaces;
 
 public interface IMatchService
 {
-    // SPDBTCP-246 — Rifaat
+    // SPDBTCP-246
     /// <summary>
     /// Returns the match by id, or null if not found.
     /// </summary>

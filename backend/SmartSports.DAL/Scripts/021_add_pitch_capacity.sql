@@ -10,4 +10,4 @@ ALTER TABLE pitches
     DROP CONSTRAINT IF EXISTS chk_pitch_capacity;
 
 ALTER TABLE pitches
-    ADD CONSTRAINT chk_pitch_capacity CHECK (capacity > 0);
+    ADD CONSTRAINT chk_pitch_capacity CHECK (capacity >= 2 AND capacity <= 30);

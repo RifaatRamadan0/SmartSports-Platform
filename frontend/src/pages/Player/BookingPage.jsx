@@ -135,6 +135,7 @@ export default function BookingPage() {
       setError(null)
       setSelectedSlot(null)
       setShowAllSlots(false)
+      setIsOpen(true)
       const data = await getAvailableSlots(Number(pitchId), toApiDate(selectedDate))
       setSlots(data)
     } catch (err) {

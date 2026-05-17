@@ -36,7 +36,6 @@ public class CreatePitchRequest
 
     // Match.max_players is derived from this when a booking creates the linked match
     // (see BookingService.CreateBookingAsync). Range mirrors realistic team-sport caps.
-    [Required]
     [Range(2, 30, ErrorMessage = "Capacity must be between 2 and 30 players.")]
     public int Capacity { get; set; } = 10;
 }

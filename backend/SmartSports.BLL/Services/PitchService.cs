@@ -178,7 +178,7 @@ public class PitchService : IPitchService
         existing.Latitude                  = request.Latitude;
         existing.Longitude                 = request.Longitude;
         existing.MaxBookingDurationMinutes = request.MaxBookingDurationMinutes;
-        existing.Capacity                  = request.Capacity;
+        existing.Capacity                  = request.Capacity ?? existing.Capacity;
         existing.IsActive                  = request.IsActive;
         existing.Status                    = PitchStatus.PendingApproval;
         existing.RejectionReason           = null;
@@ -202,7 +202,7 @@ public class PitchService : IPitchService
         || existing.Latitude               != request.Latitude
         || existing.Longitude              != request.Longitude
         || existing.MaxBookingDurationMinutes != request.MaxBookingDurationMinutes
-        || existing.Capacity               != request.Capacity
+        || (request.Capacity.HasValue && existing.Capacity != request.Capacity.Value)
         || existing.IsActive               != request.IsActive;
 
     public async Task SoftDeleteAsync(int ownerId, int pitchId)

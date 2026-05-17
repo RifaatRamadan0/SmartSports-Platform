@@ -7,7 +7,9 @@ export function getUserIdFromToken(token) {
   const parts = token.split('.')
   if (parts.length !== 3) return null
   try {
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+    const base64Url = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64Url + '==='.slice(0, (4 - (base64Url.length % 4)) % 4)
+    const payload = JSON.parse(atob(padded))
     const raw = payload.nameid ?? payload.sub ?? payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']
     const id = Number(raw)
     return Number.isFinite(id) ? id : null
