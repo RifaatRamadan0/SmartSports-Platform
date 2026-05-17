@@ -545,31 +545,59 @@ export default function BookingPage() {
         {/* Visibility (SPDBTCP-247) */}
         <div className="px-6 sm:px-8 pb-6">
           <div className="flex items-center gap-4">
-            <div className={`
-              w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors
-              ${isOpen
-                ? 'bg-green-500/10 border border-green-500/40 text-green-400'
-                : 'bg-blue-500/10 border border-blue-500/40 text-blue-400'
-              }
-            `}>
+            <motion.div
+              className={`
+                w-11 h-11 rounded-xl flex items-center justify-center shrink-0
+                ${isOpen
+                  ? 'bg-green-500/10 border border-green-500/40 text-green-400'
+                  : 'bg-blue-500/10 border border-blue-500/40 text-blue-400'
+                }
+              `}
+              animate={{ scale: [1, 1.18, 1] }}
+              transition={{ duration: 0.28, ease: 'easeOut' }}
+              key={isOpen ? 'globe' : 'lock'}
+            >
               {isOpen ? <GlobeIcon className="w-5 h-5" /> : <LockIcon className="w-5 h-5" />}
-            </div>
+            </motion.div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white">Match Visibility</p>
-              <p className="text-xs text-neutral-400 mt-0.5">
-                {isOpen
-                  ? 'Listed in Find Games — anyone can discover and request to join'
-                  : 'Hidden from Find Games — only players you invite can join'}
-              </p>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.p
+                  key={isOpen ? 'open-desc' : 'private-desc'}
+                  className="text-xs text-neutral-400 mt-0.5"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  {isOpen
+                    ? 'Listed in Find Games — anyone can discover and request to join'
+                    : 'Hidden from Find Games — only players you invite can join'}
+                </motion.p>
+              </AnimatePresence>
             </div>
-            <div className="flex rounded-full bg-[#0f1411] border border-[#1f2622] p-1 shrink-0">
+            <div className="relative flex rounded-full bg-[#0f1411] border border-[#1f2622] p-1 shrink-0">
+              {isOpen && (
+                <motion.div
+                  layoutId="visibility-pill"
+                  className="absolute inset-y-1 left-1 w-[calc(50%-2px)] rounded-full bg-green-500"
+                  transition={springTransition}
+                />
+              )}
+              {!isOpen && (
+                <motion.div
+                  layoutId="visibility-pill"
+                  className="absolute inset-y-1 right-1 w-[calc(50%-2px)] rounded-full bg-blue-500"
+                  transition={springTransition}
+                />
+              )}
               <button
                 type="button"
                 onClick={() => setIsOpen(true)}
                 aria-pressed={isOpen}
                 className={`
-                  flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-colors
-                  ${isOpen ? 'bg-green-500 text-black' : 'text-neutral-400 hover:text-white'}
+                  relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-colors
+                  ${isOpen ? 'text-black' : 'text-neutral-400 hover:text-white'}
                 `}
               >
                 <GlobeIcon className="w-3.5 h-3.5" />
@@ -580,8 +608,8 @@ export default function BookingPage() {
                 onClick={() => setIsOpen(false)}
                 aria-pressed={!isOpen}
                 className={`
-                  flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-colors
-                  ${!isOpen ? 'bg-blue-500 text-white' : 'text-neutral-400 hover:text-white'}
+                  relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-colors
+                  ${!isOpen ? 'text-white' : 'text-neutral-400 hover:text-white'}
                 `}
               >
                 <LockIcon className="w-3.5 h-3.5" />
