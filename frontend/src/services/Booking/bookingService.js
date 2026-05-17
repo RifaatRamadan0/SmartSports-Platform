@@ -31,12 +31,13 @@ export async function getBookingById(id) {
 }
 
 //player
-export async function createBooking({ pitchId, bookingDate, startTime, durationInMinutes }) {
+export async function createBooking({ pitchId, bookingDate, startTime, durationInMinutes, isOpenToJoin = true }) {
   const { data } = await api.post('/api/bookings', {
     pitchId,
     bookingDate,
     startTime,
     durationInMinutes,
+    isOpenToJoin,
   })
   return data
 }

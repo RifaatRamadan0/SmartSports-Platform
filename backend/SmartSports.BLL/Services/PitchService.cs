@@ -40,6 +40,7 @@ public class PitchService : IPitchService
             PricePerHour              = detail.PricePerHour,
             Rating                    = detail.Rating,
             MaxBookingDurationMinutes = detail.MaxBookingDurationMinutes,
+            Capacity                  = detail.Capacity,
             Images                    = images,
             Schedule                  = schedule.Select(s => new ScheduleDayResponse
             {
@@ -84,6 +85,7 @@ public class PitchService : IPitchService
             Rating                    = r.Rating,
             SportName                 = r.SportName,
             MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
+            Capacity                  = r.Capacity,
             CityName                  = r.CityName,
             CoverImageUrl             = r.CoverImageUrl,
             ImageCount                = r.ImageCount,
@@ -113,6 +115,7 @@ public class PitchService : IPitchService
             Rating                    = r.Rating,
             SportName                 = r.SportName,
             MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
+            Capacity                  = r.Capacity,
             CityName                  = r.CityName,
             CoverImageUrl             = r.CoverImageUrl,
             ImageCount                = r.ImageCount,
@@ -142,6 +145,7 @@ public class PitchService : IPitchService
             Latitude                  = request.Latitude,
             Longitude                 = request.Longitude,
             MaxBookingDurationMinutes = request.MaxBookingDurationMinutes,
+            Capacity                  = request.Capacity,
             IsActive = true,
             Status   = PitchStatus.PendingApproval,
         };
@@ -174,6 +178,7 @@ public class PitchService : IPitchService
         existing.Latitude                  = request.Latitude;
         existing.Longitude                 = request.Longitude;
         existing.MaxBookingDurationMinutes = request.MaxBookingDurationMinutes;
+        existing.Capacity                  = request.Capacity;
         existing.IsActive                  = request.IsActive;
         existing.Status                    = PitchStatus.PendingApproval;
         existing.RejectionReason           = null;
@@ -197,6 +202,7 @@ public class PitchService : IPitchService
         || existing.Latitude               != request.Latitude
         || existing.Longitude              != request.Longitude
         || existing.MaxBookingDurationMinutes != request.MaxBookingDurationMinutes
+        || existing.Capacity               != request.Capacity
         || existing.IsActive               != request.IsActive;
 
     public async Task SoftDeleteAsync(int ownerId, int pitchId)
@@ -239,6 +245,7 @@ public class PitchService : IPitchService
         Latitude                  = pitch.Latitude,
         Longitude                 = pitch.Longitude,
         MaxBookingDurationMinutes = pitch.MaxBookingDurationMinutes,
+        Capacity                  = pitch.Capacity,
         IsActive        = pitch.IsActive,
         Status          = pitch.Status,
         RejectionReason = pitch.RejectionReason,

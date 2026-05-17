@@ -10,9 +10,10 @@ public interface IBookingRepository
     /// Returns the generated booking id and booked_at timestamp.
     /// Throws ConflictException if a unique constraint violation occurs (race condition).
     /// </summary>
-    Task<(int Id, DateTime BookedAt)> CreateWithMatchAsync(
+    Task<(int Id, DateTime BookedAt, int MatchId)> CreateWithMatchAsync(
         int userId, int pitchId, DateOnly bookingDate,
-        TimeOnly startTime, TimeOnly endTime, decimal totalPrice);
+        TimeOnly startTime, TimeOnly endTime, decimal totalPrice,
+        bool isOpenToJoin, int maxPlayers);
 
     /// <summary>
     /// Returns a single booking by ID with pitch name joined.

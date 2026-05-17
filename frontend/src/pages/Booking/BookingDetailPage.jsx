@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { ROLES } from '../../constants/roles'
 import { getBookingById, cancelBooking } from '../../services/Booking/bookingService'
+import { updateMatchVisibility } from '../../services/Match/matchService'
 import { parseApiError } from '../../utils/errorUtils'
+import { getUserIdFromToken } from '../../utils/jwtUtils'
 
 import { CANCEL_BUFFER_MS } from '../../constants'
 
@@ -99,6 +101,53 @@ function CancelDialog({ isSubmitting, onConfirm, onClose }) {
   )
 }
 
+// ── Match visibility card (SPDBTCP-248) ───────────────────────────────────────
+
+function MatchVisibilityCard({ match, canToggle, isFlipping, onToggle }) {
+  const isOpen = !!match.isOpenToJoin
+  return (
+    <div className="rounded-2xl border border-white/[0.06] bg-[#0d0d0d] px-5 py-4 mb-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">
+            Match visibility
+          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`px-2.5 py-1 rounded-full border text-[11px] font-bold tracking-widest uppercase ${
+              isOpen
+                ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+            }`}>
+              {isOpen ? 'Open to join' : 'Private'}
+            </span>
+            <span className="text-[11px] text-neutral-500">· Max {match.maxPlayers} players</span>
+          </div>
+          <p className="text-[12px] text-neutral-500">
+            {isOpen
+              ? 'Listed publicly. Other players can find and join this match.'
+              : 'Hidden from the public list. Only invited players can join.'}
+          </p>
+        </div>
+        {canToggle && (
+          <button
+            type="button"
+            onClick={onToggle}
+            disabled={isFlipping}
+            className={`shrink-0 self-center px-4 py-2 rounded-xl text-[12px] font-bold transition-colors
+                       border disabled:opacity-50
+                       ${isOpen
+                         ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20'
+                         : 'bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20'
+                       }`}
+          >
+            {isFlipping ? 'Saving…' : (isOpen ? 'Make private' : 'Open to others')}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Detail row ────────────────────────────────────────────────────────────────
 
 function DetailRow({ label, value, valueClass = 'text-white' }) {
@@ -115,10 +164,12 @@ function DetailRow({ label, value, valueClass = 'text-white' }) {
 export default function BookingDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { roles } = useAuth()
+  const { roles, token } = useAuth()
   const isPlayer = roles.includes(ROLES.PLAYER)
+  const currentUserId = useMemo(() => getUserIdFromToken(token), [token])
 
   const [booking,      setBooking]      = useState(null)
+  const [isFlipping,   setIsFlipping]   = useState(false)
   const [isLoading,    setIsLoading]    = useState(true)
   const [error,        setError]        = useState(null)   // { type: '403'|'404'|'error', message }
   const [showDialog,   setShowDialog]   = useState(false)
@@ -147,6 +198,28 @@ export default function BookingDetailPage() {
   }, [id])
 
   useEffect(() => { fetchBooking() }, [fetchBooking])
+
+  // SPDBTCP-248 — owner-only toggle. Optimistic; rollback + toast on server failure.
+  const handleVisibilityToggle = async () => {
+    if (!booking?.match || isFlipping) return
+    const next = !booking.match.isOpenToJoin
+    setIsFlipping(true)
+    setBooking(b => ({ ...b, match: { ...b.match, isOpenToJoin: next } }))
+    try {
+      const updated = await updateMatchVisibility(booking.match.id, next)
+      setBooking(b => ({ ...b, match: updated }))
+      showToast(next ? 'Match is now open to others.' : 'Match is now private.')
+    } catch (err) {
+      setBooking(b => ({ ...b, match: { ...b.match, isOpenToJoin: !next } }))
+      const status = err?.response?.status
+      const msg = status === 403
+        ? 'Only the booking owner can change visibility.'
+        : parseApiError(err, 'Could not update visibility.')
+      showToast(msg, 'error')
+    } finally {
+      setIsFlipping(false)
+    }
+  }
 
   const handleCancel = async (reason) => {
     setIsCancelling(true)
@@ -282,6 +355,16 @@ export default function BookingDetailPage() {
             <p className="text-[10px] font-bold tracking-widest uppercase text-red-400/70 mb-1">Cancellation reason</p>
             <p className="text-[13px] text-red-300">{booking.cancellationReason}</p>
           </div>
+        )}
+
+        {/* Match visibility (SPDBTCP-248) */}
+        {booking.match && (
+          <MatchVisibilityCard
+            match={booking.match}
+            canToggle={isPlayer && currentUserId === booking.userId && booking.status === 'confirmed'}
+            isFlipping={isFlipping}
+            onToggle={handleVisibilityToggle}
+          />
         )}
 
         {/* Upcoming: payment, chat, edit */}

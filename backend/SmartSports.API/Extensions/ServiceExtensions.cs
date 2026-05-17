@@ -15,6 +15,7 @@ using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.DAL.Interfaces.Availability;
 using SmartSports.DAL.Interfaces.Booking;
 using SmartSports.DAL.Interfaces.Lookup;
+using SmartSports.DAL.Interfaces.Match;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Interfaces.Review;
 using SmartSports.DAL.Interfaces.RoleRequests;
@@ -207,6 +208,10 @@ public static class ServiceExtensions
         // Booking
         services.AddScoped<IPitchRepository, PitchRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
+
+        // Match (SPDBTCP-245)
+        services.AddScoped<IMatchRepository, MatchRepository>();
+        services.AddScoped<IMatchService, MatchService>();
 
         // Pitch
         services.AddScoped<IReviewRepository, ReviewRepository>();

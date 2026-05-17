@@ -35,5 +35,9 @@ public class UpdatePitchRequest
     public int MaxBookingDurationMinutes { get; set; }
 
     [Required]
+    [Range(2, 30, ErrorMessage = "Capacity must be between 2 and 30 players.")]
+    public int Capacity { get; set; }
+
+    [Required]
     public bool IsActive { get; set; }
 }

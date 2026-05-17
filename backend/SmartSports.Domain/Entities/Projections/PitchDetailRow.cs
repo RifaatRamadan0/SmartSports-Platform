@@ -9,4 +9,5 @@ public record PitchDetailRow(
     string   Address,
     decimal  PricePerHour,
     decimal? Rating,
-    int      MaxBookingDurationMinutes);
+    int      MaxBookingDurationMinutes,
+    int      Capacity);
