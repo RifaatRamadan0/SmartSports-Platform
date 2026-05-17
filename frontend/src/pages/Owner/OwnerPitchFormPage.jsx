@@ -26,6 +26,7 @@ const EMPTY_FORM = {
   latitude:                  '',
   longitude:                 '',
   maxBookingDurationMinutes: 120,
+  capacity:                  10,
   isActive:                  true,
 }
 
@@ -60,6 +61,10 @@ function validate(form) {
   if (!Number.isFinite(dur) || dur < 60 || dur > 480 || dur % 30 !== 0)
     errors.maxBookingDurationMinutes = 'Duration must be 60–480 minutes in 30-minute steps.'
 
+  const cap = Number(form.capacity)
+  if (!Number.isFinite(cap) || !Number.isInteger(cap) || cap < 2 || cap > 30)
+    errors.capacity = 'Capacity must be a whole number between 2 and 30.'
+
   return errors
 }
 
@@ -73,6 +78,7 @@ function buildPayload(form, mode) {
     latitude:                  form.latitude  === '' ? null : Number(form.latitude),
     longitude:                 form.longitude === '' ? null : Number(form.longitude),
     maxBookingDurationMinutes: Number(form.maxBookingDurationMinutes),
+    capacity:                  Number(form.capacity),
   }
   if (mode === 'edit') payload.isActive = !!form.isActive
   return payload
@@ -137,6 +143,7 @@ export default function OwnerPitchFormPage() {
           latitude:                  pitch.latitude  != null ? String(pitch.latitude)  : '',
           longitude:                 pitch.longitude != null ? String(pitch.longitude) : '',
           maxBookingDurationMinutes: pitch.maxBookingDurationMinutes ?? 120,
+          capacity:                  pitch.capacity ?? 10,
           isActive:                  !!pitch.isActive,
         })
       }
@@ -363,6 +370,25 @@ export default function OwnerPitchFormPage() {
               </select>
             </Field>
           </div>
+
+          <Field
+            label="Capacity (players)"
+            htmlFor="capacity"
+            error={errors.capacity}
+            hint="Maximum players per match on this pitch. Used as the join cap for open matches."
+          >
+            <input
+              id="capacity"
+              type="number"
+              min={2}
+              max={30}
+              step={1}
+              value={form.capacity}
+              onChange={e => setField('capacity', e.target.value)}
+              className={inputClass}
+              placeholder="10"
+            />
+          </Field>
 
           <div className="grid sm:grid-cols-2 gap-5">
             <Field label="Latitude (optional)" htmlFor="latitude" error={errors.latitude}>

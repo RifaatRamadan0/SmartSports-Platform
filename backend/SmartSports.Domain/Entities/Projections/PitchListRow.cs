@@ -11,6 +11,7 @@ public record PitchListRow
     public decimal? Rating                    { get; init; }
     public string   SportName                 { get; init; } = "";
     public int      MaxBookingDurationMinutes { get; init; }
+    public int      Capacity                  { get; init; }
     public string   CityName                  { get; init; } = "";
     public string?  CoverImageUrl             { get; init; }
     public int      ImageCount                { get; init; }

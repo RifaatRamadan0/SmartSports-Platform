@@ -33,4 +33,9 @@ public class CreatePitchRequest
     [Required]
     [Range(60, 480, ErrorMessage = "MaxBookingDurationMinutes must be between 60 and 480.")]
     public int MaxBookingDurationMinutes { get; set; } = 120;
+
+    // Match.max_players is derived from this when a booking creates the linked match
+    // (see BookingService.CreateBookingAsync). Range mirrors realistic team-sport caps.
+    [Range(2, 30, ErrorMessage = "Capacity must be between 2 and 30 players.")]
+    public int Capacity { get; set; } = 10;
 }

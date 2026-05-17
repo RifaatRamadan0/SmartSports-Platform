@@ -1,3 +1,5 @@
+using SmartSports.BLL.DTOs.Match;
+
 namespace SmartSports.BLL.DTOs.Booking;
 
 public class BookingResponse
@@ -13,4 +15,7 @@ public class BookingResponse
     public string Status { get; set; } = string.Empty;
     public DateTime BookedAt { get; set; }
     public string? CancellationReason { get; set; }
+
+    // SPDBTCP-245 — populated for endpoints that include the linked match (create, detail).
+    public MatchResponse? Match { get; set; }
 }
