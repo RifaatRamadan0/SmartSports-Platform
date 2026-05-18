@@ -29,7 +29,19 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception occurred.");
+            // Expected domain rejections map to 4xx and are part of normal request flow —
+            // log at Warning without a stack trace. Anything else is an unexpected bug
+            // (maps to 500) and deserves a full Error-level stack trace.
+            if (ex is ForbiddenException
+                   or KeyNotFoundException
+                   or ArgumentException
+                   or ConflictException
+                   or UnauthorizedAccessException)
+                _logger.LogWarning("Request rejected ({Type}): {Message}",
+                    ex.GetType().Name, ex.Message);
+            else
+                _logger.LogError(ex, "Unhandled exception occurred.");
+
             await HandleExceptionAsync(context, ex);
         }
     }
