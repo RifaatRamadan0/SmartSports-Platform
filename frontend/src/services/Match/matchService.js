@@ -7,6 +7,12 @@ export async function updateMatchVisibility(matchId, isOpenToJoin) {
   return data
 }
 
+// Returns aggregate stats for open matches: counts, min price, sport/city breakdowns.
+export async function getMatchStats() {
+  const { data } = await api.get('/api/matches/stats')
+  return data
+}
+
 // Returns a paginated list of open matches. sport and city are optional filters.
 export async function listOpenMatches({ sport, city, page = 1, pageSize = 10 } = {}) {
   const params = { page, pageSize }
