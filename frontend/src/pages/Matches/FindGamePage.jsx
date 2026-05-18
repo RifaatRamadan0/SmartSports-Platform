@@ -8,7 +8,6 @@ import PageWrapper from '@/components/routing/PageWrapper'
 import { cardVariants, cardHover, cardTap, listContainerVariants } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { listOpenMatches, getMatchStats } from '../../services/Match/matchService'
-import { getSportTypes, getCities } from '../../services/Lookup/lookupService'
 import { parseApiError } from '../../utils/errorUtils'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -472,22 +471,16 @@ export default function FindGamePage() {
   const urlPage  = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
 
   const [refreshKey,  setRefreshKey]  = useState(0)
-  const [sportTypes,  setSportTypes]  = useState([])
-  const [cities,      setCities]      = useState([])
   const [statsResult, setStatsResult] = useState(null)
   const [result,      setResult]      = useState(null)
   const [isLoading,   setIsLoading]   = useState(true)
   const [error,       setError]       = useState(null)
 
-  // Load lookups + stats once on mount — allSettled so a stats failure doesn't block the filter dropdowns
+  // Load stats once on mount — false = "failed but done" so the banner exits skeleton state
   useEffect(() => {
-    Promise.allSettled([getSportTypes(), getCities(), getMatchStats()])
-      .then(([st, c, stats]) => {
-        if (st.status === 'fulfilled') setSportTypes(st.value)
-        if (c.status  === 'fulfilled') setCities(c.value)
-        // false = "failed but done" so the banner exits skeleton state
-        setStatsResult(stats.status === 'fulfilled' ? stats.value : false)
-      })
+    getMatchStats()
+      .then(data => setStatsResult(data))
+      .catch(() => setStatsResult(false))
   }, [])
 
   // Fetch matches whenever URL-driven filters or refresh key change
