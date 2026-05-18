@@ -5,7 +5,7 @@ import {
   Calendar, Clock, ChevronLeft, ChevronRight, ExternalLink,
 } from 'lucide-react'
 import PageWrapper from '@/components/routing/PageWrapper'
-import { cardVariants, cardHover, cardTap, listContainerVariants } from '@/lib/motion'
+import { cardVariants, cardTap, listContainerVariants } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { listOpenMatches, getMatchStats } from '../../services/Match/matchService'
 import { parseApiError } from '../../utils/errorUtils'

@@ -49,15 +49,14 @@ public class MatchService : IMatchService
     public async Task<PagedResult<MatchSummaryResponse>> ListOpenAsync(MatchQuery query)
     {
         // Clamp to safe bounds — prevents runaway queries from bad client input
-        if (query.Page     < 1)   query.Page     = 1;
-        if (query.PageSize < 1)   query.PageSize = 10;
-        if (query.PageSize > 100) query.PageSize = 100;
+        var page     = Math.Max(1, query.Page);
+        var pageSize = Math.Clamp(query.PageSize < 1 ? 10 : query.PageSize, 1, 100);
 
         var filters = new MatchFilterParams(
             Sport:    query.Sport?.Trim(),
             City:     query.City?.Trim(),
-            Page:     query.Page,
-            PageSize: query.PageSize
+            Page:     page,
+            PageSize: pageSize
         );
 
         var (rows, total) = await _matchRepository.ListOpenAsync(filters);
@@ -79,8 +78,8 @@ public class MatchService : IMatchService
                 PricePerPlayer = r.PricePerPlayer,
             }),
             TotalCount = (int)Math.Min(total, int.MaxValue),
-            Page       = query.Page,
-            PageSize   = query.PageSize,
+            Page       = page,
+            PageSize   = pageSize,
         };
     }
 

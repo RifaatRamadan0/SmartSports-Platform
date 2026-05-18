@@ -3,6 +3,7 @@ using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Match;
 using SmartSports.DAL.Parameters;
 using SmartSports.Domain.Entities.Projections;
+using SmartSports.Domain.Enums;
 using MatchEntity = SmartSports.Domain.Entities.Match;
 
 namespace SmartSports.DAL.Repositories;
@@ -70,9 +71,10 @@ public class MatchRepository : IMatchRepository
             "m.is_open_to_join = TRUE",
             "b.booking_date    >= CURRENT_DATE",
             "p.deleted_at      IS NULL",
-            "p.status          = 1",    // PitchStatus.Approved
+            "p.status          = @ApprovedStatus",
         };
         var parameters = new DynamicParameters();
+        parameters.Add("ApprovedStatus", (short)PitchStatus.Approved);
 
         // Optional filters — user input goes through Dapper params, never string-interpolated
         if (!string.IsNullOrWhiteSpace(filters.Sport))
@@ -146,7 +148,7 @@ public class MatchRepository : IMatchRepository
         using var connection = _connectionFactory.CreateConnection();
 
         // Open-match subquery reused across all three queries for consistency
-        const string openMatchesCte = """
+        var openMatchesCte = $"""
             WITH open_matches AS (
                 SELECT m.id,
                        b.total_price,
@@ -163,7 +165,7 @@ public class MatchRepository : IMatchRepository
                 WHERE  m.is_open_to_join = TRUE
                   AND  b.booking_date   >= CURRENT_DATE
                   AND  p.deleted_at      IS NULL
-                  AND  p.status          = 1
+                  AND  p.status          = {(short)PitchStatus.Approved}
                 GROUP  BY m.id, b.total_price, m.max_players, c.id, c.name, s.name
                 HAVING COUNT(mp.id) < m.max_players
             )
