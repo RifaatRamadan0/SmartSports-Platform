@@ -33,6 +33,15 @@ public class MatchesController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("stats")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(MatchStatsResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetStats()
+    {
+        var result = await _matchService.GetStatsAsync();
+        return Ok(result);
+    }
+
     // SPDBTCP-246
     [HttpPatch("{id:int}/visibility")]
     [Authorize(Policy = "PlayerOnly")]

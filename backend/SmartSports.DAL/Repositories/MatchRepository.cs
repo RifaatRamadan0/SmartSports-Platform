@@ -109,24 +109,28 @@ public class MatchRepository : IMatchRepository
         // Data query: LEFT JOIN filters in the ON clause so matches with 0 participants are included.
         // HAVING removes full matches. ::int cast avoids bigint→int mapping mismatch in Dapper.
         var dataSql = $"""
-            SELECT m.id                AS MatchId,
-                   p.name              AS PitchName,
-                   c.name              AS CityName,
-                   s.name              AS SportName,
-                   b.booking_date      AS BookingDate,
-                   b.start_time        AS StartTime,
-                   b.end_time          AS EndTime,
-                   COUNT(mp.id)::int   AS AcceptedCount,
-                   m.max_players       AS MaxPlayers
+            SELECT m.id                                              AS MatchId,
+                   p.name                                            AS PitchName,
+                   c.name                                            AS CityName,
+                   s.name                                            AS SportName,
+                   b.booking_date                                    AS BookingDate,
+                   b.start_time                                      AS StartTime,
+                   b.end_time                                        AS EndTime,
+                   COUNT(mp.id)::int                                 AS AcceptedCount,
+                   m.max_players                                     AS MaxPlayers,
+                   u.username                                        AS OrganizerName,
+                   ROUND(b.total_price / NULLIF(m.max_players, 0), 2) AS PricePerPlayer
             FROM   matches              m
-            JOIN   bookings             b  ON b.id = m.booking_id
-            JOIN   pitches              p  ON p.id = b.pitch_id
-            JOIN   sport_types          s  ON s.id = p.sport_type_id
-            JOIN   cities               c  ON c.id = p.city_id
+            JOIN   bookings             b  ON b.id  = m.booking_id
+            JOIN   users               u  ON u.id  = b.user_id
+            JOIN   pitches              p  ON p.id  = b.pitch_id
+            JOIN   sport_types          s  ON s.id  = p.sport_type_id
+            JOIN   cities               c  ON c.id  = p.city_id
             LEFT JOIN match_participants mp ON mp.match_id = m.id AND mp.status = 'accepted'
             WHERE  {where}
             GROUP  BY m.id, p.name, c.name, s.name,
-                      b.booking_date, b.start_time, b.end_time, m.max_players
+                      b.booking_date, b.start_time, b.end_time,
+                      m.max_players, b.total_price, u.username
             HAVING COUNT(mp.id) < m.max_players
             ORDER  BY b.booking_date ASC, b.start_time ASC, m.id ASC
             LIMIT  @PageSize OFFSET @Offset
@@ -135,5 +139,64 @@ public class MatchRepository : IMatchRepository
         var total = await connection.ExecuteScalarAsync<long>(countSql, parameters);
         var items = await connection.QueryAsync<OpenMatchRow>(dataSql, parameters);
         return (items, total);
+    }
+
+    public async Task<(MatchStatsRow Summary, IEnumerable<MatchCountByName> BySport, IEnumerable<MatchCountByName> ByCity)> GetStatsAsync()
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        // Open-match subquery reused across all three queries for consistency
+        const string openMatchesCte = """
+            WITH open_matches AS (
+                SELECT m.id,
+                       b.total_price,
+                       m.max_players,
+                       c.id   AS city_id,
+                       c.name AS city_name,
+                       s.name AS sport_name
+                FROM   matches              m
+                JOIN   bookings             b  ON b.id = m.booking_id
+                JOIN   pitches              p  ON p.id = b.pitch_id
+                JOIN   sport_types          s  ON s.id = p.sport_type_id
+                JOIN   cities               c  ON c.id = p.city_id
+                LEFT JOIN match_participants mp ON mp.match_id = m.id AND mp.status = 'accepted'
+                WHERE  m.is_open_to_join = TRUE
+                  AND  b.booking_date   >= CURRENT_DATE
+                  AND  p.deleted_at      IS NULL
+                  AND  p.status          = 1
+                GROUP  BY m.id, b.total_price, m.max_players, c.id, c.name, s.name
+                HAVING COUNT(mp.id) < m.max_players
+            )
+            """;
+
+        var summarySql = $"""
+            {openMatchesCte}
+            SELECT COUNT(*)::bigint                                          AS OpenGamesCount,
+                   COUNT(DISTINCT city_id)::bigint                          AS CitiesCount,
+                   MIN(ROUND(total_price / NULLIF(max_players, 0), 2))      AS MinPricePerPlayer
+            FROM   open_matches
+            """;
+
+        var bySportSql = $"""
+            {openMatchesCte}
+            SELECT sport_name AS Name, COUNT(*)::int AS Count
+            FROM   open_matches
+            GROUP  BY sport_name
+            ORDER  BY Count DESC
+            """;
+
+        var byCitySql = $"""
+            {openMatchesCte}
+            SELECT city_name AS Name, COUNT(*)::int AS Count
+            FROM   open_matches
+            GROUP  BY city_name
+            ORDER  BY Count DESC
+            """;
+
+        var summary = await connection.QuerySingleAsync<MatchStatsRow>(summarySql);
+        var bySport  = await connection.QueryAsync<MatchCountByName>(bySportSql);
+        var byCity   = await connection.QueryAsync<MatchCountByName>(byCitySql);
+
+        return (summary, bySport, byCity);
     }
 }

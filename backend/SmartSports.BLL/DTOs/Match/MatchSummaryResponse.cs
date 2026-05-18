@@ -9,6 +9,8 @@ public class MatchSummaryResponse
     public DateOnly BookingDate   { get; set; }
     public TimeOnly StartTime     { get; set; }
     public TimeOnly EndTime       { get; set; }
-    public int      AcceptedCount { get; set; }
-    public int      MaxPlayers    { get; set; }
+    public int      AcceptedCount  { get; set; }
+    public int      MaxPlayers     { get; set; }
+    public string   OrganizerName  { get; set; } = string.Empty;
+    public decimal  PricePerPlayer { get; set; }
 }

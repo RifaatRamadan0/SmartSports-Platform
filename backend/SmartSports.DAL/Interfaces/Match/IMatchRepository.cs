@@ -28,4 +28,10 @@ public interface IMatchRepository
     /// Ordered by booking_date ASC, start_time ASC.
     /// </summary>
     Task<(IEnumerable<OpenMatchRow> Items, long TotalCount)> ListOpenAsync(MatchFilterParams filters);
+
+    /// <summary>
+    /// Aggregate stats for open matches: total count, distinct city count,
+    /// minimum price per player, and per-sport and per-city breakdowns.
+    /// </summary>
+    Task<(MatchStatsRow Summary, IEnumerable<MatchCountByName> BySport, IEnumerable<MatchCountByName> ByCity)> GetStatsAsync();
 }

@@ -66,19 +66,35 @@ public class MatchService : IMatchService
         {
             Items = rows.Select(r => new MatchSummaryResponse
             {
-                MatchId       = r.MatchId,
-                PitchName     = r.PitchName,
-                CityName      = r.CityName,
-                SportName     = r.SportName,
-                BookingDate   = r.BookingDate,
-                StartTime     = r.StartTime,
-                EndTime       = r.EndTime,
-                AcceptedCount = r.AcceptedCount,
-                MaxPlayers    = r.MaxPlayers,
+                MatchId        = r.MatchId,
+                PitchName      = r.PitchName,
+                CityName       = r.CityName,
+                SportName      = r.SportName,
+                BookingDate    = r.BookingDate,
+                StartTime      = r.StartTime,
+                EndTime        = r.EndTime,
+                AcceptedCount  = r.AcceptedCount,
+                MaxPlayers     = r.MaxPlayers,
+                OrganizerName  = r.OrganizerName,
+                PricePerPlayer = r.PricePerPlayer,
             }),
             TotalCount = (int)Math.Min(total, int.MaxValue),
             Page       = query.Page,
             PageSize   = query.PageSize,
+        };
+    }
+
+    public async Task<MatchStatsResponse> GetStatsAsync()
+    {
+        var (summary, bySport, byCity) = await _matchRepository.GetStatsAsync();
+
+        return new MatchStatsResponse
+        {
+            OpenGamesCount    = (int)Math.Min(summary.OpenGamesCount, int.MaxValue),
+            CitiesCount       = (int)Math.Min(summary.CitiesCount,    int.MaxValue),
+            MinPricePerPlayer = summary.MinPricePerPlayer,
+            BySport           = bySport.Select(r => new NameCountItem { Name = r.Name, Count = r.Count }),
+            ByCity            = byCity.Select(r  => new NameCountItem { Name = r.Name, Count = r.Count }),
         };
     }
 

@@ -25,4 +25,10 @@ public interface IMatchService
     /// booking date >= today, and accepted participants &lt; max_players.
     /// </summary>
     Task<PagedResult<MatchSummaryResponse>> ListOpenAsync(MatchQuery query);
+
+    /// <summary>
+    /// Returns aggregate stats for all open matches: total count, distinct city count,
+    /// minimum price per player, and per-sport and per-city breakdowns.
+    /// </summary>
+    Task<MatchStatsResponse> GetStatsAsync();
 }
