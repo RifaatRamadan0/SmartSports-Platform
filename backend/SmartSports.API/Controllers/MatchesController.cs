@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartSports.API.Services;
+using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Match;
 using SmartSports.BLL.Interfaces;
 
@@ -21,6 +22,15 @@ public class MatchesController : ControllerBase
     {
         _matchService = matchService;
         _currentUser  = currentUser;
+    }
+
+    [HttpGet("open")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(PagedResult<MatchSummaryResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListOpen([FromQuery] MatchQuery query)
+    {
+        var result = await _matchService.ListOpenAsync(query);
+        return Ok(result);
     }
 
     // SPDBTCP-246

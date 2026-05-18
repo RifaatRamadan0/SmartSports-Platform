@@ -30,6 +30,7 @@ const BookingPage             = lazy(() => import('./pages/Player/BookingPage'))
 const AdminPitchApprovalsPage = lazy(() => import('./pages/Admin/AdminPitchApprovalsPage'))
 const SettingsPage            = lazy(() => import('./pages/Settings/SettingsPage'))
 const BookingDetailPage       = lazy(() => import('./pages/Booking/BookingDetailPage'))
+const FindGamePage            = lazy(() => import('./pages/Matches/FindGamePage'))
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -52,6 +53,9 @@ function AnimatedRoutes() {
           {/* Public pitch discovery — no auth required */}
           <Route path="/pitches" element={<PitchDiscoveryPage />} />
           <Route path="/pitches/:id" element={<PitchDetailPage />} />
+
+          {/* Public match discovery — no auth required */}
+          <Route path="/matches/open" element={<FindGamePage />} />
 
           {/* Protected: any authenticated user */}
           <Route element={<PrivateRoute />}>

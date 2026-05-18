@@ -1,6 +1,8 @@
+using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Match;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Match;
+using SmartSports.DAL.Parameters;
 using SmartSports.Domain.Exceptions;
 using MatchEntity = SmartSports.Domain.Entities.Match;
 
@@ -42,6 +44,42 @@ public class MatchService : IMatchService
 
         match.IsOpenToJoin = isOpenToJoin;
         return MapToResponse(match);
+    }
+
+    public async Task<PagedResult<MatchSummaryResponse>> ListOpenAsync(MatchQuery query)
+    {
+        // Clamp to safe bounds — prevents runaway queries from bad client input
+        if (query.Page     < 1)   query.Page     = 1;
+        if (query.PageSize < 1)   query.PageSize = 10;
+        if (query.PageSize > 100) query.PageSize = 100;
+
+        var filters = new MatchFilterParams(
+            Sport:    query.Sport?.Trim(),
+            City:     query.City?.Trim(),
+            Page:     query.Page,
+            PageSize: query.PageSize
+        );
+
+        var (rows, total) = await _matchRepository.ListOpenAsync(filters);
+
+        return new PagedResult<MatchSummaryResponse>
+        {
+            Items = rows.Select(r => new MatchSummaryResponse
+            {
+                MatchId       = r.MatchId,
+                PitchName     = r.PitchName,
+                CityName      = r.CityName,
+                SportName     = r.SportName,
+                BookingDate   = r.BookingDate,
+                StartTime     = r.StartTime,
+                EndTime       = r.EndTime,
+                AcceptedCount = r.AcceptedCount,
+                MaxPlayers    = r.MaxPlayers,
+            }),
+            TotalCount = (int)Math.Min(total, int.MaxValue),
+            Page       = query.Page,
+            PageSize   = query.PageSize,
+        };
     }
 
     private static MatchResponse MapToResponse(MatchEntity match) => new()
