@@ -12,5 +12,6 @@ public class MatchSummaryResponse
     public int      AcceptedCount  { get; set; }
     public int      MaxPlayers     { get; set; }
     public string   OrganizerName  { get; set; } = string.Empty;
+    public int      OrganizerId    { get; set; }
     public decimal  PricePerPlayer { get; set; }
 }

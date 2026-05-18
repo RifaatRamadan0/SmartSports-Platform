@@ -121,6 +121,7 @@ public class MatchRepository : IMatchRepository
                    COUNT(mp.id)::int                                 AS AcceptedCount,
                    m.max_players                                     AS MaxPlayers,
                    u.username                                        AS OrganizerName,
+                   u.id                                              AS OrganizerId,
                    ROUND(b.total_price / NULLIF(m.max_players, 0), 2) AS PricePerPlayer
             FROM   matches              m
             JOIN   bookings             b  ON b.id  = m.booking_id
@@ -132,7 +133,7 @@ public class MatchRepository : IMatchRepository
             WHERE  {where}
             GROUP  BY m.id, p.name, c.name, s.name,
                       b.booking_date, b.start_time, b.end_time,
-                      m.max_players, b.total_price, u.username
+                      m.max_players, b.total_price, u.username, u.id
             HAVING COUNT(mp.id) < m.max_players
             ORDER  BY b.booking_date ASC, b.start_time ASC, m.id ASC
             LIMIT  @PageSize OFFSET @Offset

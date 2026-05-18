@@ -21,3 +21,25 @@ export async function listOpenMatches({ sport, city, page = 1, pageSize = 10 } =
   const { data } = await api.get('/api/matches/open', { params })
   return data
 }
+
+// Sends a join request for the current player. Returns MatchParticipantResponse (status='pending').
+export async function joinMatch(matchId) {
+  const { data } = await api.post(`/api/matches/${matchId}/join`)
+  return data
+}
+
+// Returns the current player's participant record for a match, or null if not a participant.
+export async function getMyMatchStatus(matchId) {
+  try {
+    const { data } = await api.get(`/api/matches/${matchId}/my-status`)
+    return data
+  } catch (err) {
+    if (err.response?.status === 404) return null
+    throw err
+  }
+}
+
+// Removes the current player from the match.
+export async function leaveMatch(matchId) {
+  await api.delete(`/api/matches/${matchId}/leave`)
+}
