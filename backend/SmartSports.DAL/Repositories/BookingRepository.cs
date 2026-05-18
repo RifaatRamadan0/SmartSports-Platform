@@ -115,9 +115,11 @@ public class BookingRepository : IBookingRepository
                     b.booked_at,
                     b.cancellation_reason,
                     p.name              AS pitch_name,
-                    p.owner_id          AS pitch_owner_id
+                    p.owner_id          AS pitch_owner_id,
+                    m.id                AS match_id
             FROM    bookings b
             JOIN    pitches  p ON p.id = b.pitch_id
+            LEFT JOIN matches m ON m.booking_id = b.id
             WHERE   b.id = @BookingId
             """,
             new { BookingId = bookingId });

@@ -14,7 +14,10 @@ using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.DAL.Interfaces.Availability;
 using SmartSports.DAL.Interfaces.Booking;
+using SmartSports.DAL.Interfaces.Invitation;
 using SmartSports.DAL.Interfaces.Lookup;
+using SmartSports.DAL.Interfaces.Match;
+using SmartSports.DAL.Interfaces.Notification;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Interfaces.Review;
 using SmartSports.DAL.Interfaces.RoleRequests;
@@ -220,6 +223,13 @@ public static class ServiceExtensions
         services.AddScoped<IRoleRequestRepository, RoleRequestRepository>();
         services.AddScoped<IRoleRequestService, RoleRequestService>();
         services.AddScoped<IAdminRoleRequestService, AdminRoleRequestService>();
+
+        // Match / Invitations / Notifications (SPDBTCP-76)
+        services.AddScoped<IMatchRepository, MatchRepository>();
+        services.AddScoped<IInvitationRepository, InvitationRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IInvitationService, InvitationService>();
 
         // Lookups
         services.AddScoped<ILookupRepository, LookupRepository>();
