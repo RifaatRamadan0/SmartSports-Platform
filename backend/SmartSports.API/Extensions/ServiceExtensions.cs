@@ -211,6 +211,10 @@ public static class ServiceExtensions
         services.AddScoped<IPitchRepository, PitchRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
 
+        // Match (SPDBTCP-245)
+        services.AddScoped<IMatchRepository, MatchRepository>();
+        services.AddScoped<IMatchService, MatchService>();
+
         // Pitch
         services.AddScoped<IReviewRepository, ReviewRepository>();
         services.AddScoped<IReviewService, ReviewService>();
@@ -224,8 +228,8 @@ public static class ServiceExtensions
         services.AddScoped<IRoleRequestService, RoleRequestService>();
         services.AddScoped<IAdminRoleRequestService, AdminRoleRequestService>();
 
-        // Match / Invitations / Notifications (SPDBTCP-76)
-        services.AddScoped<IMatchRepository, MatchRepository>();
+        // Invitations / Notifications (SPDBTCP-76)
+        // IMatchRepository is already registered above in the Match (SPDBTCP-245) block.
         services.AddScoped<IInvitationRepository, InvitationRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<INotificationService, NotificationService>();

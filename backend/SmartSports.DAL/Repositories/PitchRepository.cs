@@ -26,7 +26,7 @@ public class PitchRepository : IPitchRepository
             SELECT id, owner_id, city_id, sport_type_id, name, address,
                    price_per_hour, rating, latitude, longitude,
                    is_active, status, rejection_reason,
-                   max_booking_duration_minutes, created_at, deleted_at
+                   max_booking_duration_minutes, capacity, created_at, deleted_at
             FROM pitches
             WHERE id = @PitchId
             """,
@@ -46,7 +46,8 @@ public class PitchRepository : IPitchRepository
                    p.address,
                    p.price_per_hour,
                    p.rating,
-                   p.max_booking_duration_minutes
+                   p.max_booking_duration_minutes,
+                   p.capacity
             FROM   pitches     p
             JOIN   sport_types s ON s.id = p.sport_type_id
             JOIN   cities      c ON c.id = p.city_id
@@ -102,7 +103,8 @@ public class PitchRepository : IPitchRepository
                    p.address,
                    p.price_per_hour,
                    p.rating,
-                   p.max_booking_duration_minutes
+                   p.max_booking_duration_minutes,
+                   p.capacity
             FROM   pitches     p
             JOIN   sport_types s ON s.id = p.sport_type_id
             JOIN   cities      c ON c.id = p.city_id
@@ -194,6 +196,7 @@ public class PitchRepository : IPitchRepository
                     p.price_per_hour,
                     p.rating,
                     p.max_booking_duration_minutes,
+                    p.capacity,
                     s.name              AS sport_name,
                     c.name              AS city_name,
                     cover.image_url     AS cover_image_url,
@@ -235,6 +238,7 @@ public class PitchRepository : IPitchRepository
                     p.rating,
                     s.name              AS sport_name,
                     p.max_booking_duration_minutes,
+                    p.capacity,
                     c.name              AS city_name,
                     cover.image_url     AS cover_image_url,
                     (SELECT COUNT(*) FROM pitch_images WHERE pitch_id = p.id) AS image_count,
@@ -268,12 +272,12 @@ public class PitchRepository : IPitchRepository
             INSERT INTO pitches (
                 owner_id, city_id, sport_type_id, name, address,
                 price_per_hour, latitude, longitude,
-                is_active, status, max_booking_duration_minutes
+                is_active, status, max_booking_duration_minutes, capacity
             )
             VALUES (
                 @OwnerId, @CityId, @SportTypeId, @Name, @Address,
                 @PricePerHour, @Latitude, @Longitude,
-                @IsActive, @Status, @MaxBookingDurationMinutes
+                @IsActive, @Status, @MaxBookingDurationMinutes, @Capacity
             )
             RETURNING id
             """,
@@ -295,6 +299,7 @@ public class PitchRepository : IPitchRepository
                    latitude                     = @Latitude,
                    longitude                    = @Longitude,
                    max_booking_duration_minutes = @MaxBookingDurationMinutes,
+                   capacity                     = @Capacity,
                    is_active                    = @IsActive,
                    status                       = @Status,
                    rejection_reason             = @RejectionReason

@@ -1,17 +1,24 @@
+using SmartSports.Domain.Entities;
+
 namespace SmartSports.DAL.Interfaces.Match;
 
 public interface IMatchRepository
 {
     /// <summary>
-    /// Returns the match by id, or null if it does not exist.
+    /// Returns the match by id, joined to bookings so BookingOwnerId is populated
+    /// (used for resource-level authorization in MatchService / InvitationService).
     /// </summary>
     Task<Domain.Entities.Match?> GetByIdAsync(int matchId);
 
     /// <summary>
-    /// Returns the user id of the booking owner who controls this match,
-    /// or null if no match with the given id exists.
+    /// Returns the match for a given booking, joined to bookings so BookingOwnerId is populated.
     /// </summary>
-    Task<int?> GetOwnerUserIdAsync(int matchId);
+    Task<Domain.Entities.Match?> GetByBookingIdAsync(int bookingId);
+
+    /// <summary>
+    /// Sets is_open_to_join on the match. Returns true if a row was updated.
+    /// </summary>
+    Task<bool> UpdateVisibilityAsync(int matchId, bool isOpenToJoin);
 
     /// <summary>
     /// Returns true if the given user is already a participant in the match.

@@ -14,6 +14,7 @@ public class PitchResponse
     public decimal?  Latitude                  { get; set; }
     public decimal?  Longitude                 { get; set; }
     public int       MaxBookingDurationMinutes { get; set; }
+    public int       Capacity                  { get; set; }
     public bool        IsActive         { get; set; }
     public PitchStatus Status           { get; set; }
     public string?     RejectionReason  { get; set; }

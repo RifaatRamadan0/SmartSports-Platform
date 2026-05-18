@@ -19,9 +19,4 @@ public class Booking
     // check will silently fail and deny legitimate pitch owners.
     public string PitchName    { get; set; } = string.Empty;
     public int?   PitchOwnerId { get; set; }
-
-    // Populated by GetByIdAsync via LEFT JOIN on matches.booking_id. Every booking
-    // confirmed through CreateWithMatchAsync has an associated match row, so this is
-    // effectively non-null in practice; nullable to be safe for legacy/test data.
-    public int?   MatchId      { get; set; }
 }

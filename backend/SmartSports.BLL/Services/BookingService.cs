@@ -1,6 +1,8 @@
 using SmartSports.BLL.DTOs.Booking;
+using SmartSports.BLL.DTOs.Match;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Booking;
+using SmartSports.DAL.Interfaces.Match;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.Domain.Entities;
 using SmartSports.Domain.Enums;
@@ -13,16 +15,19 @@ public class BookingService : IBookingService
     private readonly IPitchRepository _pitchRepository;
     private readonly IPitchScheduleRepository _pitchScheduleRepository;
     private readonly IBookingRepository _bookingRepository;
+    private readonly IMatchRepository _matchRepository;
     private static readonly string[] ValidStatuses = { "pending", "confirmed", "cancelled" };
 
     public BookingService(
         IPitchRepository pitchRepository,
         IPitchScheduleRepository pitchScheduleRepository,
-        IBookingRepository bookingRepository)
+        IBookingRepository bookingRepository,
+        IMatchRepository matchRepository)
     {
         _pitchRepository         = pitchRepository;
         _pitchScheduleRepository = pitchScheduleRepository;
         _bookingRepository       = bookingRepository;
+        _matchRepository         = matchRepository;
     }
 
     // SPDBTCP-166 — Rifaat
@@ -88,9 +93,12 @@ public class BookingService : IBookingService
         // 10. Persist booking + match atomically.
         // Conflict check, advisory lock, and insert all happen inside one transaction
         // in the repository — see BookingRepository.CreateWithMatchAsync.
-        var (bookingId, bookedAt) = await _bookingRepository.CreateWithMatchAsync(
+        // max_players for the match comes from pitch.Capacity, not user input, so every
+        // booking on the same pitch shares one source of truth (SPDBTCP-245).
+        var (bookingId, bookedAt, matchId) = await _bookingRepository.CreateWithMatchAsync(
             userId, request.PitchId, bookingDate,
-            startTime, endTime, totalPrice);
+            startTime, endTime, totalPrice,
+            request.IsOpenToJoin, pitch.Capacity);
 
         // 11. Assemble response — no extra DB round-trip needed
         return new BookingResponse
@@ -104,7 +112,14 @@ public class BookingService : IBookingService
             EndTime     = endTime,
             TotalPrice  = totalPrice,
             Status      = "confirmed",
-            BookedAt    = bookedAt
+            BookedAt    = bookedAt,
+            Match       = new MatchResponse
+            {
+                Id           = matchId,
+                BookingId    = bookingId,
+                IsOpenToJoin = request.IsOpenToJoin,
+                MaxPlayers   = pitch.Capacity,
+            },
         };
     }
 
@@ -151,7 +166,24 @@ public class BookingService : IBookingService
             throw new ForbiddenException(
                 "You do not have permission to view this booking.");
 
-        return MapToResponse(booking);
+        var response = MapToResponse(booking);
+
+        // Attach the linked match so the detail page can render the visibility toggle
+        // without a second round-trip. Match always exists for any booking inserted via
+        // CreateWithMatchAsync, but we tolerate null defensively for any pre-existing rows.
+        var match = await _matchRepository.GetByBookingIdAsync(booking.Id);
+        if (match is not null)
+        {
+            response.Match = new MatchResponse
+            {
+                Id           = match.Id,
+                BookingId    = match.BookingId,
+                IsOpenToJoin = match.IsOpenToJoin,
+                MaxPlayers   = match.MaxPlayers,
+            };
+        }
+
+        return response;
     }
 
     /// <inheritdoc/>
@@ -233,7 +265,6 @@ public class BookingService : IBookingService
         TotalPrice = booking.TotalPrice,
         Status = booking.Status,
         BookedAt = booking.BookedAt,
-        CancellationReason = booking.CancellationReason,
-        MatchId = booking.MatchId
+        CancellationReason = booking.CancellationReason
     };
 }

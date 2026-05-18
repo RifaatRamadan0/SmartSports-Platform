@@ -30,12 +30,13 @@ public class InvitationService : IInvitationService
     public async Task<InvitationResponse> InviteByUsernameAsync(
         int currentUserId, int matchId, string username)
     {
-        // 1. Match must exist.
-        var ownerId = await _matches.GetOwnerUserIdAsync(matchId)
+        // 1. Match must exist. GetByIdAsync joins bookings so BookingOwnerId is populated
+        //    in one round-trip — see MatchRepository.GetByIdAsync.
+        var match = await _matches.GetByIdAsync(matchId)
             ?? throw new KeyNotFoundException($"Match {matchId} was not found.");
 
         // 2. Only the booking owner may invite.
-        if (ownerId != currentUserId)
+        if (match.BookingOwnerId != currentUserId)
             throw new ForbiddenException("Only the booking owner can invite players to this match.");
 
         // 3. Invitee must exist.

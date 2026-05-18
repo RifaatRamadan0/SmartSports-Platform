@@ -17,9 +17,10 @@ public class BookingRepository : IBookingRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task<(int Id, DateTime BookedAt)> CreateWithMatchAsync(
+    public async Task<(int Id, DateTime BookedAt, int MatchId)> CreateWithMatchAsync(
         int userId, int pitchId, DateOnly bookingDate,
-        TimeOnly startTime, TimeOnly endTime, decimal totalPrice)
+        TimeOnly startTime, TimeOnly endTime, decimal totalPrice,
+        bool isOpenToJoin, int maxPlayers)
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
@@ -69,16 +70,22 @@ public class BookingRepository : IBookingRepository
                 },
                 transaction);
 
-            await connection.ExecuteAsync(
+            var matchId = await connection.ExecuteScalarAsync<int>(
                 """
                 INSERT INTO matches (booking_id, is_open_to_join, max_players)
-                VALUES (@BookingId, TRUE, 10)
+                VALUES (@BookingId, @IsOpenToJoin, @MaxPlayers)
+                RETURNING id
                 """,
-                new { BookingId = row.Id },
+                new
+                {
+                    BookingId    = row.Id,
+                    IsOpenToJoin = isOpenToJoin,
+                    MaxPlayers   = maxPlayers,
+                },
                 transaction);
 
             await transaction.CommitAsync();
-            return (row.Id, row.BookedAt);
+            return (row.Id, row.BookedAt, matchId);
         }
         catch (ConflictException)
         {
@@ -115,11 +122,9 @@ public class BookingRepository : IBookingRepository
                     b.booked_at,
                     b.cancellation_reason,
                     p.name              AS pitch_name,
-                    p.owner_id          AS pitch_owner_id,
-                    m.id                AS match_id
+                    p.owner_id          AS pitch_owner_id
             FROM    bookings b
             JOIN    pitches  p ON p.id = b.pitch_id
-            LEFT JOIN matches m ON m.booking_id = b.id
             WHERE   b.id = @BookingId
             """,
             new { BookingId = bookingId });
