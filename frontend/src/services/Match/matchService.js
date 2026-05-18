@@ -15,3 +15,9 @@ export async function listOpenMatches({ sport, city, page = 1, pageSize = 10 } =
   const { data } = await api.get('/api/matches/open', { params })
   return data
 }
+
+// Returns aggregate stats for the open games page.
+export async function getMatchStats() {
+  const { data } = await api.get('/api/matches/stats')
+  return data
+}
