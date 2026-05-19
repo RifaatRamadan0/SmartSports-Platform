@@ -21,7 +21,6 @@ using SmartSports.DAL.Interfaces.Notification;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Interfaces.Review;
 using SmartSports.DAL.Interfaces.RoleRequests;
-using SmartSports.DAL.Interfaces.Notification;
 using SmartSports.API.Services;
 using SmartSports.DAL.Repositories;
 
@@ -215,9 +214,7 @@ public static class ServiceExtensions
         // Match (SPDBTCP-245)
         services.AddScoped<IMatchRepository, MatchRepository>();
         services.AddScoped<IMatchParticipantRepository, MatchParticipantRepository>();
-        services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IMatchService, MatchService>();
-        services.AddScoped<INotificationService, NotificationService>();
 
         // Pitch
         services.AddScoped<IReviewRepository, ReviewRepository>();

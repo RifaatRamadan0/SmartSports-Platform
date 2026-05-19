@@ -3,6 +3,7 @@ using SmartSports.BLL.DTOs.Match;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Match;
 using SmartSports.DAL.Parameters;
+using SmartSports.Domain.Common;
 using SmartSports.Domain.Entities;
 using SmartSports.Domain.Exceptions;
 using MatchEntity = SmartSports.Domain.Entities.Match;
@@ -126,7 +127,7 @@ public class MatchService : IMatchService
 
         await _notificationService.CreateAsync(
             match.BookingOwnerId!.Value,
-            "match_join_requested",
+            NotificationTypes.MatchJoinRequested,
             matchId,
             "A player has requested to join your match.");
 
@@ -153,7 +154,7 @@ public class MatchService : IMatchService
         {
             await _notificationService.CreateAsync(
                 match.BookingOwnerId!.Value,
-                "match_join_rejected",
+                NotificationTypes.MatchJoinRejected,
                 matchId,
                 "A player has left your match.");
         }
@@ -185,7 +186,7 @@ public class MatchService : IMatchService
         await _participantRepository.UpdateStatusAsync(matchId, participantUserId, newStatus);
         participant.Status = newStatus;
 
-        var notifType    = action == "accept" ? "match_join_accepted" : "match_join_rejected";
+        var notifType    = action == "accept" ? NotificationTypes.MatchJoinAccepted : NotificationTypes.MatchJoinRejected;
         var notifMessage = action == "accept"
             ? "Your request to join the match has been accepted."
             : "Your request to join the match has been rejected.";

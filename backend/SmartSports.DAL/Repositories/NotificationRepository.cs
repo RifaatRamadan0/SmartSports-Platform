@@ -1,7 +1,7 @@
 using Dapper;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Notification;
-using SmartSports.Domain.Entities;
+using NotificationEntity = SmartSports.Domain.Entities.Notification;
 
 namespace SmartSports.DAL.Repositories;
 
@@ -14,7 +14,7 @@ public class NotificationRepository : INotificationRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task<int> InsertAsync(Notification notification)
+    public async Task<int> InsertAsync(NotificationEntity notification)
     {
         using var connection = _connectionFactory.CreateConnection();
         return await connection.ExecuteScalarAsync<int>(
