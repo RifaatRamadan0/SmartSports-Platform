@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Match;
@@ -26,6 +27,8 @@ public class MatchesController : ControllerBase
 
     [HttpGet("open")]
     [AllowAnonymous]
+    [EnableRateLimiting("lookups")]
+    [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "sport", "city", "page", "pageSize" })]
     [ProducesResponseType(typeof(PagedResult<MatchSummaryResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListOpen([FromQuery] MatchQuery query)
     {
@@ -35,6 +38,8 @@ public class MatchesController : ControllerBase
 
     [HttpGet("stats")]
     [AllowAnonymous]
+    [EnableRateLimiting("lookups")]
+    [ResponseCache(Duration = 60)]
     [ProducesResponseType(typeof(MatchStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetStats()
     {

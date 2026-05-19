@@ -63,16 +63,13 @@ function FieldLines() {
 function StatsBanner({ statsResult }) {
   const loading = statsResult === null  // null = still fetching; false = failed; object = loaded
 
+  // SportsCount is derived from the existing bySport breakdown — no extra backend field.
+  // "Real-time spots" is a static badge that reassures the count updates as people join.
   const blocks = [
-    { label: 'OPEN GAMES', value: statsResult?.openGamesCount },
-    { label: 'CITIES',     value: statsResult?.citiesCount },
-    {
-      label: 'FROM',
-      value: statsResult?.minPricePerPlayer != null
-        ? `$${statsResult.minPricePerPlayer} / player`
-        : null,
-      fallback: '—',
-    },
+    { label: 'OPEN GAMES',      value: statsResult?.openGamesCount },
+    { label: 'CITIES',          value: statsResult?.citiesCount },
+    { label: 'SPORTS',          value: statsResult ? (statsResult.bySport?.length ?? 0) : null },
+    { label: 'REAL-TIME SPOTS', value: 'Live' },
   ]
 
   return (
@@ -268,7 +265,8 @@ function FindGameNavbar() {
 
 // ── match card ────────────────────────────────────────────────────────────────
 
-function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, actionLoading }) {
+function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRedirect, actionLoading, actionVerb, statusLoading }) {
+  const [confirmLeave, setConfirmLeave] = useState(false)
   const fillPct   = Math.min(100, Math.round((match.acceptedCount / match.maxPlayers) * 100))
   const isFull    = match.acceptedCount >= match.maxPlayers
   const spotsLeft = match.maxPlayers - match.acceptedCount
@@ -357,30 +355,27 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, actionLoad
           </span>
         </div>
 
-        {/* Center — Price */}
+        {/* Center — Price (total is the truth, per-player is a projection) */}
         <div
           className="flex flex-col items-center justify-center rounded-[14px] border border-border px-3.5 py-3 text-center"
           style={{ flex: '1.4', margin: '0 10px', background: 'linear-gradient(145deg, var(--muted) 0%, var(--card) 100%)' }}
+          title={`≈ $${match.pricePerPlayer} / player if the match fills (${match.maxPlayers} players)`}
         >
           <span
             className="text-primary font-extrabold leading-[1.05]"
             style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 30, letterSpacing: '-1.5px' }}
           >
             <sup className="text-[15px] align-super" style={{ color: 'oklch(0.68 0.22 145 / 0.7)', letterSpacing: 0 }}>$</sup>
-            {match.pricePerPlayer}
+            {match.totalPrice}
           </span>
           <span className="text-[10px] font-semibold tracking-[0.5px] uppercase text-muted-foreground mt-0.5">
-            per player
+            total
+          </span>
+          <span className="text-[9px] text-muted-foreground/70 mt-1 leading-tight">
+            ≈ ${match.pricePerPlayer}/player if full
           </span>
         </div>
 
-        {/* Right — Skill */}
-        <div className="flex-1 flex flex-col justify-center items-end">
-          <span className="text-[9px] font-semibold tracking-[0.7px] uppercase text-muted-foreground mb-1">Skill</span>
-          <span className="text-[14px] font-bold text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            Open
-          </span>
-        </div>
       </div>
 
       {/* ── footer ── */}
@@ -403,6 +398,8 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, actionLoad
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           {isOrganizer ? (
             <span className="text-[12px] text-muted-foreground font-medium px-3">Your match</span>
+          ) : statusLoading ? (
+            <div className="h-9 w-[100px] rounded-full bg-muted animate-pulse" />
           ) : userStatus === 'pending' ? (
             <>
               <button
@@ -416,7 +413,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, actionLoad
                 disabled={actionLoading}
                 className="text-[11px] text-red-400 font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
               >
-                Withdraw
+                {actionLoading ? `${actionVerb}...` : 'Withdraw'}
               </button>
             </>
           ) : userStatus === 'accepted' ? (
@@ -428,16 +425,43 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, actionLoad
               >
                 Joined ✓
               </button>
-              <button
-                onClick={() => onLeave(match.matchId)}
-                disabled={actionLoading}
-                className="text-[11px] text-red-400 font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
-              >
-                Leave
-              </button>
+              {confirmLeave ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground">Leave match?</span>
+                  <button
+                    onClick={() => { setConfirmLeave(false); onLeave(match.matchId) }}
+                    disabled={actionLoading}
+                    className="text-[11px] text-red-400 font-semibold hover:opacity-[0.72] transition-opacity disabled:opacity-40"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setConfirmLeave(false)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    No
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmLeave(true)}
+                  disabled={actionLoading}
+                  className="text-[11px] text-red-400 font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
+                >
+                  Leave
+                </button>
+              )}
             </>
           ) : userStatus === 'rejected' ? (
             <span className="text-[12px] text-muted-foreground font-medium px-2">Request rejected</span>
+          ) : onLoginRedirect ? (
+            <button
+              onClick={onLoginRedirect}
+              className="rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap bg-primary text-[#061008] hover:opacity-[0.88] active:scale-[0.97] transition-all"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            >
+              Log in to join
+            </button>
           ) : (
             <button
               onClick={() => onJoin && onJoin(match.matchId)}
@@ -450,7 +474,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, actionLoad
               )}
               style={(!isFull && onJoin) ? { fontFamily: "'Space Grotesk', sans-serif" } : {}}
             >
-              {actionLoading ? '…' : 'Join Game'}
+              {actionLoading ? `${actionVerb}...` : 'Join Game'}
             </button>
           )}
         </div>
@@ -594,8 +618,10 @@ function Pagination({ page, totalPages, hasPrev, hasNext, onPrev, onNext, setPag
 
 export default function FindGamePage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const { userId, roles } = useAuth()
-  const isPlayer = roles.includes(ROLES.PLAYER)
+  const isPlayer       = roles.includes(ROLES.PLAYER)
+  const isAuthenticated = !!userId
 
   const urlSport = searchParams.get('sport') ?? ''
   const urlCity  = searchParams.get('city')  ?? ''
@@ -607,8 +633,9 @@ export default function FindGamePage() {
   const [isLoading,     setIsLoading]     = useState(true)
   const [error,         setError]         = useState(null)
   const [joinedMatches, setJoinedMatches] = useState(new Map()) // matchId → 'pending'|'accepted'|'rejected'
-  const [actionLoading, setActionLoading] = useState(null)      // matchId currently being acted on
-  const [toast,         setToast]         = useState(null)
+  const [actionLoading,   setActionLoading]   = useState(null)  // { matchId, verb } | null
+  const [isStatusLoading, setIsStatusLoading] = useState(false) // true while pre-fetching join statuses
+  const [toast,           setToast]           = useState(null)
 
   // Load stats once on mount — false = "failed but done" so the banner exits skeleton state
   useEffect(() => {
@@ -630,18 +657,23 @@ export default function FindGamePage() {
 
         // Pre-populate join state for the current page (players only)
         if (isPlayer && userId && data.items?.length) {
-          const statuses = await Promise.all(
-            data.items.map(m => getMyMatchStatus(m.matchId))
-          )
-          if (!cancelled) {
-            setJoinedMatches(prev => {
-              const next = new Map(prev)
-              data.items.forEach((m, i) => {
-                if (statuses[i]) next.set(m.matchId, statuses[i].status)
-                else next.delete(m.matchId)
+          setIsStatusLoading(true)
+          try {
+            const statuses = await Promise.all(
+              data.items.map(m => getMyMatchStatus(m.matchId))
+            )
+            if (!cancelled) {
+              setJoinedMatches(prev => {
+                const next = new Map(prev)
+                data.items.forEach((m, i) => {
+                  if (statuses[i]) next.set(m.matchId, statuses[i].status)
+                  else next.delete(m.matchId)
+                })
+                return next
               })
-              return next
-            })
+            }
+          } finally {
+            if (!cancelled) setIsStatusLoading(false)
           }
         }
       })
@@ -652,20 +684,25 @@ export default function FindGamePage() {
   }, [urlSport, urlCity, urlPage, refreshKey, isPlayer, userId])
 
   const handleJoin = useCallback(async (matchId) => {
-    setActionLoading(matchId)
+    setActionLoading({ matchId, verb: 'Joining' })
     try {
       await joinMatch(matchId)
       setJoinedMatches(prev => new Map(prev).set(matchId, 'pending'))
       setToast({ type: 'success', message: 'Request sent to the organizer.' })
     } catch (err) {
-      setToast({ type: 'error', message: parseApiError(err, 'Could not send join request.') })
+      const status = err.response?.status
+      const msg = status === 409
+        ? "You've already requested to join this match."
+        : parseApiError(err, 'Could not send join request.')
+      setToast({ type: 'error', message: msg })
     } finally {
       setActionLoading(null)
     }
   }, [])
 
   const handleLeave = useCallback(async (matchId) => {
-    setActionLoading(matchId)
+    const verb = joinedMatches.get(matchId) === 'accepted' ? 'Leaving' : 'Withdrawing'
+    setActionLoading({ matchId, verb })
     try {
       await leaveMatch(matchId)
       setJoinedMatches(prev => { const next = new Map(prev); next.delete(matchId); return next })
@@ -675,7 +712,7 @@ export default function FindGamePage() {
     } finally {
       setActionLoading(null)
     }
-  }, [])
+  }, [joinedMatches])
 
   const setFilter = useCallback((type, value) => {
     setSearchParams(prev => {
@@ -768,7 +805,10 @@ export default function FindGamePage() {
                       isOrganizer={userId != null && m.organizerId === userId}
                       onJoin={isPlayer ? handleJoin : null}
                       onLeave={isPlayer ? handleLeave : null}
-                      actionLoading={actionLoading === m.matchId}
+                      onLoginRedirect={!isAuthenticated ? () => navigate('/login') : null}
+                      actionLoading={actionLoading?.matchId === m.matchId}
+                      actionVerb={actionLoading?.matchId === m.matchId ? actionLoading.verb : null}
+                      statusLoading={isPlayer && isStatusLoading}
                     />
                   ))}
                 </motion.div>

@@ -13,5 +13,6 @@ public record OpenMatchRow
     public int      MaxPlayers       { get; init; }
     public string   OrganizerName    { get; init; } = "";
     public int      OrganizerId      { get; init; }
+    public decimal  TotalPrice       { get; init; }
     public decimal  PricePerPlayer   { get; init; }
 }
