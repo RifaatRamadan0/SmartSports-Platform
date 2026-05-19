@@ -36,9 +36,13 @@ public class InvitationService : IInvitationService
         var match = await _matches.GetByIdAsync(matchId)
             ?? throw new KeyNotFoundException($"Match {matchId} was not found.");
 
-        // 2. Only the booking owner may invite.
-        if (match.BookingOwnerId != currentUserId)
-            throw new ForbiddenException("Only the booking owner can invite players to this match.");
+        // 2. Anyone in the match may invite — the booking owner, or any accepted
+        //    participant. Pending invitees do NOT count; they haven't actually
+        //    joined yet. IsAcceptedParticipantAsync runs only if the cheaper
+        //    owner check fails.
+        var isOwner = match.BookingOwnerId == currentUserId;
+        if (!isOwner && !await _matches.IsAcceptedParticipantAsync(matchId, currentUserId))
+            throw new ForbiddenException("Only players in this match can invite others.");
 
         // 3. Underlying booking must be active and in the future. A cancelled or
         //    past booking still has a matches row but should not accept invitations.

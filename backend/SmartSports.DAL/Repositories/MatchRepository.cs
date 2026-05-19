@@ -80,6 +80,21 @@ public class MatchRepository : IMatchRepository
             new { MatchId = matchId, UserId = userId });
     }
 
+    public async Task<bool> IsAcceptedParticipantAsync(int matchId, int userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<bool>(
+            """
+            SELECT EXISTS (
+                SELECT 1 FROM match_participants
+                WHERE match_id = @MatchId
+                  AND user_id  = @UserId
+                  AND status   = 'accepted'
+            )
+            """,
+            new { MatchId = matchId, UserId = userId });
+    }
+
     public async Task<(IEnumerable<OpenMatchRow> Items, long TotalCount)> ListOpenAsync(
         MatchFilterParams filters)
     {

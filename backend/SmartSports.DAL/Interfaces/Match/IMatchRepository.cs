@@ -23,9 +23,20 @@ public interface IMatchRepository
     Task<bool> UpdateVisibilityAsync(int matchId, bool isOpenToJoin);
 
     /// <summary>
-    /// Returns true if the given user is already a participant in the match.
+    /// Returns true if the given user holds an active stake in the match —
+    /// either already accepted or with a pending invitation. Used by
+    /// InvitationService to reject re-inviting someone who's already in
+    /// or being processed.
     /// </summary>
     Task<bool> IsParticipantAsync(int matchId, int userId);
+
+    /// <summary>
+    /// Returns true if the given user is an accepted (confirmed) participant
+    /// in the match. Stricter than IsParticipantAsync — a pending invitee
+    /// does not count, because they haven't actually joined yet. Used to
+    /// authorize invitation dispatch: any confirmed player can invite others.
+    /// </summary>
+    Task<bool> IsAcceptedParticipantAsync(int matchId, int userId);
 
     /// <summary>
     /// Paginated list of open matches (is_open_to_join=TRUE, booking date >= today,

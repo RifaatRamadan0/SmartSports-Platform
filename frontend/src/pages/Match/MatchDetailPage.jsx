@@ -103,7 +103,7 @@ export default function MatchDetailPage() {
             </button>
           </form>
           <p className="text-[11px] text-neutral-600 mt-3">
-            Only the booking owner can send invitations. The invitee will see it in their inbox.
+            Anyone already in this match can send invitations. The invitee will see it in their inbox.
           </p>
         </div>
 

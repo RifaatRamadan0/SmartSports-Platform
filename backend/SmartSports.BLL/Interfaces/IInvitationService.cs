@@ -6,8 +6,9 @@ public interface IInvitationService
 {
     /// <summary>
     /// Sends an invitation to the named user for the given match.
-    /// Only the booking owner may invite. Persists a pending invitation
-    /// and a 'match_invitation' notification for the invitee.
+    /// The caller must already be in the match — either the booking owner
+    /// or an accepted participant. Persists a pending invitation and a
+    /// 'match_invitation' notification for the invitee.
     /// </summary>
     /// <param name="currentUsername">
     /// Display name of the caller, sourced from the JWT unique_name claim — used to
