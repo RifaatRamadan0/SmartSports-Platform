@@ -31,4 +31,30 @@ public interface IMatchService
     /// minimum price per player, and per-sport and per-city breakdowns.
     /// </summary>
     Task<MatchStatsResponse> GetStatsAsync();
+
+    /// <summary>
+    /// Creates a pending join request for the calling player.
+    /// Throws ArgumentException (400) if the match is closed, full, or the player is the organizer,
+    /// or if a request already exists. Notifies the organizer on success.
+    /// </summary>
+    Task<MatchParticipantResponse> JoinAsync(int callerUserId, int matchId);
+
+    /// <summary>
+    /// Returns the current user's participant record for the match, or null if they have not joined.
+    /// </summary>
+    Task<MatchParticipantResponse?> GetMyStatusAsync(int callerUserId, int matchId);
+
+    /// <summary>
+    /// Removes the caller's participant record. If the record was accepted, the organizer is notified.
+    /// Throws KeyNotFoundException (404) if the caller is not a participant.
+    /// </summary>
+    Task LeaveAsync(int callerUserId, int matchId);
+
+    /// <summary>
+    /// Accepts or rejects a pending join request. Only the match organizer may call this.
+    /// Throws ForbiddenException (403) if the caller is not the organizer,
+    /// KeyNotFoundException (404) if the participant is not found,
+    /// ArgumentException (400) if action is invalid or the match is full on accept.
+    /// </summary>
+    Task<MatchParticipantResponse> RespondToParticipantAsync(int callerUserId, int matchId, int participantUserId, string action);
 }

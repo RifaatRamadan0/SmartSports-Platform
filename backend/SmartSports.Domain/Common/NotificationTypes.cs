@@ -8,10 +8,14 @@ namespace SmartSports.Domain.Common;
 /// </summary>
 public static class NotificationTypes
 {
-    public const string BookingConfirmed = "booking_confirmed";
-    public const string BookingCancelled = "booking_cancelled";
-    public const string MatchInvitation  = "match_invitation";
-    public const string MatchJoined      = "match_joined";
-    public const string MatchCancelled   = "match_cancelled";
-    public const string ReviewReceived   = "review_received";
+    public const string BookingConfirmed    = "booking_confirmed";
+    public const string BookingCancelled    = "booking_cancelled";
+    public const string MatchInvitation     = "match_invitation";
+    public const string MatchJoined         = "match_joined";
+    public const string MatchCancelled      = "match_cancelled";
+    public const string ReviewReceived      = "review_received";
+    public const string MatchJoinRequested  = "match_join_requested";
+    public const string MatchJoinAccepted   = "match_join_accepted";
+    public const string MatchJoinRejected   = "match_join_rejected";
+    public const string MatchPlayerLeft     = "match_player_left";
 }

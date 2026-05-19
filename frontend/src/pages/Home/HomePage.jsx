@@ -115,19 +115,27 @@ function Navbar() {
 
         <ul className="hidden md:flex items-center gap-8 text-[13px] text-[var(--text2)]">
           <li><a href="#pitches" className="hover:text-white transition-colors">Pitches</a></li>
+          <li><button onClick={() => navigate('/matches/open')} type="button" className="hover:text-white transition-colors">Find Games</button></li>
           <li><button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Leagues</button></li>
           <li><button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Coaching</button></li>
-          <li><button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Venues</button></li>
         </ul>
 
         <div className="flex items-center gap-2 relative">
           {isPlayer && (
-            <button
-              onClick={() => navigate('/my-bookings')}
-              className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
-            >
-              My Bookings
-            </button>
+            <>
+              <button
+                onClick={() => navigate('/matches/open')}
+                className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
+              >
+                Find Games
+              </button>
+              <button
+                onClick={() => navigate('/my-bookings')}
+                className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
+              >
+                My Bookings
+              </button>
+            </>
           )}
           {isOwner && (
             <>
@@ -183,13 +191,22 @@ function Navbar() {
                 <p className="text-white font-semibold mt-0.5">{roles.join(', ') || 'User'}</p>
               </div>
               {isPlayer && (
-                <motion.button
-                  whileHover={{ x: 3 }}
-                  onClick={() => { setMenuOpen(false); navigate('/my-bookings') }}
-                  className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
-                >
-                  My Bookings
-                </motion.button>
+                <>
+                  <motion.button
+                    whileHover={{ x: 3 }}
+                    onClick={() => { setMenuOpen(false); navigate('/matches/open') }}
+                    className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
+                  >
+                    Find Games
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ x: 3 }}
+                    onClick={() => { setMenuOpen(false); navigate('/my-bookings') }}
+                    className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
+                  >
+                    My Bookings
+                  </motion.button>
+                </>
               )}
               {isOwner && (
                 <>

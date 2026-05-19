@@ -1,11 +1,8 @@
-using SmartSports.Domain.Entities;
+using NotificationEntity = SmartSports.Domain.Entities.Notification;
 
 namespace SmartSports.DAL.Interfaces.Notification;
 
 public interface INotificationRepository
 {
-    /// <summary>
-    /// Inserts a notification row for a user. Returns the generated id.
-    /// </summary>
-    Task<int> InsertAsync(Domain.Entities.Notification notification);
+    Task<int> InsertAsync(NotificationEntity notification);
 }

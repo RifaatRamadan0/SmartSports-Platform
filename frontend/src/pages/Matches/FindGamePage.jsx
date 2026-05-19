@@ -1,14 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Calendar, Clock, ChevronLeft, ChevronRight, ExternalLink,
+  Calendar, Clock, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import PageWrapper from '@/components/routing/PageWrapper'
 import { cardVariants, cardTap, listContainerVariants } from '@/lib/motion'
 import { cn } from '@/lib/utils'
-import { listOpenMatches, getMatchStats } from '../../services/Match/matchService'
+import { listOpenMatches, getMatchStats, joinMatch, leaveMatch, getMyMatchStatus } from '../../services/Match/matchService'
 import { parseApiError } from '../../utils/errorUtils'
+import { useAuth } from '../../hooks/useAuth'
+import Toast from '../../components/ui/Toast'
+import { ROLES } from '../../constants/roles'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -171,9 +174,99 @@ function FilterBar({ statsResult, filters, setFilter, clearAllFilters, totalCoun
   )
 }
 
+// ── nav bar ───────────────────────────────────────────────────────────────────
+
+function FindGameNavbar() {
+  const navigate = useNavigate()
+  const { roles, logout } = useAuth()
+  const isPlayer = roles.includes(ROLES.PLAYER)
+  const isOwner  = roles.includes(ROLES.PITCH_OWNER)
+  const isAdmin  = roles.includes(ROLES.ADMIN)
+  const isAuthed = roles.length > 0
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const homePath = isOwner ? '/dashboard/pitches' : isAdmin ? '/admin/pitches' : isPlayer ? '/dashboard' : '/'
+
+  const handleLogout = async () => {
+    setMenuOpen(false)
+    await logout()
+    navigate('/login', { replace: true })
+  }
+
+  return (
+    <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border">
+      <nav className="mx-auto max-w-324 px-12 h-16 flex items-center justify-between">
+        <button
+          onClick={() => navigate(homePath)}
+          className="flex items-center gap-2 group"
+        >
+          <span className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_12px_var(--green-glow)]" />
+          <span className="text-[15px] font-bold tracking-tight text-foreground">SmartSports</span>
+        </button>
+
+        <ul className="hidden md:flex items-center gap-8 text-[13px] text-muted-foreground">
+          <li><button onClick={() => navigate('/pitches')} className="hover:text-foreground transition-colors">Pitches</button></li>
+          <li><span className="text-primary font-semibold">Find Games</span></li>
+        </ul>
+
+        <div className="flex items-center gap-2 relative">
+          {!isAuthed ? (
+            <>
+              <button onClick={() => navigate('/login')} className="text-[12px] font-semibold text-muted-foreground hover:text-foreground px-3 py-2 transition-colors">
+                Sign In
+              </button>
+              <button onClick={() => navigate('/register')} className="text-[12px] font-bold bg-primary text-[#061008] px-4 py-2 rounded-full hover:opacity-90 transition-opacity">
+                Sign Up
+              </button>
+            </>
+          ) : (
+            <>
+              {isPlayer && (
+                <button onClick={() => navigate('/my-bookings')} className="hidden sm:inline-flex text-[12px] font-semibold text-muted-foreground hover:text-foreground px-3 py-2 transition-colors">
+                  My Bookings
+                </button>
+              )}
+              <button
+                onClick={() => setMenuOpen(o => !o)}
+                className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1.5 hover:border-primary/40 transition-colors"
+              >
+                <span className="w-7 h-7 rounded-full bg-primary text-[#061008] text-[12px] font-bold flex items-center justify-center">
+                  {(roles[0] || 'U')[0].toUpperCase()}
+                </span>
+                <span className="hidden sm:inline text-[12px] font-semibold pr-1 text-foreground">{roles[0] || 'User'}</span>
+                <span className="text-[10px] text-muted-foreground pr-1">▾</span>
+              </button>
+              {menuOpen && (
+                <div
+                  className="absolute right-0 top-12 w-48 rounded-xl border border-border bg-card shadow-2xl py-2 text-[13px]"
+                  onMouseLeave={() => setMenuOpen(false)}
+                >
+                  <button onClick={() => { setMenuOpen(false); navigate(homePath) }} className="w-full text-left px-3 py-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                    Home
+                  </button>
+                  {isPlayer && (
+                    <button onClick={() => { setMenuOpen(false); navigate('/my-bookings') }} className="w-full text-left px-3 py-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                      My Bookings
+                    </button>
+                  )}
+                  <div className="border-t border-border my-1" />
+                  <button onClick={handleLogout} className="w-full text-left px-3 py-2 hover:bg-muted text-red-400 hover:text-red-300 transition-colors">
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </nav>
+    </header>
+  )
+}
+
 // ── match card ────────────────────────────────────────────────────────────────
 
-function MatchCard({ match }) {
+function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRedirect, actionLoading, actionVerb, statusLoading }) {
+  const [confirmLeave, setConfirmLeave] = useState(false)
   const fillPct   = Math.min(100, Math.round((match.acceptedCount / match.maxPlayers) * 100))
   const isFull    = match.acceptedCount >= match.maxPlayers
   const spotsLeft = match.maxPlayers - match.acceptedCount
@@ -303,21 +396,87 @@ function MatchCard({ match }) {
 
         {/* actions */}
         <div className="flex flex-col items-end gap-1.5 shrink-0">
-          <button
-            disabled={isFull}
-            className={cn(
-              'rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap transition-all',
-              isFull
-                ? 'bg-muted border border-border text-muted-foreground cursor-not-allowed'
-                : 'bg-primary text-[#061008] hover:opacity-[0.88] active:scale-[0.97]',
-            )}
-            style={!isFull ? { fontFamily: "'Space Grotesk', sans-serif" } : {}}
-          >
-            Join Game
-          </button>
-          <button className="text-[11px] text-primary font-medium flex items-center gap-1 hover:opacity-[0.72] transition-opacity">
-            Invite <ExternalLink size={10} />
-          </button>
+          {isOrganizer ? (
+            <span className="text-[12px] text-muted-foreground font-medium px-3">Your match</span>
+          ) : statusLoading ? (
+            <div className="h-9 w-[100px] rounded-full bg-muted animate-pulse" />
+          ) : userStatus === 'pending' ? (
+            <>
+              <button
+                disabled
+                className="rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap bg-muted border border-border text-muted-foreground cursor-not-allowed"
+              >
+                Request Sent
+              </button>
+              <button
+                onClick={() => onLeave(match.matchId)}
+                disabled={actionLoading}
+                className="text-[11px] text-red-400 font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
+              >
+                {actionLoading ? `${actionVerb}...` : 'Withdraw'}
+              </button>
+            </>
+          ) : userStatus === 'accepted' ? (
+            <>
+              <button
+                disabled
+                className="rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap bg-primary/20 border border-primary/30 text-primary cursor-not-allowed"
+                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+              >
+                Joined ✓
+              </button>
+              {confirmLeave ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground">Leave match?</span>
+                  <button
+                    onClick={() => { setConfirmLeave(false); onLeave(match.matchId) }}
+                    disabled={actionLoading}
+                    className="text-[11px] text-red-400 font-semibold hover:opacity-[0.72] transition-opacity disabled:opacity-40"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setConfirmLeave(false)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    No
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmLeave(true)}
+                  disabled={actionLoading}
+                  className="text-[11px] text-red-400 font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
+                >
+                  Leave
+                </button>
+              )}
+            </>
+          ) : userStatus === 'rejected' ? (
+            <span className="text-[12px] text-muted-foreground font-medium px-2">Request rejected</span>
+          ) : onLoginRedirect ? (
+            <button
+              onClick={onLoginRedirect}
+              className="rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap bg-primary text-[#061008] hover:opacity-[0.88] active:scale-[0.97] transition-all"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            >
+              Log in to join
+            </button>
+          ) : (
+            <button
+              onClick={() => onJoin && onJoin(match.matchId)}
+              disabled={isFull || !onJoin || actionLoading}
+              className={cn(
+                'rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap transition-all',
+                isFull || !onJoin
+                  ? 'bg-muted border border-border text-muted-foreground cursor-not-allowed'
+                  : 'bg-primary text-[#061008] hover:opacity-[0.88] active:scale-[0.97]',
+              )}
+              style={(!isFull && onJoin) ? { fontFamily: "'Space Grotesk', sans-serif" } : {}}
+            >
+              {actionLoading ? `${actionVerb}...` : 'Join Game'}
+            </button>
+          )}
         </div>
       </div>
     </motion.div>
@@ -459,16 +618,24 @@ function Pagination({ page, totalPages, hasPrev, hasNext, onPrev, onNext, setPag
 
 export default function FindGamePage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const { userId, roles } = useAuth()
+  const isPlayer       = roles.includes(ROLES.PLAYER)
+  const isAuthenticated = !!userId
 
   const urlSport = searchParams.get('sport') ?? ''
   const urlCity  = searchParams.get('city')  ?? ''
   const urlPage  = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
 
-  const [refreshKey,  setRefreshKey]  = useState(0)
-  const [statsResult, setStatsResult] = useState(null)
-  const [result,      setResult]      = useState(null)
-  const [isLoading,   setIsLoading]   = useState(true)
-  const [error,       setError]       = useState(null)
+  const [refreshKey,    setRefreshKey]    = useState(0)
+  const [statsResult,   setStatsResult]   = useState(null)
+  const [result,        setResult]        = useState(null)
+  const [isLoading,     setIsLoading]     = useState(true)
+  const [error,         setError]         = useState(null)
+  const [joinedMatches, setJoinedMatches] = useState(new Map()) // matchId → 'pending'|'accepted'|'rejected'
+  const [actionLoading,   setActionLoading]   = useState(null)  // { matchId, verb } | null
+  const [isStatusLoading, setIsStatusLoading] = useState(false) // true while pre-fetching join statuses
+  const [toast,           setToast]           = useState(null)
 
   // Load stats once on mount — false = "failed but done" so the banner exits skeleton state
   useEffect(() => {
@@ -484,12 +651,68 @@ export default function FindGamePage() {
     setError(null)
 
     listOpenMatches({ sport: urlSport, city: urlCity, page: urlPage, pageSize: 9 })
-      .then(data => { if (!cancelled) setResult(data) })
+      .then(async data => {
+        if (cancelled) return
+        setResult(data)
+
+        // Pre-populate join state for the current page (players only)
+        if (isPlayer && userId && data.items?.length) {
+          setIsStatusLoading(true)
+          try {
+            const statuses = await Promise.all(
+              data.items.map(m => getMyMatchStatus(m.matchId))
+            )
+            if (!cancelled) {
+              setJoinedMatches(prev => {
+                const next = new Map(prev)
+                data.items.forEach((m, i) => {
+                  if (statuses[i]) next.set(m.matchId, statuses[i].status)
+                  else next.delete(m.matchId)
+                })
+                return next
+              })
+            }
+          } finally {
+            if (!cancelled) setIsStatusLoading(false)
+          }
+        }
+      })
       .catch(err  => { if (!cancelled) setError(parseApiError(err, 'Could not load matches.')) })
       .finally(()  => { if (!cancelled) setIsLoading(false) })
 
     return () => { cancelled = true }
-  }, [urlSport, urlCity, urlPage, refreshKey])
+  }, [urlSport, urlCity, urlPage, refreshKey, isPlayer, userId])
+
+  const handleJoin = useCallback(async (matchId) => {
+    setActionLoading({ matchId, verb: 'Joining' })
+    try {
+      await joinMatch(matchId)
+      setJoinedMatches(prev => new Map(prev).set(matchId, 'pending'))
+      setToast({ type: 'success', message: 'Request sent to the organizer.' })
+    } catch (err) {
+      const status = err.response?.status
+      const msg = status === 409
+        ? "You've already requested to join this match."
+        : parseApiError(err, 'Could not send join request.')
+      setToast({ type: 'error', message: msg })
+    } finally {
+      setActionLoading(null)
+    }
+  }, [])
+
+  const handleLeave = useCallback(async (matchId) => {
+    const verb = joinedMatches.get(matchId) === 'accepted' ? 'Leaving' : 'Withdrawing'
+    setActionLoading({ matchId, verb })
+    try {
+      await leaveMatch(matchId)
+      setJoinedMatches(prev => { const next = new Map(prev); next.delete(matchId); return next })
+      setToast({ type: 'success', message: 'You left the match.' })
+    } catch (err) {
+      setToast({ type: 'error', message: parseApiError(err, 'Could not leave the match.') })
+    } finally {
+      setActionLoading(null)
+    }
+  }, [joinedMatches])
 
   const setFilter = useCallback((type, value) => {
     setSearchParams(prev => {
@@ -515,8 +738,10 @@ export default function FindGamePage() {
   const filters = { sport: urlSport || null, city: urlCity || null }
 
   return (
+    <>
+    <FindGameNavbar />
     <PageWrapper className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-[1296px] pt-[100px] pb-20 px-12">
+      <div className="mx-auto max-w-324 pt-12 pb-20 px-12">
 
         {/* Page header */}
         <div className="mb-9">
@@ -573,7 +798,18 @@ export default function FindGamePage() {
                   animate="visible"
                 >
                   {result.items.map(m => (
-                    <MatchCard key={m.matchId} match={m} />
+                    <MatchCard
+                      key={m.matchId}
+                      match={m}
+                      userStatus={joinedMatches.get(m.matchId) ?? null}
+                      isOrganizer={userId != null && m.organizerId === userId}
+                      onJoin={isPlayer ? handleJoin : null}
+                      onLeave={isPlayer ? handleLeave : null}
+                      onLoginRedirect={!isAuthenticated ? () => navigate('/login') : null}
+                      actionLoading={actionLoading?.matchId === m.matchId}
+                      actionVerb={actionLoading?.matchId === m.matchId ? actionLoading.verb : null}
+                      statusLoading={isPlayer && isStatusLoading}
+                    />
                   ))}
                 </motion.div>
               </AnimatePresence>
@@ -592,5 +828,14 @@ export default function FindGamePage() {
         </main>
       </div>
     </PageWrapper>
+
+    {toast && (
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast(null)}
+      />
+    )}
+    </>
   )
 }

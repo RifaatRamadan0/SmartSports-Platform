@@ -213,6 +213,7 @@ public static class ServiceExtensions
 
         // Match (SPDBTCP-245)
         services.AddScoped<IMatchRepository, MatchRepository>();
+        services.AddScoped<IMatchParticipantRepository, MatchParticipantRepository>();
         services.AddScoped<IMatchService, MatchService>();
 
         // Pitch

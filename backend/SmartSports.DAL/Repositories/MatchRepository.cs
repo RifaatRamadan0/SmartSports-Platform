@@ -142,6 +142,7 @@ public class MatchRepository : IMatchRepository
                        COUNT(mp.id)::int                                 AS AcceptedCount,
                        m.max_players                                     AS MaxPlayers,
                        u.username                                        AS OrganizerName,
+                       u.id                                              AS OrganizerId,
                        b.total_price                                     AS TotalPrice,
                        ROUND(b.total_price / NULLIF(m.max_players, 0), 2) AS PricePerPlayer
                 FROM   matches              m
@@ -154,13 +155,13 @@ public class MatchRepository : IMatchRepository
                 WHERE  {where}
                 GROUP  BY m.id, p.name, c.name, s.name,
                           b.booking_date, b.start_time, b.end_time,
-                          m.max_players, b.total_price, u.username
+                          m.max_players, b.total_price, u.username, u.id
                 HAVING COUNT(mp.id) < m.max_players
             )
             SELECT MatchId, PitchName, CityName, SportName,
                    BookingDate, StartTime, EndTime,
                    AcceptedCount, MaxPlayers, OrganizerName,
-                   TotalPrice, PricePerPlayer,
+                   OrganizerId, TotalPrice, PricePerPlayer,
                    COUNT(*) OVER() AS TotalCount
             FROM   filtered
             ORDER  BY BookingDate ASC, StartTime ASC, MatchId ASC
@@ -182,6 +183,7 @@ public class MatchRepository : IMatchRepository
             AcceptedCount  = r.AcceptedCount,
             MaxPlayers     = r.MaxPlayers,
             OrganizerName  = r.OrganizerName,
+            OrganizerId    = r.OrganizerId,
             TotalPrice     = r.TotalPrice,
             PricePerPlayer = r.PricePerPlayer,
         });
@@ -269,6 +271,7 @@ public class MatchRepository : IMatchRepository
         int      AcceptedCount,
         int      MaxPlayers,
         string   OrganizerName,
+        int      OrganizerId,
         decimal  TotalPrice,
         decimal  PricePerPlayer,
         long     TotalCount);

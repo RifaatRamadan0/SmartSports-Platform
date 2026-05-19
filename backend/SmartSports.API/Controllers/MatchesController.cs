@@ -63,4 +63,51 @@ public class MatchesController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpPost("{id:int}/join")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(typeof(MatchParticipantResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Join(int id)
+    {
+        var result = await _matchService.JoinAsync(_currentUser.GetUserId()!.Value, id);
+        return CreatedAtAction(nameof(GetMyStatus), new { id }, result);
+    }
+
+    [HttpGet("{id:int}/my-status")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(typeof(MatchParticipantResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMyStatus(int id)
+    {
+        var result = await _matchService.GetMyStatusAsync(_currentUser.GetUserId()!.Value, id);
+        if (result is null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:int}/leave")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Leave(int id)
+    {
+        await _matchService.LeaveAsync(_currentUser.GetUserId()!.Value, id);
+        return NoContent();
+    }
+
+    [HttpPatch("{id:int}/participants/{userId:int}/respond")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(typeof(MatchParticipantResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RespondToParticipant(
+        int id, int userId, [FromBody] RespondToParticipantRequest request)
+    {
+        var result = await _matchService.RespondToParticipantAsync(
+            _currentUser.GetUserId()!.Value, id, userId, request.Action);
+        return Ok(result);
+    }
 }
