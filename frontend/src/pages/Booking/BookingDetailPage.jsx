@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { ROLES } from '../../constants/roles'
 import { getBookingById, cancelBooking } from '../../services/Booking/bookingService'
 import { updateMatchVisibility } from '../../services/Match/matchService'
+import { generateInviteLink } from '../../services/Invitation/invitationService'
 import { parseApiError } from '../../utils/errorUtils'
 import { getUserIdFromToken } from '../../utils/jwtUtils'
 
@@ -103,7 +104,7 @@ function CancelDialog({ isSubmitting, onConfirm, onClose }) {
 
 // ── Match visibility card (SPDBTCP-248) ───────────────────────────────────────
 
-function MatchVisibilityCard({ match, canToggle, isFlipping, onToggle }) {
+function MatchVisibilityCard({ match, canToggle, isFlipping, onToggle, onShareLink }) {
   const isOpen = !!match.isOpenToJoin
   return (
     <div className="rounded-2xl border border-white/[0.06] bg-[#0d0d0d] px-5 py-4 mb-4">
@@ -144,6 +145,19 @@ function MatchVisibilityCard({ match, canToggle, isFlipping, onToggle }) {
           </button>
         )}
       </div>
+      {canToggle && (
+        <div className="mt-3 pt-3 border-t border-white/[0.05]">
+          <button
+            type="button"
+            onClick={onShareLink}
+            className="w-full py-2 rounded-xl text-[12px] font-bold
+                       border border-white/[0.08] bg-[#141414] text-neutral-300
+                       hover:text-white hover:border-white/[0.15] transition-colors"
+          >
+            ⎘ Share invite link
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -198,6 +212,16 @@ export default function BookingDetailPage() {
   }, [id])
 
   useEffect(() => { fetchBooking() }, [fetchBooking])
+
+  const handleShareLink = async () => {
+    try {
+      const { shareUrl } = await generateInviteLink(booking.match.id)
+      await navigator.clipboard.writeText(shareUrl)
+      showToast('Invite link copied to clipboard!')
+    } catch {
+      showToast('Could not generate invite link.', 'error')
+    }
+  }
 
   // SPDBTCP-248 — owner-only toggle. Optimistic; rollback + toast on server failure.
   const handleVisibilityToggle = async () => {
@@ -364,6 +388,7 @@ export default function BookingDetailPage() {
             canToggle={isPlayer && currentUserId === booking.userId && booking.status === 'confirmed'}
             isFlipping={isFlipping}
             onToggle={handleVisibilityToggle}
+            onShareLink={handleShareLink}
           />
         )}
 

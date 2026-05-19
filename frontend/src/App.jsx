@@ -31,6 +31,7 @@ const AdminPitchApprovalsPage = lazy(() => import('./pages/Admin/AdminPitchAppro
 const SettingsPage            = lazy(() => import('./pages/Settings/SettingsPage'))
 const BookingDetailPage       = lazy(() => import('./pages/Booking/BookingDetailPage'))
 const FindGamePage            = lazy(() => import('./pages/Matches/FindGamePage'))
+const JoinPage                = lazy(() => import('./pages/Matches/JoinPage'))
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -62,6 +63,7 @@ function AnimatedRoutes() {
             <Route path="/dashboard" element={<HomePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/bookings/:id" element={<BookingDetailPage />} />
+            <Route path="/join/:token" element={<JoinPage />} />
           </Route>
 
           {/* Protected: PitchOwner only */}

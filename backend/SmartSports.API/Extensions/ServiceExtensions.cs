@@ -20,6 +20,7 @@ using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Interfaces.Review;
 using SmartSports.DAL.Interfaces.RoleRequests;
 using SmartSports.DAL.Interfaces.Notification;
+using SmartSports.DAL.Interfaces.Invitation;
 using SmartSports.API.Services;
 using SmartSports.DAL.Repositories;
 
@@ -216,6 +217,10 @@ public static class ServiceExtensions
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IMatchService, MatchService>();
         services.AddScoped<INotificationService, NotificationService>();
+
+        // Invitations
+        services.AddScoped<IInvitationRepository, InvitationRepository>();
+        services.AddScoped<IInvitationService, InvitationService>();
 
         // Pitch
         services.AddScoped<IReviewRepository, ReviewRepository>();
