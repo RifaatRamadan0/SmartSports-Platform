@@ -41,8 +41,13 @@ public class InvitationController : ControllerBase
         if (userId is null)
             return Unauthorized();
 
+        // Username comes from the JWT claim — saves the service a DB round-trip
+        // just to compose the notification message string.
         var response = await _invitationService.InviteByUsernameAsync(
-            userId.Value, matchId, request.Username);
+            userId.Value,
+            _currentUser.GetUsername() ?? string.Empty,
+            matchId,
+            request.Username);
 
         return StatusCode(StatusCodes.Status201Created, response);
     }

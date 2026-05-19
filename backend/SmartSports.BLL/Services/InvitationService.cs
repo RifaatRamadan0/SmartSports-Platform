@@ -28,10 +28,11 @@ public class InvitationService : IInvitationService
     }
 
     public async Task<InvitationResponse> InviteByUsernameAsync(
-        int currentUserId, int matchId, string username)
+        int currentUserId, string currentUsername, int matchId, string username)
     {
-        // 1. Match must exist. GetByIdAsync joins bookings so BookingOwnerId is populated
-        //    in one round-trip — see MatchRepository.GetByIdAsync.
+        // 1. Match must exist. GetByIdAsync joins bookings so BookingOwnerId,
+        //    BookingStatus, and BookingDate are populated in one round-trip —
+        //    see MatchRepository.GetByIdAsync.
         var match = await _matches.GetByIdAsync(matchId)
             ?? throw new KeyNotFoundException($"Match {matchId} was not found.");
 
@@ -39,23 +40,34 @@ public class InvitationService : IInvitationService
         if (match.BookingOwnerId != currentUserId)
             throw new ForbiddenException("Only the booking owner can invite players to this match.");
 
-        // 3. Invitee must exist.
+        // 3. Underlying booking must be active and in the future. A cancelled or
+        //    past booking still has a matches row but should not accept invitations.
+        if (match.BookingStatus != "confirmed")
+            throw new ConflictException("This match's booking is not active.");
+        if (match.BookingDate < DateOnly.FromDateTime(DateTime.Today))
+            throw new ConflictException("This match has already taken place.");
+
+        // 4. Invitee must exist.
         var invitee = await _users.GetByUsernameAsync(username)
             ?? throw new KeyNotFoundException($"User '{username}' was not found.");
 
-        // 4. Cannot invite yourself.
+        // 5. Cannot invite yourself.
         if (invitee.Id == currentUserId)
             throw new ArgumentException("You cannot invite yourself to your own match.");
 
-        // 5. Cannot invite someone already in the match.
+        // 6. Cannot invite someone already in the match (counts accepted + pending
+        //    participants only; rejected users can be re-invited).
         if (await _matches.IsParticipantAsync(matchId, invitee.Id))
             throw new ConflictException($"'{invitee.Username}' is already in this match.");
 
-        // 6. Cannot send a duplicate pending invite.
+        // 7. Cannot send a duplicate pending invite. Partial unique index
+        //    uq_invitations_pending (migration 022) backs this up against TOCTOU.
         if (await _invitations.ExistsPendingAsync(matchId, invitee.Id))
             throw new ConflictException($"'{invitee.Username}' already has a pending invitation to this match.");
 
-        // 7. Persist the invitation.
+        // 8. Persist the invitation. Token is required by the schema (it's the
+        //    lookup key for shareable links in SPDBTCP-80); for username invites
+        //    it's generated but never read.
         var invitation = new Invitation
         {
             MatchId       = matchId,
@@ -66,9 +78,8 @@ public class InvitationService : IInvitationService
         };
         var invitationId = await _invitations.CreateAsync(invitation);
 
-        // 8. Notify the invitee. Username lookup for the inviter to compose the message.
-        var inviter = await _users.GetByIdAsync(currentUserId);
-        var inviterName = inviter?.Username ?? "Someone";
+        // 9. Notify the invitee. Inviter name comes from the JWT claim — no DB lookup.
+        var inviterName = string.IsNullOrWhiteSpace(currentUsername) ? "Someone" : currentUsername;
         await _notifications.CreateAsync(
             userId:          invitee.Id,
             type:            "match_invitation",

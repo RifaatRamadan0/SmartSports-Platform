@@ -9,5 +9,10 @@ public interface IInvitationService
     /// Only the booking owner may invite. Persists a pending invitation
     /// and a 'match_invitation' notification for the invitee.
     /// </summary>
-    Task<InvitationResponse> InviteByUsernameAsync(int currentUserId, int matchId, string username);
+    /// <param name="currentUsername">
+    /// Display name of the caller, sourced from the JWT unique_name claim — used to
+    /// compose the notification message without a second DB round-trip for the user row.
+    /// </param>
+    Task<InvitationResponse> InviteByUsernameAsync(
+        int currentUserId, string currentUsername, int matchId, string username);
 }

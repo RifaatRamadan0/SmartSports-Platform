@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { inviteByUsername } from '../../services/Invitation/invitationService'
 import { parseApiError } from '../../utils/errorUtils'
@@ -15,9 +15,16 @@ export default function MatchDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [toast, setToast] = useState(null)
 
+  // Hold the auto-dismiss handle so we can (a) cancel a stale timer when a new
+  // toast arrives, and (b) clean up on unmount — otherwise a setTimeout outliving
+  // the component would fire setToast on an unmounted instance.
+  const toastTimerRef = useRef(null)
+  useEffect(() => () => clearTimeout(toastTimerRef.current), [])
+
   const showToast = (message, type = 'success') => {
+    clearTimeout(toastTimerRef.current)
     setToast({ message, type })
-    setTimeout(() => setToast(null), 3500)
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500)
   }
 
   const handleInvite = async (e) => {
