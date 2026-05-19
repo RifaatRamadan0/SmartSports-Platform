@@ -283,13 +283,6 @@ function MatchCard({ match }) {
           </span>
         </div>
 
-        {/* Right — Skill */}
-        <div className="flex-1 flex flex-col justify-center items-end">
-          <span className="text-[9px] font-semibold tracking-[0.7px] uppercase text-muted-foreground mb-1">Skill</span>
-          <span className="text-[14px] font-bold text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            Open
-          </span>
-        </div>
       </div>
 
       {/* ── footer ── */}
