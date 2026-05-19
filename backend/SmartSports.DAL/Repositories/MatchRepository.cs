@@ -147,8 +147,10 @@ public class MatchRepository : IMatchRepository
     {
         using var connection = _connectionFactory.CreateConnection();
 
+        var parameters = new { ApprovedStatus = (short)PitchStatus.Approved };
+
         // Open-match subquery reused across all three queries for consistency
-        var openMatchesCte = $"""
+        const string openMatchesCte = """
             WITH open_matches AS (
                 SELECT m.id,
                        b.total_price,
@@ -165,39 +167,39 @@ public class MatchRepository : IMatchRepository
                 WHERE  m.is_open_to_join = TRUE
                   AND  b.booking_date   >= CURRENT_DATE
                   AND  p.deleted_at      IS NULL
-                  AND  p.status          = {(short)PitchStatus.Approved}
+                  AND  p.status          = @ApprovedStatus
                 GROUP  BY m.id, b.total_price, m.max_players, c.id, c.name, s.name
                 HAVING COUNT(mp.id) < m.max_players
             )
             """;
 
-        var summarySql = $"""
-            {openMatchesCte}
+        const string summarySql = openMatchesCte + """
+
             SELECT COUNT(*)::bigint                                          AS OpenGamesCount,
                    COUNT(DISTINCT city_id)::bigint                          AS CitiesCount,
                    MIN(ROUND(total_price / NULLIF(max_players, 0), 2))      AS MinPricePerPlayer
             FROM   open_matches
             """;
 
-        var bySportSql = $"""
-            {openMatchesCte}
+        const string bySportSql = openMatchesCte + """
+
             SELECT sport_name AS Name, COUNT(*)::int AS Count
             FROM   open_matches
             GROUP  BY sport_name
             ORDER  BY Count DESC
             """;
 
-        var byCitySql = $"""
-            {openMatchesCte}
+        const string byCitySql = openMatchesCte + """
+
             SELECT city_name AS Name, COUNT(*)::int AS Count
             FROM   open_matches
             GROUP  BY city_name
             ORDER  BY Count DESC
             """;
 
-        var summary = await connection.QuerySingleAsync<MatchStatsRow>(summarySql);
-        var bySport  = await connection.QueryAsync<MatchCountByName>(bySportSql);
-        var byCity   = await connection.QueryAsync<MatchCountByName>(byCitySql);
+        var summary = await connection.QuerySingleAsync<MatchStatsRow>(summarySql, parameters);
+        var bySport = await connection.QueryAsync<MatchCountByName>(bySportSql, parameters);
+        var byCity  = await connection.QueryAsync<MatchCountByName>(byCitySql,  parameters);
 
         return (summary, bySport, byCity);
     }
