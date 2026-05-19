@@ -290,6 +290,21 @@ public static class ServiceExtensions
                         QueueLimit = 0
                     }));
 
+            // SPDBTCP-76 — Caps the invite-by-username endpoint per IP. Each invite
+            // writes an invitations row plus a notifications row for the invitee, so an
+            // uncapped Player JWT could flood another user's inbox. 10/min is generous
+            // for a real owner clicking the button and tight for a script.
+            options.AddPolicy("invitations", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
             // Caps the ImageKit signing endpoint per IP so a single source
             // can't pound the upload quota or host arbitrary content via our keys.
             options.AddPolicy("imagekit-auth", httpContext =>
