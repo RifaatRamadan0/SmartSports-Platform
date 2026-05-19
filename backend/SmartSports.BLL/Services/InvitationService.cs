@@ -3,6 +3,7 @@ using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.DAL.Interfaces.Invitation;
 using SmartSports.DAL.Interfaces.Match;
+using SmartSports.Domain.Common;
 using SmartSports.Domain.Entities;
 using SmartSports.Domain.Exceptions;
 
@@ -86,7 +87,7 @@ public class InvitationService : IInvitationService
         var inviterName = string.IsNullOrWhiteSpace(currentUsername) ? "Someone" : currentUsername;
         await _notifications.CreateAsync(
             userId:          invitee.Id,
-            type:            "match_invitation",
+            type:            NotificationTypes.MatchInvitation,
             relatedEntityId: invitationId,
             message:         $"{inviterName} invited you to a match.");
 

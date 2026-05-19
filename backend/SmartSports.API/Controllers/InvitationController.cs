@@ -37,14 +37,12 @@ public class InvitationController : ControllerBase
     public async Task<IActionResult> InviteByUsername(
         int matchId, [FromBody] InviteByUsernameRequest request)
     {
-        var userId = _currentUser.GetUserId();
-        if (userId is null)
-            return Unauthorized();
-
+        // [Authorize(Policy = "PlayerOnly")] guarantees an authenticated principal
+        // reaches this point, so GetUserId() is always non-null here.
         // Username comes from the JWT claim — saves the service a DB round-trip
         // just to compose the notification message string.
         var response = await _invitationService.InviteByUsernameAsync(
-            userId.Value,
+            _currentUser.GetUserId()!.Value,
             _currentUser.GetUsername() ?? string.Empty,
             matchId,
             request.Username);
