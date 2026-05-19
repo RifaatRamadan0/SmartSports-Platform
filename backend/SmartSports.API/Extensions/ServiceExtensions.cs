@@ -14,8 +14,10 @@ using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.DAL.Interfaces.Availability;
 using SmartSports.DAL.Interfaces.Booking;
+using SmartSports.DAL.Interfaces.Invitation;
 using SmartSports.DAL.Interfaces.Lookup;
 using SmartSports.DAL.Interfaces.Match;
+using SmartSports.DAL.Interfaces.Notification;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Interfaces.Review;
 using SmartSports.DAL.Interfaces.RoleRequests;
@@ -226,6 +228,13 @@ public static class ServiceExtensions
         services.AddScoped<IRoleRequestService, RoleRequestService>();
         services.AddScoped<IAdminRoleRequestService, AdminRoleRequestService>();
 
+        // Invitations / Notifications (SPDBTCP-76)
+        // IMatchRepository is already registered above in the Match (SPDBTCP-245) block.
+        services.AddScoped<IInvitationRepository, InvitationRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IInvitationService, InvitationService>();
+
         // Lookups
         services.AddScoped<ILookupRepository, LookupRepository>();
         services.AddScoped<ILookupService, LookupService>();
@@ -276,6 +285,21 @@ public static class ServiceExtensions
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 60,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            // SPDBTCP-76 — Caps the invite-by-username endpoint per IP. Each invite
+            // writes an invitations row plus a notifications row for the invitee, so an
+            // uncapped Player JWT could flood another user's inbox. 10/min is generous
+            // for a real owner clicking the button and tight for a script.
+            options.AddPolicy("invitations", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
                         Window = TimeSpan.FromMinutes(1),
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                         QueueLimit = 0
