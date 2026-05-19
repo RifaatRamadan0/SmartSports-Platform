@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SmartSports.API.Services;
+using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Match;
 using SmartSports.BLL.Interfaces;
 
@@ -21,6 +23,28 @@ public class MatchesController : ControllerBase
     {
         _matchService = matchService;
         _currentUser  = currentUser;
+    }
+
+    [HttpGet("open")]
+    [AllowAnonymous]
+    [EnableRateLimiting("lookups")]
+    [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "sport", "city", "page", "pageSize" })]
+    [ProducesResponseType(typeof(PagedResult<MatchSummaryResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListOpen([FromQuery] MatchQuery query)
+    {
+        var result = await _matchService.ListOpenAsync(query);
+        return Ok(result);
+    }
+
+    [HttpGet("stats")]
+    [AllowAnonymous]
+    [EnableRateLimiting("lookups")]
+    [ResponseCache(Duration = 60)]
+    [ProducesResponseType(typeof(MatchStatsResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetStats()
+    {
+        var result = await _matchService.GetStatsAsync();
+        return Ok(result);
     }
 
     // SPDBTCP-246
