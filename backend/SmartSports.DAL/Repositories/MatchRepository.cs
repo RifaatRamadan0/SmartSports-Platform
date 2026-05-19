@@ -26,7 +26,9 @@ public class MatchRepository : IMatchRepository
                    m.booking_id,
                    m.is_open_to_join,
                    m.max_players,
-                   b.user_id AS booking_owner_id
+                   b.user_id       AS booking_owner_id,
+                   b.status::TEXT  AS booking_status,
+                   b.booking_date  AS booking_date
             FROM   matches  m
             JOIN   bookings b ON b.id = m.booking_id
             WHERE  m.id = @MatchId
@@ -58,6 +60,39 @@ public class MatchRepository : IMatchRepository
             "UPDATE matches SET is_open_to_join = @IsOpen WHERE id = @MatchId",
             new { MatchId = matchId, IsOpen = isOpenToJoin });
         return rows > 0;
+    }
+
+    public async Task<bool> IsParticipantAsync(int matchId, int userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        // Only 'accepted' and 'pending' count as "in the match" for invitation purposes.
+        // A user with status='rejected' previously declined and can be re-invited; if
+        // every status blocked re-invitation, declining would be a one-way door.
+        return await connection.ExecuteScalarAsync<bool>(
+            """
+            SELECT EXISTS (
+                SELECT 1 FROM match_participants
+                WHERE match_id = @MatchId
+                  AND user_id  = @UserId
+                  AND status IN ('accepted', 'pending')
+            )
+            """,
+            new { MatchId = matchId, UserId = userId });
+    }
+
+    public async Task<bool> IsAcceptedParticipantAsync(int matchId, int userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<bool>(
+            """
+            SELECT EXISTS (
+                SELECT 1 FROM match_participants
+                WHERE match_id = @MatchId
+                  AND user_id  = @UserId
+                  AND status   = 'accepted'
+            )
+            """,
+            new { MatchId = matchId, UserId = userId });
     }
 
     public async Task<(IEnumerable<OpenMatchRow> Items, long TotalCount)> ListOpenAsync(

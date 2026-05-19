@@ -124,11 +124,11 @@ public class MatchService : IMatchService
         // ConflictException from the UNIQUE constraint is surfaced as-is (409)
         var participant = await _participantRepository.AddAsync(matchId, callerUserId);
 
-        await _notificationService.NotifyAsync(
+        await _notificationService.CreateAsync(
             match.BookingOwnerId!.Value,
-            "A player has requested to join your match.",
             "match_join_requested",
-            matchId);
+            matchId,
+            "A player has requested to join your match.");
 
         return MapParticipant(participant);
     }
@@ -151,11 +151,11 @@ public class MatchService : IMatchService
 
         if (participant.Status == "accepted")
         {
-            await _notificationService.NotifyAsync(
+            await _notificationService.CreateAsync(
                 match.BookingOwnerId!.Value,
-                "A player has left your match.",
                 "match_join_rejected",
-                matchId);
+                matchId,
+                "A player has left your match.");
         }
     }
 
@@ -190,7 +190,7 @@ public class MatchService : IMatchService
             ? "Your request to join the match has been accepted."
             : "Your request to join the match has been rejected.";
 
-        await _notificationService.NotifyAsync(participantUserId, notifMessage, notifType, matchId);
+        await _notificationService.CreateAsync(participantUserId, notifType, matchId, notifMessage);
 
         return MapParticipant(participant);
     }

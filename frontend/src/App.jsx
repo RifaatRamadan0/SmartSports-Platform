@@ -30,6 +30,7 @@ const BookingPage             = lazy(() => import('./pages/Player/BookingPage'))
 const AdminPitchApprovalsPage = lazy(() => import('./pages/Admin/AdminPitchApprovalsPage'))
 const SettingsPage            = lazy(() => import('./pages/Settings/SettingsPage'))
 const BookingDetailPage       = lazy(() => import('./pages/Booking/BookingDetailPage'))
+const MatchDetailPage         = lazy(() => import('./pages/Match/MatchDetailPage'))
 const FindGamePage            = lazy(() => import('./pages/Matches/FindGamePage'))
 
 function AnimatedRoutes() {
@@ -83,6 +84,7 @@ function AnimatedRoutes() {
           <Route element={<RoleRoute allowedRoles={[ROLES.PLAYER]} />}>
             <Route path="/my-bookings" element={<PlayerBookingsPage />} />
             <Route path="/book/:pitchId" element={<BookingPage />} />
+            <Route path="/matches/:matchId" element={<MatchDetailPage />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />

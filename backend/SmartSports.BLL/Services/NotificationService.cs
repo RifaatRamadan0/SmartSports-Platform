@@ -1,17 +1,26 @@
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Notification;
+using SmartSports.Domain.Entities;
 
 namespace SmartSports.BLL.Services;
 
 public class NotificationService : INotificationService
 {
-    private readonly INotificationRepository _repo;
+    private readonly INotificationRepository _notifications;
 
-    public NotificationService(INotificationRepository repo)
+    public NotificationService(INotificationRepository notifications)
     {
-        _repo = repo;
+        _notifications = notifications;
     }
 
-    public Task NotifyAsync(int userId, string message, string type, int? relatedEntityId = null)
-        => _repo.CreateAsync(userId, message, type, relatedEntityId);
+    public async Task CreateAsync(int userId, string type, int? relatedEntityId, string message)
+    {
+        await _notifications.InsertAsync(new Notification
+        {
+            UserId          = userId,
+            Type            = type,
+            RelatedEntityId = relatedEntityId,
+            Message         = message
+        });
+    }
 }
