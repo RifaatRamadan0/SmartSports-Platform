@@ -60,16 +60,13 @@ function FieldLines() {
 function StatsBanner({ statsResult }) {
   const loading = statsResult === null  // null = still fetching; false = failed; object = loaded
 
+  // SportsCount is derived from the existing bySport breakdown — no extra backend field.
+  // "Real-time spots" is a static badge that reassures the count updates as people join.
   const blocks = [
-    { label: 'OPEN GAMES', value: statsResult?.openGamesCount },
-    { label: 'CITIES',     value: statsResult?.citiesCount },
-    {
-      label: 'FROM',
-      value: statsResult?.minPricePerPlayer != null
-        ? `$${statsResult.minPricePerPlayer} / player`
-        : null,
-      fallback: '—',
-    },
+    { label: 'OPEN GAMES',      value: statsResult?.openGamesCount },
+    { label: 'CITIES',          value: statsResult?.citiesCount },
+    { label: 'SPORTS',          value: statsResult ? (statsResult.bySport?.length ?? 0) : null },
+    { label: 'REAL-TIME SPOTS', value: 'Live' },
   ]
 
   return (
@@ -265,20 +262,24 @@ function MatchCard({ match }) {
           </span>
         </div>
 
-        {/* Center — Price */}
+        {/* Center — Price (total is the truth, per-player is a projection) */}
         <div
           className="flex flex-col items-center justify-center rounded-[14px] border border-border px-3.5 py-3 text-center"
           style={{ flex: '1.4', margin: '0 10px', background: 'linear-gradient(145deg, var(--muted) 0%, var(--card) 100%)' }}
+          title={`≈ $${match.pricePerPlayer} / player if the match fills (${match.maxPlayers} players)`}
         >
           <span
             className="text-primary font-extrabold leading-[1.05]"
             style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 30, letterSpacing: '-1.5px' }}
           >
             <sup className="text-[15px] align-super" style={{ color: 'oklch(0.68 0.22 145 / 0.7)', letterSpacing: 0 }}>$</sup>
-            {match.pricePerPlayer}
+            {match.totalPrice}
           </span>
           <span className="text-[10px] font-semibold tracking-[0.5px] uppercase text-muted-foreground mt-0.5">
-            per player
+            total
+          </span>
+          <span className="text-[9px] text-muted-foreground/70 mt-1 leading-tight">
+            ≈ ${match.pricePerPlayer}/player if full
           </span>
         </div>
 

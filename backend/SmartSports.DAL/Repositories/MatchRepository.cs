@@ -95,9 +95,6 @@ public class MatchRepository : IMatchRepository
         // One round-trip: a CTE produces the post-GROUP-BY/HAVING result set, and
         // COUNT(*) OVER() returns the unpaginated total alongside every page row.
         // Mirrors the BookingRepository.GetByUserIdAsync pattern.
-        // LEFT JOIN match_participants filters in the ON clause so matches with 0
-        // participants are included. HAVING removes full matches. ::int cast avoids
-        // bigint→int mismatch in Dapper.
         var sql = $"""
             WITH filtered AS (
                 SELECT m.id                                              AS MatchId,
@@ -110,6 +107,7 @@ public class MatchRepository : IMatchRepository
                        COUNT(mp.id)::int                                 AS AcceptedCount,
                        m.max_players                                     AS MaxPlayers,
                        u.username                                        AS OrganizerName,
+                       b.total_price                                     AS TotalPrice,
                        ROUND(b.total_price / NULLIF(m.max_players, 0), 2) AS PricePerPlayer
                 FROM   matches              m
                 JOIN   bookings             b  ON b.id  = m.booking_id
@@ -126,7 +124,8 @@ public class MatchRepository : IMatchRepository
             )
             SELECT MatchId, PitchName, CityName, SportName,
                    BookingDate, StartTime, EndTime,
-                   AcceptedCount, MaxPlayers, OrganizerName, PricePerPlayer,
+                   AcceptedCount, MaxPlayers, OrganizerName,
+                   TotalPrice, PricePerPlayer,
                    COUNT(*) OVER() AS TotalCount
             FROM   filtered
             ORDER  BY BookingDate ASC, StartTime ASC, MatchId ASC
@@ -148,6 +147,7 @@ public class MatchRepository : IMatchRepository
             AcceptedCount  = r.AcceptedCount,
             MaxPlayers     = r.MaxPlayers,
             OrganizerName  = r.OrganizerName,
+            TotalPrice     = r.TotalPrice,
             PricePerPlayer = r.PricePerPlayer,
         });
 
@@ -186,9 +186,8 @@ public class MatchRepository : IMatchRepository
 
         const string summarySql = openMatchesCte + """
 
-            SELECT COUNT(*)::bigint                                          AS OpenGamesCount,
-                   COUNT(DISTINCT city_id)::bigint                          AS CitiesCount,
-                   MIN(ROUND(total_price / NULLIF(max_players, 0), 2))      AS MinPricePerPlayer
+            SELECT COUNT(*)::bigint           AS OpenGamesCount,
+                   COUNT(DISTINCT city_id)::bigint AS CitiesCount
             FROM   open_matches
             """;
 
@@ -235,6 +234,7 @@ public class MatchRepository : IMatchRepository
         int      AcceptedCount,
         int      MaxPlayers,
         string   OrganizerName,
+        decimal  TotalPrice,
         decimal  PricePerPlayer,
         long     TotalCount);
 }

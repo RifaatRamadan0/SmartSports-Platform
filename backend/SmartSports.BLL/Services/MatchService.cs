@@ -75,6 +75,7 @@ public class MatchService : IMatchService
                 AcceptedCount  = r.AcceptedCount,
                 MaxPlayers     = r.MaxPlayers,
                 OrganizerName  = r.OrganizerName,
+                TotalPrice     = r.TotalPrice,
                 PricePerPlayer = r.PricePerPlayer,
             }),
             TotalCount = (int)Math.Min(total, int.MaxValue),
@@ -89,11 +90,10 @@ public class MatchService : IMatchService
 
         return new MatchStatsResponse
         {
-            OpenGamesCount    = (int)Math.Min(summary.OpenGamesCount, int.MaxValue),
-            CitiesCount       = (int)Math.Min(summary.CitiesCount,    int.MaxValue),
-            MinPricePerPlayer = summary.MinPricePerPlayer,
-            BySport           = bySport.Select(r => new NameCountItem { Name = r.Name, Count = r.Count }),
-            ByCity            = byCity.Select(r  => new NameCountItem { Name = r.Name, Count = r.Count }),
+            OpenGamesCount = (int)Math.Min(summary.OpenGamesCount, int.MaxValue),
+            CitiesCount    = (int)Math.Min(summary.CitiesCount,    int.MaxValue),
+            BySport        = bySport.Select(r => new NameCountItem { Name = r.Name, Count = r.Count }),
+            ByCity         = byCity.Select(r  => new NameCountItem { Name = r.Name, Count = r.Count }),
         };
     }
 
