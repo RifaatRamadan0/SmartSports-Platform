@@ -17,4 +17,5 @@ public static class NotificationTypes
     public const string MatchJoinRequested  = "match_join_requested";
     public const string MatchJoinAccepted   = "match_join_accepted";
     public const string MatchJoinRejected   = "match_join_rejected";
+    public const string MatchPlayerLeft     = "match_player_left";
 }
