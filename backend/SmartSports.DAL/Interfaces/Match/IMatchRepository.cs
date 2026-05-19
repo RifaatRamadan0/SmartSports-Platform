@@ -1,4 +1,6 @@
+using SmartSports.DAL.Parameters;
 using SmartSports.Domain.Entities;
+using SmartSports.Domain.Entities.Projections;
 
 namespace SmartSports.DAL.Interfaces.Match;
 
@@ -24,4 +26,17 @@ public interface IMatchRepository
     /// Returns true if the given user is already a participant in the match.
     /// </summary>
     Task<bool> IsParticipantAsync(int matchId, int userId);
+
+    /// <summary>
+    /// Paginated list of open matches (is_open_to_join=TRUE, booking date >= today,
+    /// accepted participants &lt; max_players). Optionally filtered by sport and city.
+    /// Ordered by booking_date ASC, start_time ASC.
+    /// </summary>
+    Task<(IEnumerable<OpenMatchRow> Items, long TotalCount)> ListOpenAsync(MatchFilterParams filters);
+
+    /// <summary>
+    /// Aggregate stats for open matches: total count, distinct city count,
+    /// and per-sport and per-city breakdowns.
+    /// </summary>
+    Task<(MatchStatsRow Summary, IEnumerable<MatchCountByName> BySport, IEnumerable<MatchCountByName> ByCity)> GetStatsAsync();
 }

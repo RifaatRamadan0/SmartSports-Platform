@@ -1,6 +1,8 @@
+using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Match;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Match;
+using SmartSports.DAL.Parameters;
 using SmartSports.Domain.Exceptions;
 using MatchEntity = SmartSports.Domain.Entities.Match;
 
@@ -42,6 +44,57 @@ public class MatchService : IMatchService
 
         match.IsOpenToJoin = isOpenToJoin;
         return MapToResponse(match);
+    }
+
+    public async Task<PagedResult<MatchSummaryResponse>> ListOpenAsync(MatchQuery query)
+    {
+        // Clamp to safe bounds — prevents runaway queries from bad client input
+        var page     = Math.Max(1, query.Page);
+        var pageSize = Math.Clamp(query.PageSize < 1 ? 10 : query.PageSize, 1, 100);
+
+        var filters = new MatchFilterParams(
+            Sport:    query.Sport?.Trim(),
+            City:     query.City?.Trim(),
+            Page:     page,
+            PageSize: pageSize
+        );
+
+        var (rows, total) = await _matchRepository.ListOpenAsync(filters);
+
+        return new PagedResult<MatchSummaryResponse>
+        {
+            Items = rows.Select(r => new MatchSummaryResponse
+            {
+                MatchId        = r.MatchId,
+                PitchName      = r.PitchName,
+                CityName       = r.CityName,
+                SportName      = r.SportName,
+                BookingDate    = r.BookingDate,
+                StartTime      = r.StartTime,
+                EndTime        = r.EndTime,
+                AcceptedCount  = r.AcceptedCount,
+                MaxPlayers     = r.MaxPlayers,
+                OrganizerName  = r.OrganizerName,
+                TotalPrice     = r.TotalPrice,
+                PricePerPlayer = r.PricePerPlayer,
+            }),
+            TotalCount = (int)Math.Min(total, int.MaxValue),
+            Page       = page,
+            PageSize   = pageSize,
+        };
+    }
+
+    public async Task<MatchStatsResponse> GetStatsAsync()
+    {
+        var (summary, bySport, byCity) = await _matchRepository.GetStatsAsync();
+
+        return new MatchStatsResponse
+        {
+            OpenGamesCount = (int)Math.Min(summary.OpenGamesCount, int.MaxValue),
+            CitiesCount    = (int)Math.Min(summary.CitiesCount,    int.MaxValue),
+            BySport        = bySport.Select(r => new NameCountItem { Name = r.Name, Count = r.Count }),
+            ByCity         = byCity.Select(r  => new NameCountItem { Name = r.Name, Count = r.Count }),
+        };
     }
 
     private static MatchResponse MapToResponse(MatchEntity match) => new()

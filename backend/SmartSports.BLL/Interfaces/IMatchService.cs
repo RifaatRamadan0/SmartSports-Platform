@@ -1,3 +1,4 @@
+using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Match;
 
 namespace SmartSports.BLL.Interfaces;
@@ -17,4 +18,17 @@ public interface IMatchService
     /// state the call is a no-op and still returns 200.
     /// </summary>
     Task<MatchResponse> UpdateVisibilityAsync(int callerUserId, int matchId, bool isOpenToJoin);
+
+    /// <summary>
+    /// Returns a paginated list of open matches filterable by sport and city,
+    /// ordered by upcoming date. A match is open when is_open_to_join=TRUE,
+    /// booking date >= today, and accepted participants &lt; max_players.
+    /// </summary>
+    Task<PagedResult<MatchSummaryResponse>> ListOpenAsync(MatchQuery query);
+
+    /// <summary>
+    /// Returns aggregate stats for all open matches: total count, distinct city count,
+    /// minimum price per player, and per-sport and per-city breakdowns.
+    /// </summary>
+    Task<MatchStatsResponse> GetStatsAsync();
 }
