@@ -17,4 +17,11 @@ public class CurrentUserService : ICurrentUserService
             .FindFirstValue(ClaimTypes.NameIdentifier);
         return int.TryParse(value, out var id) ? id : null;
     }
+
+    public string? GetUsername()
+    {
+        var principal = _httpContextAccessor.HttpContext?.User;
+        return principal?.FindFirstValue(ClaimTypes.Name)
+            ?? principal?.FindFirstValue("unique_name");
+    }
 }

@@ -1,7 +1,9 @@
 using Dapper;
+using Npgsql;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Invitation;
 using SmartSports.Domain.Entities.Projections;
+using SmartSports.Domain.Exceptions;
 using InvitationEntity = SmartSports.Domain.Entities.Invitation;
 
 namespace SmartSports.DAL.Repositories;
@@ -43,16 +45,45 @@ public class InvitationRepository : IInvitationRepository
             new { Token = token });
     }
 
-    public async Task<InvitationEntity> CreateAsync(int matchId, int invitedById, string token, DateTime expiresAt)
+    public async Task<InvitationEntity> CreateAsync(InvitationEntity invitation)
     {
         using var connection = _connectionFactory.CreateConnection();
-        return await connection.QuerySingleAsync<InvitationEntity>(
+        try
+        {
+            return await connection.QuerySingleAsync<InvitationEntity>(
+                """
+                INSERT INTO invitations
+                    (match_id, invited_by_id, invited_user_id, expires_at, token, status)
+                VALUES
+                    (@MatchId, @InvitedById, @InvitedUserId, @ExpiresAt, @Token, @Status::invitation_status)
+                RETURNING id, match_id, invited_by_id, invited_user_id, expires_at, token, status
+                """,
+                invitation);
+        }
+        catch (PostgresException ex) when (ex.SqlState == "23505")
+        {
+            // uq_invitations_pending (migration 023) catches concurrent inserts that
+            // slip past ExistsPendingAsync's TOCTOU window. Only fires for username
+            // invites (invited_user_id IS NOT NULL); link invitations are not covered
+            // by that partial index.
+            throw new ConflictException(
+                "A pending invitation for this user and match already exists.");
+        }
+    }
+
+    public async Task<bool> ExistsPendingAsync(int matchId, int invitedUserId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<bool>(
             """
-            INSERT INTO invitations (match_id, invited_by_id, token, expires_at)
-            VALUES (@MatchId, @InvitedById, @Token, @ExpiresAt)
-            RETURNING id, match_id, invited_by_id, invited_user_id, expires_at, token, status
+            SELECT EXISTS (
+                SELECT 1 FROM invitations
+                WHERE match_id        = @MatchId
+                  AND invited_user_id = @InvitedUserId
+                  AND status          = 'pending'
+            )
             """,
-            new { MatchId = matchId, InvitedById = invitedById, Token = token, ExpiresAt = expiresAt });
+            new { MatchId = matchId, InvitedUserId = invitedUserId });
     }
 
     public async Task<InvitePreviewRow?> GetPreviewByTokenAsync(string token)
@@ -100,19 +131,6 @@ public class InvitationRepository : IInvitationRepository
             WHERE  mp.match_id = @MatchId
               AND  mp.status   = 'accepted'
             ORDER  BY u.username ASC
-            """,
-            new { MatchId = matchId });
-    }
-
-    public async Task<DateTime?> GetMatchStartTimeAsync(int matchId)
-    {
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<DateTime?>(
-            """
-            SELECT (b.booking_date + b.start_time) AT TIME ZONE 'UTC'
-            FROM   matches  m
-            JOIN   bookings b ON b.id = m.booking_id
-            WHERE  m.id = @MatchId
             """,
             new { MatchId = matchId });
     }

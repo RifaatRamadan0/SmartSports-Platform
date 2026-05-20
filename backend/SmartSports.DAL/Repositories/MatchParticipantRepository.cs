@@ -70,6 +70,25 @@ public class MatchParticipantRepository : IMatchParticipantRepository
         return rows > 0;
     }
 
+    public async Task<bool> TryAcceptAsync(int matchId, int userId, int maxPlayers)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        var rows = await connection.ExecuteAsync(
+            """
+            UPDATE match_participants
+            SET    status = 'accepted'::participant_status
+            WHERE  match_id = @MatchId
+              AND  user_id  = @UserId
+              AND  status   = 'pending'::participant_status
+              AND  (
+                SELECT COUNT(*) FROM match_participants
+                WHERE  match_id = @MatchId AND status = 'accepted'
+              ) < @MaxPlayers
+            """,
+            new { MatchId = matchId, UserId = userId, MaxPlayers = maxPlayers });
+        return rows > 0;
+    }
+
     public async Task<bool> RemoveAsync(int matchId, int userId)
     {
         using var connection = _connectionFactory.CreateConnection();

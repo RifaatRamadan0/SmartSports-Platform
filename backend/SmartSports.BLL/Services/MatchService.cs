@@ -3,6 +3,7 @@ using SmartSports.BLL.DTOs.Match;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Match;
 using SmartSports.DAL.Parameters;
+using SmartSports.Domain.Common;
 using SmartSports.Domain.Entities;
 using SmartSports.Domain.Exceptions;
 using MatchEntity = SmartSports.Domain.Entities.Match;
@@ -124,11 +125,11 @@ public class MatchService : IMatchService
         // ConflictException from the UNIQUE constraint is surfaced as-is (409)
         var participant = await _participantRepository.AddAsync(matchId, callerUserId);
 
-        await _notificationService.NotifyAsync(
+        await _notificationService.CreateAsync(
             match.BookingOwnerId!.Value,
-            "A player has requested to join your match.",
-            "match_join_requested",
-            matchId);
+            NotificationTypes.MatchJoinRequested,
+            matchId,
+            "A player has requested to join your match.");
 
         return MapParticipant(participant);
     }
@@ -151,11 +152,11 @@ public class MatchService : IMatchService
 
         if (participant.Status == "accepted")
         {
-            await _notificationService.NotifyAsync(
+            await _notificationService.CreateAsync(
                 match.BookingOwnerId!.Value,
-                "A player has left your match.",
-                "match_join_rejected",
-                matchId);
+                NotificationTypes.MatchPlayerLeft,
+                matchId,
+                "A player has left your match.");
         }
     }
 
@@ -171,26 +172,33 @@ public class MatchService : IMatchService
         if (action != "accept" && action != "reject")
             throw new ArgumentException("Action must be 'accept' or 'reject'.");
 
-        if (action == "accept")
-        {
-            var acceptedCount = await _participantRepository.GetAcceptedCountAsync(matchId);
-            if (acceptedCount >= match.MaxPlayers)
-                throw new ArgumentException("Cannot accept: match is already full.");
-        }
-
         var participant = await _participantRepository.GetAsync(matchId, participantUserId)
             ?? throw new KeyNotFoundException("Participant not found.");
 
-        var newStatus = action == "accept" ? "accepted" : "rejected";
-        await _participantRepository.UpdateStatusAsync(matchId, participantUserId, newStatus);
-        participant.Status = newStatus;
+        if (action == "accept")
+        {
+            // Atomic capacity-guarded accept — see IMatchParticipantRepository.TryAcceptAsync.
+            // Prevents a TOCTOU race where two concurrent organizer requests both observe
+            // accepted < max and both succeed, overfilling the match.
+            var accepted = await _participantRepository.TryAcceptAsync(matchId, participantUserId, match.MaxPlayers);
+            if (!accepted)
+                throw new ArgumentException("Cannot accept: participant is not pending, or match is already full.");
+            participant.Status = "accepted";
+        }
+        else
+        {
+            // Hard-delete on reject so the player isn't permanently locked out by the
+            // UNIQUE (match_id, user_id) constraint. They can request again later.
+            await _participantRepository.RemoveAsync(matchId, participantUserId);
+            participant.Status = "rejected";
+        }
 
-        var notifType    = action == "accept" ? "match_join_accepted" : "match_join_rejected";
+        var notifType    = action == "accept" ? NotificationTypes.MatchJoinAccepted : NotificationTypes.MatchJoinRejected;
         var notifMessage = action == "accept"
             ? "Your request to join the match has been accepted."
             : "Your request to join the match has been rejected.";
 
-        await _notificationService.NotifyAsync(participantUserId, notifMessage, notifType, matchId);
+        await _notificationService.CreateAsync(participantUserId, notifType, matchId, notifMessage);
 
         return MapParticipant(participant);
     }

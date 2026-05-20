@@ -301,6 +301,10 @@ export default function BookingDetailPage() {
 
   // ── Main ─────────────────────────────────────────────────────────────────────
   const canCancel = isPlayer && isCancellable(booking)
+  // SPDBTCP-76 — the booking-detail API already 403s non-owner players, so
+  // reaching this page as a Player means this booking belongs to them.
+  const canManageMatch =
+    isPlayer && booking.status === 'confirmed' && booking.match?.id != null
 
   return (
     <div className="min-h-screen bg-[#080808] px-6 py-10 text-white">
@@ -398,6 +402,18 @@ export default function BookingDetailPage() {
             Coming soon: payment info · messaging · booking edit
           </p>
         </div>
+
+        {/* Manage match (invite players, etc.) */}
+        {canManageMatch && (
+          <button
+            onClick={() => navigate(`/matches/${booking.match.id}`)}
+            className="w-full py-3 rounded-2xl border border-green-500/30 bg-green-500/10
+                       text-[13px] font-bold text-green-400 hover:bg-green-500/20
+                       transition-colors mb-3"
+          >
+            Manage match · Invite players
+          </button>
+        )}
 
         {/* Cancel action */}
         {canCancel && (

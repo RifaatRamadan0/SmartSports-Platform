@@ -1,6 +1,7 @@
 using Dapper;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Notification;
+using NotificationEntity = SmartSports.Domain.Entities.Notification;
 
 namespace SmartSports.DAL.Repositories;
 
@@ -13,14 +14,17 @@ public class NotificationRepository : INotificationRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task CreateAsync(int userId, string message, string type, int? relatedEntityId = null)
+    public async Task<int> InsertAsync(NotificationEntity notification)
     {
         using var connection = _connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(
+        return await connection.ExecuteScalarAsync<int>(
             """
-            INSERT INTO notifications (user_id, message, type, related_entity_id)
-            VALUES (@UserId, @Message, @Type::notification_type, @RelatedEntityId)
+            INSERT INTO notifications
+                (user_id, related_entity_id, message, type, is_read)
+            VALUES
+                (@UserId, @RelatedEntityId, @Message, @Type::notification_type, FALSE)
+            RETURNING id
             """,
-            new { UserId = userId, Message = message, Type = type, RelatedEntityId = relatedEntityId });
+            notification);
     }
 }

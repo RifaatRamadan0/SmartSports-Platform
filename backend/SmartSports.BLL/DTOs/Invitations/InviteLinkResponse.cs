@@ -1,3 +1,3 @@
-namespace SmartSports.BLL.DTOs.Invitation;
+namespace SmartSports.BLL.DTOs.Invitations;
 
 public record InviteLinkResponse(string Token, string ShareUrl);
