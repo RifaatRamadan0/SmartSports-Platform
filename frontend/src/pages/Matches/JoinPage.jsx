@@ -290,9 +290,13 @@ export default function JoinPage() {
     }
   }
 
-  function handleCopy() {
-    navigator.clipboard.writeText(window.location.href)
-    showToast('Invite link copied to clipboard!')
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      showToast('Invite link copied to clipboard!')
+    } catch {
+      showToast('Could not copy link — please copy the URL manually.', 'error')
+    }
   }
 
   if (isLoading) return <Skeleton />

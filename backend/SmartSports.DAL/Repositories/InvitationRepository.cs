@@ -40,7 +40,8 @@ public class InvitationRepository : IInvitationRepository
             """
             SELECT id, match_id, invited_by_id, invited_user_id, expires_at, token, status
             FROM   invitations
-            WHERE  token = @Token
+            WHERE  token            = @Token
+              AND  invited_user_id IS NULL
             """,
             new { Token = token });
     }
@@ -112,7 +113,8 @@ public class InvitationRepository : IInvitationRepository
             JOIN   sport_types        s   ON s.id  = p.sport_type_id
             JOIN   cities             c   ON c.id  = p.city_id
             LEFT JOIN match_participants mp ON mp.match_id = m.id AND mp.status = 'accepted'
-            WHERE  inv.token = @Token
+            WHERE  inv.token            = @Token
+              AND  inv.invited_user_id IS NULL
             GROUP  BY m.id, s.name, b.booking_date, b.start_time, b.end_time,
                       p.name, c.name, u.username, m.max_players, b.total_price,
                       inv.expires_at

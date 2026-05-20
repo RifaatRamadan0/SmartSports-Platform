@@ -216,10 +216,6 @@ public static class ServiceExtensions
         services.AddScoped<IMatchParticipantRepository, MatchParticipantRepository>();
         services.AddScoped<IMatchService, MatchService>();
 
-        // Invitations
-        services.AddScoped<IInvitationRepository, InvitationRepository>();
-        services.AddScoped<IInvitationService, InvitationService>();
-
         // Pitch
         services.AddScoped<IReviewRepository, ReviewRepository>();
         services.AddScoped<IReviewService, ReviewService>();

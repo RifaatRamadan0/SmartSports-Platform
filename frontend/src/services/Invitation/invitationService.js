@@ -11,8 +11,7 @@ export async function getJoinPreview(token) {
 }
 
 export async function joinViaToken(token) {
-  const { data } = await api.post(`/api/join/${token}`)
-  return data
+  await api.post(`/api/join/${token}`)
 }
 
 // SPDBTCP-76 — POST /api/matches/{matchId}/invitations
