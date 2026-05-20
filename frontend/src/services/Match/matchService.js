@@ -43,3 +43,15 @@ export async function getMyMatchStatus(matchId) {
 export async function leaveMatch(matchId) {
   await api.delete(`/api/matches/${matchId}/leave`)
 }
+
+// SPDBTCP-83 — Returns pending join requests for all matches the current user organises.
+export async function getPendingJoinRequests() {
+  const { data } = await api.get('/api/matches/join-requests/pending')
+  return data
+}
+
+// SPDBTCP-83 — Organiser accepts or rejects a pending participant (action: 'accept' | 'reject').
+export async function respondToJoinRequest(matchId, userId, action) {
+  const { data } = await api.patch(`/api/matches/${matchId}/participants/${userId}/respond`, { action })
+  return data
+}

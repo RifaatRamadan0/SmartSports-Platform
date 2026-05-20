@@ -23,4 +23,9 @@ public class NotificationService : INotificationService
             Message         = message
         });
     }
+
+    public async Task MarkReadByRelatedEntityAsync(int userId, int relatedEntityId)
+    {
+        await _notifications.MarkReadByRelatedEntityAsync(userId, relatedEntityId);
+    }
 }

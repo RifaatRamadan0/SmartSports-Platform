@@ -107,6 +107,26 @@ public class MatchService : IMatchService
         };
     }
 
+    public async Task<IEnumerable<PendingJoinRequestDto>> GetPendingJoinRequestsAsync(int organizerUserId)
+    {
+        var rows = await _participantRepository.GetPendingByOrganizerAsync(organizerUserId);
+        return rows.Select(r => new PendingJoinRequestDto
+        {
+            ParticipantId   = r.ParticipantId,
+            MatchId         = r.MatchId,
+            RequesterUserId = r.RequesterUserId,
+            RequesterName   = r.RequesterName,
+            PitchName       = r.PitchName,
+            SportName       = r.SportName,
+            BookingDate     = r.BookingDate,
+            StartTime       = r.StartTime,
+            EndTime         = r.EndTime,
+            MaxPlayers      = r.MaxPlayers,
+            SpotsLeft       = r.SpotsLeft,
+            PricePerPlayer  = r.PricePerPlayer,
+        });
+    }
+
     public async Task<MatchParticipantResponse> JoinAsync(int callerUserId, int matchId)
     {
         var match = await _matchRepository.GetByIdAsync(matchId)

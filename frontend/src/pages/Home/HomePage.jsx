@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { cardVariants, cardHover, cardTap, listContainerVariants } from '../../lib/motion'
 import { useAuth } from '../../hooks/useAuth'
 import { ROLES } from '../../constants/roles'
@@ -8,6 +8,12 @@ import { getRoleHomePath } from '../../utils/roleUtils'
 import { listPitches } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
 import PitchCover from '../../components/Pitch/PitchCover'
+import {
+  getMyPendingInvitations,
+  acceptInvitation,
+  declineInvitation,
+} from '../../services/Invitation/invitationService'
+import { getPendingJoinRequests, respondToJoinRequest } from '../../services/Match/matchService'
 
 const SPORT_FILTERS = ['All', 'Football', 'Futsal', 'Basketball', 'Tennis']
 
@@ -85,21 +91,220 @@ export default function HomePage() {
   )
 }
 
+// ── Inbox helpers (SPDBTCP-83) ────────────────────────────────────────────────
+
+function timeUntil(dateStr) {
+  if (!dateStr) return null
+  const ms = new Date(dateStr) - Date.now()
+  if (ms <= 0) return null
+  const h = Math.floor(ms / 3_600_000)
+  return h < 24 ? `${h}h` : `${Math.floor(h / 24)}d`
+}
+
+function fmtDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+function fmtTime(timeStr) {
+  const [h, m] = timeStr.split(':')
+  const d = new Date(); d.setHours(+h, +m)
+  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+}
+
+function matchFmt(maxPlayers) {
+  const half = Math.floor(maxPlayers / 2)
+  return `${half}v${half}`
+}
+
+function initials2(name) {
+  if (!name) return '??'
+  const parts = name.trim().split(/\s+/)
+  const a = parts[0]?.[0] ?? ''
+  const b = parts[1]?.[0] ?? parts[0]?.[1] ?? ''
+  return (a + b).toUpperCase()
+}
+
+function StatCell({ label, value, accent }) {
+  return (
+    <div className="rounded-xl bg-[var(--bg3)] border border-white/[0.05] px-3 py-2">
+      <p className="text-[9px] font-bold tracking-[1.5px] uppercase text-[var(--text3)] mb-0.5">{label}</p>
+      <p className={`font-display text-[14px] font-bold ${accent ? 'text-[var(--green)]' : 'text-white'}`}>{value}</p>
+    </div>
+  )
+}
+
+function InvitationCard({ inv, onAccept, onDecline, busy }) {
+  const expiry = timeUntil(inv.expiresAt)
+  return (
+    <div className="rounded-2xl border border-white/[0.07] bg-[var(--surface)] overflow-hidden">
+      <div className="border-l-[3px] border-[var(--green)] p-4">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2.5">
+            <span className="w-9 h-9 rounded-full bg-[var(--green)] text-[#061008] font-display text-[12px] font-bold flex items-center justify-center shrink-0">
+              {initials2(inv.inviterDisplayName)}
+            </span>
+            <div>
+              <p className="text-[10px] text-[var(--text3)] leading-none">Invited by</p>
+              <p className="text-[13px] font-semibold text-white leading-tight mt-1">@{inv.inviterDisplayName}</p>
+            </div>
+          </div>
+          {expiry && (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[oklch(0.72_0.18_55/0.18)] border border-[oklch(0.72_0.18_55/0.32)] text-[oklch(0.82_0.14_65)] text-[11px] font-bold shrink-0">
+              ⚡ {expiry}
+            </span>
+          )}
+        </div>
+        <p className="font-display text-[18px] font-bold text-white leading-tight mb-1">{inv.pitchName}</p>
+        <p className="text-[12px] text-[var(--text2)] mb-4">
+          📅 {fmtDate(inv.bookingDate)} · {fmtTime(inv.startTime)} · {inv.sportName} · {matchFmt(inv.maxPlayers)}
+        </p>
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <StatCell label="Per Player" value={`$${Number(inv.pricePerPlayer).toFixed(0)}`} accent />
+          <StatCell label="Spots Left" value={inv.spotsLeft} />
+          <StatCell label="Format"     value={matchFmt(inv.maxPlayers)} />
+          <StatCell label="Sport"      value={inv.sportName} />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onAccept(inv)} disabled={busy}
+            className="flex-1 py-2.5 rounded-xl font-display text-[13px] font-bold bg-[var(--green)] text-[#061008] hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            Accept &amp; Join
+          </button>
+          <button
+            onClick={() => onDecline(inv)} disabled={busy}
+            className="px-4 py-2.5 rounded-xl text-[13px] font-semibold bg-[oklch(0.62_0.2_25/0.12)] border border-[oklch(0.62_0.2_25/0.30)] text-[oklch(0.62_0.2_25)] hover:opacity-80 transition-opacity disabled:opacity-50"
+          >
+            Decline
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function JoinRequestCard({ req, onAccept, onReject, busy }) {
+  return (
+    <div className="rounded-2xl border border-white/[0.07] bg-[var(--surface)] overflow-hidden">
+      <div className="border-l-[3px] border-[oklch(0.72_0.10_240)] p-4">
+        <div className="flex items-center gap-2.5 mb-3">
+          <span className="w-9 h-9 rounded-full bg-[oklch(0.6_0.12_240/0.16)] border border-[oklch(0.6_0.12_240/0.30)] text-[oklch(0.72_0.10_240)] font-display text-[12px] font-bold flex items-center justify-center shrink-0">
+            {initials2(req.requesterName)}
+          </span>
+          <div>
+            <p className="text-[10px] text-[var(--text3)] leading-none">Join request from</p>
+            <p className="text-[13px] font-semibold text-white leading-tight mt-1">@{req.requesterName}</p>
+          </div>
+        </div>
+        <p className="font-display text-[18px] font-bold text-white leading-tight mb-1">{req.pitchName}</p>
+        <p className="text-[12px] text-[var(--text2)] mb-4">
+          📅 {fmtDate(req.bookingDate)} · {fmtTime(req.startTime)} · {req.sportName} · {matchFmt(req.maxPlayers)}
+        </p>
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <StatCell label="Per Player" value={`$${Number(req.pricePerPlayer).toFixed(0)}`} accent />
+          <StatCell label="Spots Left" value={req.spotsLeft} />
+          <StatCell label="Format"     value={matchFmt(req.maxPlayers)} />
+          <StatCell label="Sport"      value={req.sportName} />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onAccept(req)} disabled={busy}
+            className="flex-1 py-2.5 rounded-xl font-display text-[13px] font-bold bg-[var(--green)] text-[#061008] hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            Accept
+          </button>
+          <button
+            onClick={() => onReject(req)} disabled={busy}
+            className="px-4 py-2.5 rounded-xl text-[13px] font-semibold bg-[oklch(0.62_0.2_25/0.12)] border border-[oklch(0.62_0.2_25/0.30)] text-[oklch(0.62_0.2_25)] hover:opacity-80 transition-opacity disabled:opacity-50"
+          >
+            Reject
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Navbar
 
 function Navbar() {
   const navigate = useNavigate()
   const { roles, logout } = useAuth()
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuOpen,     setMenuOpen]     = useState(false)
+  const [inboxOpen,    setInboxOpen]    = useState(false)
+  const [activeTab,    setActiveTab]    = useState('invitations')   // 'invitations' | 'joinRequests'
+  const [invitations,  setInvitations]  = useState([])
+  const [joinRequests, setJoinRequests] = useState([])
+  const [inboxLoading, setInboxLoading] = useState(false)
+  const [busyId,       setBusyId]       = useState(null)
+  const inboxRef = useRef(null)
 
   const isPlayer = roles.includes(ROLES.PLAYER)
   const isOwner  = roles.includes(ROLES.PITCH_OWNER)
   const isAdmin  = roles.includes(ROLES.ADMIN)
+  const totalCount = invitations.length + joinRequests.length
 
   const handleLogout = async () => {
     setMenuOpen(false)
     await logout()
     navigate('/login', { replace: true })
+  }
+
+  const openInbox = async () => {
+    if (inboxOpen) { setInboxOpen(false); return }
+    setMenuOpen(false)
+    setInboxOpen(true)
+    setInboxLoading(true)
+    try {
+      const [invs, reqs] = await Promise.all([
+        getMyPendingInvitations().catch(() => []),
+        getPendingJoinRequests().catch(() => []),
+      ])
+      setInvitations(invs)
+      setJoinRequests(reqs)
+    } finally {
+      setInboxLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!inboxOpen) return
+    const handler = (e) => {
+      if (inboxRef.current && !inboxRef.current.contains(e.target)) setInboxOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [inboxOpen])
+
+  // Optimistic UI: drop the row first, restore it on API error.
+  const handleAcceptInv = async (inv) => {
+    setInvitations(prev => prev.filter(i => i.id !== inv.id))
+    setBusyId(`inv-${inv.id}`)
+    try { await acceptInvitation(inv.id) }
+    catch { setInvitations(prev => [inv, ...prev]) }
+    finally { setBusyId(null) }
+  }
+  const handleDeclineInv = async (inv) => {
+    setInvitations(prev => prev.filter(i => i.id !== inv.id))
+    setBusyId(`inv-${inv.id}`)
+    try { await declineInvitation(inv.id) }
+    catch { setInvitations(prev => [inv, ...prev]) }
+    finally { setBusyId(null) }
+  }
+  const handleAcceptJoin = async (req) => {
+    setJoinRequests(prev => prev.filter(r => r.participantId !== req.participantId))
+    setBusyId(`req-${req.participantId}`)
+    try { await respondToJoinRequest(req.matchId, req.requesterUserId, 'accept') }
+    catch { setJoinRequests(prev => [req, ...prev]) }
+    finally { setBusyId(null) }
+  }
+  const handleRejectJoin = async (req) => {
+    setJoinRequests(prev => prev.filter(r => r.participantId !== req.participantId))
+    setBusyId(`req-${req.participantId}`)
+    try { await respondToJoinRequest(req.matchId, req.requesterUserId, 'reject') }
+    catch { setJoinRequests(prev => [req, ...prev]) }
+    finally { setBusyId(null) }
   }
 
   return (
@@ -120,7 +325,7 @@ function Navbar() {
           <li><button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Coaching</button></li>
         </ul>
 
-        <div className="flex items-center gap-2 relative">
+        <div className="flex items-center gap-2 relative" ref={inboxRef}>
           {isPlayer && (
             <>
               <button
@@ -162,8 +367,136 @@ function Navbar() {
             </button>
           )}
 
+          {/* ── Inbox icon button (SPDBTCP-83) ── */}
+          {isPlayer && (
+            <button
+              onClick={openInbox}
+              aria-label="Inbox"
+              aria-expanded={inboxOpen}
+              className={`relative w-9 h-9 rounded-xl border flex items-center justify-center transition-colors
+                ${inboxOpen
+                  ? 'border-[var(--green-border)] bg-[var(--green-muted)] text-white'
+                  : 'border-white/[0.07] bg-[var(--bg2)] hover:border-white/[0.14] text-[var(--text2)]'}`}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+              {totalCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-[oklch(0.62_0.2_25)] text-white font-display text-[10px] font-bold flex items-center justify-center px-1 leading-none">
+                  {totalCount}
+                </span>
+              )}
+            </button>
+          )}
+
+          {/* ── Inbox dropdown ── */}
+          <AnimatePresence>
+            {inboxOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                className="absolute right-0 top-12 w-[440px] max-h-[80vh] overflow-hidden flex flex-col
+                           rounded-2xl border border-white/[0.07] bg-[var(--bg2)] shadow-[0_16px_40px_rgba(0,0,0,0.5)] z-50"
+              >
+                {/* Header */}
+                <div className="px-5 pt-5 pb-3 flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-display text-[20px] font-bold text-white tracking-tight">Inbox</h2>
+                      {totalCount > 0 && (
+                        <span className="min-w-[22px] h-[22px] rounded-full bg-[oklch(0.62_0.2_25)] text-white font-display text-[11px] font-bold flex items-center justify-center px-1.5">
+                          {totalCount}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[12px] text-[var(--text3)] mt-1">
+                      {totalCount === 0
+                        ? 'No pending items'
+                        : `${invitations.length} pending ${invitations.length === 1 ? 'invitation' : 'invitations'} · respond before they expire`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setInboxOpen(false)}
+                    aria-label="Close inbox"
+                    className="w-9 h-9 rounded-full bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-[var(--text2)] hover:text-white transition-colors text-[16px]"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex border-b border-white/[0.06] px-5">
+                  {[
+                    { id: 'invitations',  label: 'Invitations',   count: invitations.length },
+                    { id: 'joinRequests', label: 'Join Requests', count: joinRequests.length },
+                  ].map(t => {
+                    const isActive = activeTab === t.id
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => setActiveTab(t.id)}
+                        className={`px-5 py-3 text-[14px] font-semibold cursor-pointer border-b-2 transition-colors whitespace-nowrap flex items-center
+                          ${isActive
+                            ? 'text-white border-[var(--green)]'
+                            : 'text-[var(--text3)] border-transparent hover:text-[var(--text2)]'}`}
+                      >
+                        {t.label}
+                        {t.count > 0 && (
+                          <span className={`ml-2 min-w-[18px] h-[18px] rounded-[9px] px-1.5 font-display text-[10px] font-bold flex items-center justify-center
+                            ${isActive
+                              ? 'bg-[var(--green-muted)] text-[var(--green)]'
+                              : 'bg-[oklch(0.72_0.18_55/0.20)] text-[oklch(0.78_0.16_60)]'}`}>
+                            {t.count}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Body */}
+                <div className="p-4 space-y-3 overflow-y-auto">
+                  {inboxLoading && (
+                    <p className="text-center text-[13px] text-[var(--text3)] py-8">Loading…</p>
+                  )}
+
+                  {!inboxLoading && activeTab === 'invitations' && (
+                    invitations.length === 0
+                      ? <p className="text-center text-[13px] text-[var(--text3)] py-10">No pending invitations.</p>
+                      : invitations.map(inv => (
+                          <InvitationCard
+                            key={`inv-${inv.id}`}
+                            inv={inv}
+                            onAccept={handleAcceptInv}
+                            onDecline={handleDeclineInv}
+                            busy={busyId === `inv-${inv.id}`}
+                          />
+                        ))
+                  )}
+
+                  {!inboxLoading && activeTab === 'joinRequests' && (
+                    joinRequests.length === 0
+                      ? <p className="text-center text-[13px] text-[var(--text3)] py-10">No pending join requests.</p>
+                      : joinRequests.map(req => (
+                          <JoinRequestCard
+                            key={`req-${req.participantId}`}
+                            req={req}
+                            onAccept={handleAcceptJoin}
+                            onReject={handleRejectJoin}
+                            busy={busyId === `req-${req.participantId}`}
+                          />
+                        ))
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <button
-            onClick={() => setMenuOpen(o => !o)}
+            onClick={() => { setMenuOpen(o => !o); setInboxOpen(false) }}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             aria-controls="user-menu"

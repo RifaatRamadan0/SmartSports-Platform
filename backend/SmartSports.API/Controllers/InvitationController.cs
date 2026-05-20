@@ -8,7 +8,7 @@ using SmartSports.BLL.Interfaces;
 namespace SmartSports.API.Controllers;
 
 [ApiController]
-[Route("api/matches/{matchId:int}/invitations")]
+[Route("api")]
 [Authorize]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class InvitationController : ControllerBase
@@ -25,7 +25,7 @@ public class InvitationController : ControllerBase
     }
 
     // SPDBTCP-76 — Rifaat
-    [HttpPost]
+    [HttpPost("matches/{matchId:int}/invitations")]
     [Authorize(Policy = "PlayerOnly")]
     [EnableRateLimiting("invitations")]
     [ProducesResponseType(typeof(InvitationResponse), StatusCodes.Status201Created)]
@@ -37,10 +37,6 @@ public class InvitationController : ControllerBase
     public async Task<IActionResult> InviteByUsername(
         int matchId, [FromBody] InviteByUsernameRequest request)
     {
-        // [Authorize(Policy = "PlayerOnly")] guarantees an authenticated principal
-        // reaches this point, so GetUserId() is always non-null here.
-        // Username comes from the JWT claim — saves the service a DB round-trip
-        // just to compose the notification message string.
         var response = await _invitationService.InviteByUsernameAsync(
             _currentUser.GetUserId()!.Value,
             _currentUser.GetUsername() ?? string.Empty,
@@ -48,5 +44,39 @@ public class InvitationController : ControllerBase
             request.Username);
 
         return StatusCode(StatusCodes.Status201Created, response);
+    }
+
+    // SPDBTCP-83 — Rifaat
+    [HttpGet("invitations/me")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(typeof(IEnumerable<PendingInvitationDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyPendingInvitations()
+    {
+        var result = await _invitationService.GetPendingAsync(_currentUser.GetUserId()!.Value);
+        return Ok(result);
+    }
+
+    // SPDBTCP-83 — Rifaat
+    [HttpPut("invitations/{id:int}/accept")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> AcceptInvitation(int id)
+    {
+        await _invitationService.AcceptAsync(id, _currentUser.GetUserId()!.Value);
+        return NoContent();
+    }
+
+    // SPDBTCP-83 — Rifaat
+    [HttpPut("invitations/{id:int}/decline")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> DeclineInvitation(int id)
+    {
+        await _invitationService.DeclineAsync(id, _currentUser.GetUserId()!.Value);
+        return NoContent();
     }
 }

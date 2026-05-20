@@ -3,6 +3,7 @@ using Npgsql;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Match;
 using SmartSports.Domain.Entities;
+using SmartSports.Domain.Entities.Projections;
 using SmartSports.Domain.Exceptions;
 
 namespace SmartSports.DAL.Repositories;
@@ -99,5 +100,39 @@ public class MatchParticipantRepository : IMatchParticipantRepository
             """,
             new { MatchId = matchId, UserId = userId });
         return rows > 0;
+    }
+
+    public async Task<IEnumerable<PendingJoinRequestRow>> GetPendingByOrganizerAsync(int organizerUserId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QueryAsync<PendingJoinRequestRow>(
+            """
+            SELECT mp.id            AS ParticipantId,
+                   mp.match_id      AS MatchId,
+                   mp.user_id       AS RequesterUserId,
+                   u.username       AS RequesterName,
+                   p.name           AS PitchName,
+                   st.name          AS SportName,
+                   b.booking_date   AS BookingDate,
+                   b.start_time     AS StartTime,
+                   b.end_time       AS EndTime,
+                   m.max_players    AS MaxPlayers,
+                   (m.max_players - (
+                       SELECT COUNT(*) FROM match_participants mp2
+                       WHERE  mp2.match_id = m.id AND mp2.status = 'accepted'
+                   ))::int          AS SpotsLeft,
+                   ROUND(b.total_price / NULLIF(m.max_players, 0), 2) AS PricePerPlayer
+            FROM   match_participants mp
+            JOIN   matches       m  ON m.id  = mp.match_id
+            JOIN   bookings      b  ON b.id  = m.booking_id
+            JOIN   pitches       p  ON p.id  = b.pitch_id
+            JOIN   sport_types   st ON st.id = p.sport_type_id
+            JOIN   users         u  ON u.id  = mp.user_id
+            WHERE  b.user_id       = @OrganizerUserId
+              AND  mp.status       = 'pending'
+              AND  b.booking_date >= CURRENT_DATE
+            ORDER  BY mp.id DESC
+            """,
+            new { OrganizerUserId = organizerUserId });
     }
 }

@@ -3,6 +3,7 @@ using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.DAL.Interfaces.Invitation;
 using SmartSports.DAL.Interfaces.Match;
+using SmartSports.Domain.Entities.Projections;
 using SmartSports.Domain.Common;
 using SmartSports.Domain.Entities;
 using SmartSports.Domain.Exceptions;
@@ -11,21 +12,24 @@ namespace SmartSports.BLL.Services;
 
 public class InvitationService : IInvitationService
 {
-    private readonly IInvitationRepository _invitations;
-    private readonly IMatchRepository      _matches;
-    private readonly IUserRepository       _users;
-    private readonly INotificationService  _notifications;
+    private readonly IInvitationRepository        _invitations;
+    private readonly IMatchRepository             _matches;
+    private readonly IUserRepository              _users;
+    private readonly INotificationService         _notifications;
+    private readonly IMatchParticipantRepository  _participants;
 
     public InvitationService(
-        IInvitationRepository invitations,
-        IMatchRepository      matches,
-        IUserRepository       users,
-        INotificationService  notifications)
+        IInvitationRepository       invitations,
+        IMatchRepository            matches,
+        IUserRepository             users,
+        INotificationService        notifications,
+        IMatchParticipantRepository participants)
     {
-        _invitations   = invitations;
-        _matches       = matches;
-        _users         = users;
+        _invitations  = invitations;
+        _matches      = matches;
+        _users        = users;
         _notifications = notifications;
+        _participants  = participants;
     }
 
     public async Task<InvitationResponse> InviteByUsernameAsync(
@@ -98,5 +102,84 @@ public class InvitationService : IInvitationService
             InvitedUsername = invitee.Username,
             Status          = invitation.Status
         };
+    }
+
+    public async Task<IEnumerable<PendingInvitationDto>> GetPendingAsync(int userId)
+    {
+        var rows = await _invitations.GetPendingByUserIdAsync(userId);
+        return rows.Select(r => new PendingInvitationDto
+        {
+            Id                 = r.InvitationId,
+            MatchId            = r.MatchId,
+            PitchName          = r.PitchName,
+            SportName          = r.SportName,
+            BookingDate        = r.BookingDate,
+            StartTime          = r.StartTime,
+            EndTime            = r.EndTime,
+            InviterDisplayName = r.InviterDisplayName,
+            ExpiresAt          = r.ExpiresAt,
+            MaxPlayers         = r.MaxPlayers,
+            SpotsLeft          = r.SpotsLeft,
+            PricePerPlayer     = r.PricePerPlayer,
+        });
+    }
+
+    public async Task AcceptAsync(int invitationId, int userId)
+    {
+        // 1. Verify the invitation exists, belongs to this user, and is still pending.
+        //    Returns null when it's already actioned, expired, or doesn't belong to the caller.
+        var invitation = await _invitations.GetPendingByIdAsync(invitationId, userId)
+            ?? throw new ConflictException("Invitation not found, already actioned, or has expired.");
+
+        // 2. Load match to get max_players for the capacity guard below.
+        var match = await _matches.GetByIdAsync(invitation.MatchId)
+            ?? throw new KeyNotFoundException($"Match {invitation.MatchId} no longer exists.");
+
+        // 3. Add the player to the match as a pending participant (ConflictException from
+        //    the UNIQUE constraint means they're already in the match — treat that as a
+        //    no-op so the invitation can still be marked accepted).
+        bool alreadyParticipant = false;
+        try
+        {
+            await _participants.AddAsync(invitation.MatchId, userId);
+        }
+        catch (ConflictException)
+        {
+            alreadyParticipant = true;
+        }
+
+        if (!alreadyParticipant)
+        {
+            // 4. Atomically flip the participant to 'accepted' only when the match still has
+            //    capacity. TryAcceptAsync returns false when the match is full or the row is
+            //    no longer pending — both signal a capacity conflict.
+            var accepted = await _participants.TryAcceptAsync(invitation.MatchId, userId, match.MaxPlayers);
+            if (!accepted)
+            {
+                // Roll back the participant row we just inserted so the invitation can be
+                // retried or the player can be told the match is full.
+                await _participants.RemoveAsync(invitation.MatchId, userId);
+                throw new ConflictException("This match is already full.");
+            }
+        }
+
+        // 5. Mark invitation accepted — done AFTER the participant is confirmed so we never
+        //    have an 'accepted' invitation without the corresponding participant row.
+        await _invitations.UpdateStatusAsync(invitationId, userId, "accepted");
+
+        // 6. Clear the inbox notification for this invitation.
+        await _notifications.MarkReadByRelatedEntityAsync(userId, invitationId);
+    }
+
+    public async Task DeclineAsync(int invitationId, int userId)
+    {
+        // The guarded UPDATE returns 0 when the invitation is missing, already actioned,
+        // expired, or doesn't belong to the caller — all of which are 409s from the
+        // caller's perspective (the desired state is already the case or the resource is gone).
+        var rows = await _invitations.UpdateStatusAsync(invitationId, userId, "declined");
+        if (rows == 0)
+            throw new ConflictException("Invitation not found, already actioned, or has expired.");
+
+        await _notifications.MarkReadByRelatedEntityAsync(userId, invitationId);
     }
 }

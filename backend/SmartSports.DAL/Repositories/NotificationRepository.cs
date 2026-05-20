@@ -27,4 +27,18 @@ public class NotificationRepository : INotificationRepository
             """,
             notification);
     }
+
+    public async Task MarkReadByRelatedEntityAsync(int userId, int relatedEntityId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        await connection.ExecuteAsync(
+            """
+            UPDATE notifications
+            SET    is_read = TRUE
+            WHERE  user_id           = @UserId
+              AND  related_entity_id = @RelatedEntityId
+              AND  is_read           = FALSE
+            """,
+            new { UserId = userId, RelatedEntityId = relatedEntityId });
+    }
 }

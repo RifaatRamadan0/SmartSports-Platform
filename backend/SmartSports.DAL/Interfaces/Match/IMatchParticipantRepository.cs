@@ -1,4 +1,5 @@
 using SmartSports.Domain.Entities;
+using SmartSports.Domain.Entities.Projections;
 
 namespace SmartSports.DAL.Interfaces.Match;
 
@@ -9,6 +10,13 @@ public interface IMatchParticipantRepository
     Task<int>               GetAcceptedCountAsync(int matchId);
     Task<bool>              UpdateStatusAsync(int matchId, int userId, string status);
     Task<bool>              RemoveAsync(int matchId, int userId);
+
+    /// <summary>
+    /// Returns all pending join requests for every match organised by the given user
+    /// (i.e. where the booking owner = organizerUserId), enriched with match/pitch/sport
+    /// details and capacity numbers for display in the organiser inbox.
+    /// </summary>
+    Task<IEnumerable<PendingJoinRequestRow>> GetPendingByOrganizerAsync(int organizerUserId);
 
     /// <summary>
     /// Atomically flips a pending participant to 'accepted' only if the match

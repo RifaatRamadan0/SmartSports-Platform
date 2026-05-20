@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Match;
+using System.Collections.Generic;
 using SmartSports.BLL.Interfaces;
 
 namespace SmartSports.API.Controllers;
@@ -95,6 +96,16 @@ public class MatchesController : ControllerBase
     {
         await _matchService.LeaveAsync(_currentUser.GetUserId()!.Value, id);
         return NoContent();
+    }
+
+    // SPDBTCP-83 — Rifaat: organiser inbox — pending join requests
+    [HttpGet("join-requests/pending")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(typeof(IEnumerable<PendingJoinRequestDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetPendingJoinRequests()
+    {
+        var result = await _matchService.GetPendingJoinRequestsAsync(_currentUser.GetUserId()!.Value);
+        return Ok(result);
     }
 
     [HttpPatch("{id:int}/participants/{userId:int}/respond")]

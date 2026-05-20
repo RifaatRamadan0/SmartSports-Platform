@@ -1,5 +1,6 @@
 using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Match;
+using System.Collections.Generic;
 
 namespace SmartSports.BLL.Interfaces;
 
@@ -49,6 +50,12 @@ public interface IMatchService
     /// Throws KeyNotFoundException (404) if the caller is not a participant.
     /// </summary>
     Task LeaveAsync(int callerUserId, int matchId);
+
+    /// <summary>
+    /// Returns all pending join requests for every match organised by the given user,
+    /// enriched with match/pitch/sport/capacity details for display in the organiser inbox.
+    /// </summary>
+    Task<IEnumerable<PendingJoinRequestDto>> GetPendingJoinRequestsAsync(int organizerUserId);
 
     /// <summary>
     /// Accepts or rejects a pending join request. Only the match organizer may call this.
