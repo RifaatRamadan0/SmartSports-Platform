@@ -26,6 +26,21 @@ public class MatchesController : ControllerBase
         _currentUser  = currentUser;
     }
 
+    // SPDBTCP-83 — Existence check for direct deep-links into /matches/:id.
+    // [AllowAnonymous] because the page itself is reachable by unauthenticated
+    // visitors via shareable links (SPDBTCP-80) and we still need to render
+    // 404 vs. the page shell consistently for both roles.
+    [HttpGet("{id:int}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(MatchResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var result = await _matchService.GetByIdAsync(id);
+        if (result is null) return NotFound();
+        return Ok(result);
+    }
+
     [HttpGet("open")]
     [AllowAnonymous]
     [EnableRateLimiting("lookups")]

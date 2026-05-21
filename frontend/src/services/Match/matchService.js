@@ -1,5 +1,17 @@
 import api from '../api'
 
+// SPDBTCP-83 — Existence check for the match detail page. Returns the match
+// or null on 404 so callers can render a not-found state without try/catch.
+export async function getMatchById(matchId) {
+  try {
+    const { data } = await api.get(`/api/matches/${matchId}`)
+    return data
+  } catch (err) {
+    if (err.response?.status === 404) return null
+    throw err
+  }
+}
+
 // SPDBTCP-246 — flips a match between open (joinable + in public list) and private (invite-only).
 // Backend enforces booking-owner-only authorization; 403 surfaces here unchanged.
 export async function updateMatchVisibility(matchId, isOpenToJoin) {
