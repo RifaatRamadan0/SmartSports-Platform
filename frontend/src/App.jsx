@@ -32,6 +32,7 @@ const SettingsPage            = lazy(() => import('./pages/Settings/SettingsPage
 const BookingDetailPage       = lazy(() => import('./pages/Booking/BookingDetailPage'))
 const MatchDetailPage         = lazy(() => import('./pages/Match/MatchDetailPage'))
 const FindGamePage            = lazy(() => import('./pages/Matches/FindGamePage'))
+const JoinPage                = lazy(() => import('./pages/Matches/JoinPage'))
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -57,6 +58,11 @@ function AnimatedRoutes() {
 
           {/* Public match discovery — no auth required */}
           <Route path="/matches/open" element={<FindGamePage />} />
+
+          {/* Public invite-link preview — guests can read the match before deciding to sign in.
+              Backend GET /api/join/{token} is [AllowAnonymous]; auth is enforced at click time
+              inside JoinPage (handleJoin redirects to /login with from set). */}
+          <Route path="/join/:token" element={<JoinPage />} />
 
           {/* Protected: any authenticated user */}
           <Route element={<PrivateRoute />}>

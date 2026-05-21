@@ -142,14 +142,17 @@ public class MatchService : IMatchService
         if (acceptedCount >= match.MaxPlayers)
             throw new ArgumentException("This match is full.");
 
-        // ConflictException from the UNIQUE constraint is surfaced as-is (409)
-        var participant = await _participantRepository.AddAsync(matchId, callerUserId);
+        // Public matches auto-accept — the IsOpenToJoin guard above means we only
+        // reach this point for matches the organizer has already marked joinable.
+        // The invite-link path (InvitationService.JoinViaTokenAsync) uses the same rule.
+        // ConflictException from the UNIQUE constraint is surfaced as-is (409).
+        var participant = await _participantRepository.AddAcceptedAsync(matchId, callerUserId);
 
         await _notificationService.CreateAsync(
             match.BookingOwnerId!.Value,
-            NotificationTypes.MatchJoinRequested,
+            NotificationTypes.MatchJoined,
             matchId,
-            "A player has requested to join your match.");
+            "A player joined your match.");
 
         return MapParticipant(participant);
     }

@@ -28,7 +28,8 @@ public class MatchRepository : IMatchRepository
                    m.max_players,
                    b.user_id       AS booking_owner_id,
                    b.status::TEXT  AS booking_status,
-                   b.booking_date  AS booking_date
+                   b.booking_date  AS booking_date,
+                   b.start_time    AS start_time
             FROM   matches  m
             JOIN   bookings b ON b.id = m.booking_id
             WHERE  m.id = @MatchId

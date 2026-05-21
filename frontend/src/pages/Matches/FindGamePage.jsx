@@ -687,13 +687,21 @@ export default function FindGamePage() {
     setActionLoading({ matchId, verb: 'Joining' })
     try {
       await joinMatch(matchId)
-      setJoinedMatches(prev => new Map(prev).set(matchId, 'pending'))
-      setToast({ type: 'success', message: 'Request sent to the organizer.' })
+      setJoinedMatches(prev => new Map(prev).set(matchId, 'accepted'))
+      // Public-join auto-accepts, so bump the local acceptedCount immediately —
+      // otherwise the "X / Y players" + "spots open" labels stay stale until refetch.
+      setResult(prev => prev && {
+        ...prev,
+        items: prev.items.map(m =>
+          m.matchId === matchId ? { ...m, acceptedCount: (m.acceptedCount ?? 0) + 1 } : m
+        ),
+      })
+      setToast({ type: 'success', message: "You're in! Enjoy the match." })
     } catch (err) {
       const status = err.response?.status
       const msg = status === 409
-        ? "You've already requested to join this match."
-        : parseApiError(err, 'Could not send join request.')
+        ? "You're already in this match."
+        : parseApiError(err, 'Could not join match.')
       setToast({ type: 'error', message: msg })
     } finally {
       setActionLoading(null)
@@ -701,11 +709,22 @@ export default function FindGamePage() {
   }, [])
 
   const handleLeave = useCallback(async (matchId) => {
-    const verb = joinedMatches.get(matchId) === 'accepted' ? 'Leaving' : 'Withdrawing'
+    const wasAccepted = joinedMatches.get(matchId) === 'accepted'
+    const verb = wasAccepted ? 'Leaving' : 'Withdrawing'
     setActionLoading({ matchId, verb })
     try {
       await leaveMatch(matchId)
       setJoinedMatches(prev => { const next = new Map(prev); next.delete(matchId); return next })
+      // Only accepted participants counted toward acceptedCount; withdrawing a pending
+      // invite-link request leaves the displayed count unchanged.
+      if (wasAccepted) {
+        setResult(prev => prev && {
+          ...prev,
+          items: prev.items.map(m =>
+            m.matchId === matchId ? { ...m, acceptedCount: Math.max(0, (m.acceptedCount ?? 0) - 1) } : m
+          ),
+        })
+      }
       setToast({ type: 'success', message: 'You left the match.' })
     } catch (err) {
       setToast({ type: 'error', message: parseApiError(err, 'Could not leave the match.') })

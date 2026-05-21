@@ -36,6 +36,25 @@ public class MatchParticipantRepository : IMatchParticipantRepository
         }
     }
 
+    public async Task<MatchParticipant> AddAcceptedAsync(int matchId, int userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        try
+        {
+            return await connection.QuerySingleAsync<MatchParticipant>(
+                """
+                INSERT INTO match_participants (match_id, user_id, status)
+                VALUES (@MatchId, @UserId, 'accepted'::participant_status)
+                RETURNING *
+                """,
+                new { MatchId = matchId, UserId = userId });
+        }
+        catch (PostgresException ex) when (ex.SqlState == "23505")
+        {
+            throw new ConflictException("Already in this match.");
+        }
+    }
+
     public async Task<MatchParticipant?> GetAsync(int matchId, int userId)
     {
         using var connection = _connectionFactory.CreateConnection();
@@ -117,10 +136,7 @@ public class MatchParticipantRepository : IMatchParticipantRepository
                    b.start_time     AS StartTime,
                    b.end_time       AS EndTime,
                    m.max_players    AS MaxPlayers,
-                   (m.max_players - (
-                       SELECT COUNT(*) FROM match_participants mp2
-                       WHERE  mp2.match_id = m.id AND mp2.status = 'accepted'
-                   ))::int          AS SpotsLeft,
+                   (m.max_players - ac.cnt)::int AS SpotsLeft,
                    ROUND(b.total_price / NULLIF(m.max_players, 0), 2) AS PricePerPlayer
             FROM   match_participants mp
             JOIN   matches       m  ON m.id  = mp.match_id
@@ -128,6 +144,10 @@ public class MatchParticipantRepository : IMatchParticipantRepository
             JOIN   pitches       p  ON p.id  = b.pitch_id
             JOIN   sport_types   st ON st.id = p.sport_type_id
             JOIN   users         u  ON u.id  = mp.user_id
+            JOIN LATERAL (
+                SELECT COUNT(*)::int AS cnt FROM match_participants
+                WHERE  match_id = m.id AND status = 'accepted'
+            ) ac ON TRUE
             WHERE  b.user_id       = @OrganizerUserId
               AND  mp.status       = 'pending'
               AND  b.booking_date >= CURRENT_DATE
