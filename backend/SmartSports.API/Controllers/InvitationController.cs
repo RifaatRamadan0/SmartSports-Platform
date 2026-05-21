@@ -24,7 +24,7 @@ public class InvitationController : ControllerBase
         _currentUser       = currentUser;
     }
 
-    // SPDBTCP-76 — Rifaat
+    // SPDBTCP-76 — POST /api/matches/{matchId}/invitations
     [HttpPost]
     [Authorize(Policy = "PlayerOnly")]
     [EnableRateLimiting("invitations")]
@@ -37,10 +37,6 @@ public class InvitationController : ControllerBase
     public async Task<IActionResult> InviteByUsername(
         int matchId, [FromBody] InviteByUsernameRequest request)
     {
-        // [Authorize(Policy = "PlayerOnly")] guarantees an authenticated principal
-        // reaches this point, so GetUserId() is always non-null here.
-        // Username comes from the JWT claim — saves the service a DB round-trip
-        // just to compose the notification message string.
         var response = await _invitationService.InviteByUsernameAsync(
             _currentUser.GetUserId()!.Value,
             _currentUser.GetUsername() ?? string.Empty,

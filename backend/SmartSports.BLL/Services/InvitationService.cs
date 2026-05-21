@@ -11,92 +11,181 @@ namespace SmartSports.BLL.Services;
 
 public class InvitationService : IInvitationService
 {
-    private readonly IInvitationRepository _invitations;
-    private readonly IMatchRepository      _matches;
-    private readonly IUserRepository       _users;
-    private readonly INotificationService  _notifications;
+    private readonly IInvitationRepository       _invitationRepository;
+    private readonly IMatchRepository            _matchRepository;
+    private readonly IMatchParticipantRepository _participantRepository;
+    private readonly INotificationService        _notificationService;
+    private readonly IUserRepository             _userRepository;
 
     public InvitationService(
-        IInvitationRepository invitations,
-        IMatchRepository      matches,
-        IUserRepository       users,
-        INotificationService  notifications)
+        IInvitationRepository       invitationRepository,
+        IMatchRepository            matchRepository,
+        IMatchParticipantRepository participantRepository,
+        INotificationService        notificationService,
+        IUserRepository             userRepository)
     {
-        _invitations   = invitations;
-        _matches       = matches;
-        _users         = users;
-        _notifications = notifications;
+        _invitationRepository  = invitationRepository;
+        _matchRepository       = matchRepository;
+        _participantRepository = participantRepository;
+        _notificationService   = notificationService;
+        _userRepository        = userRepository;
+    }
+
+    public async Task<InviteLinkResponse> GenerateInviteLinkAsync(
+        int matchId, int callerUserId, string frontendBaseUrl)
+    {
+        var match = await _matchRepository.GetByIdAsync(matchId)
+            ?? throw new KeyNotFoundException($"Match {matchId} not found.");
+
+        if (match.BookingOwnerId != callerUserId)
+            throw new ForbiddenException("Only the match organizer can generate an invite link.");
+
+        var existing = await _invitationRepository.GetActiveByMatchIdAsync(matchId);
+        if (existing is not null)
+            return new InviteLinkResponse(existing.Token, $"{frontendBaseUrl}/join/{existing.Token}");
+
+        // Expire the link at match start — start_time is already in the GetByIdAsync join,
+        // so no second DB call is needed.
+        var expiresAt = match.BookingDate.ToDateTime(match.StartTime, DateTimeKind.Utc);
+
+        var created = await _invitationRepository.CreateAsync(new Invitation
+        {
+            MatchId     = matchId,
+            InvitedById = callerUserId,
+            Token       = Guid.NewGuid().ToString("N"),
+            ExpiresAt   = expiresAt,
+            Status      = "pending"
+            // InvitedUserId is intentionally null — this is a link invite, not a user-targeted one
+        });
+
+        return new InviteLinkResponse(created.Token, $"{frontendBaseUrl}/join/{created.Token}");
+    }
+
+    public async Task<JoinPreviewResponse> GetJoinPreviewAsync(string token)
+    {
+        var preview = await _invitationRepository.GetPreviewByTokenAsync(token)
+            ?? throw new KeyNotFoundException("Invite link not found.");
+
+        var acceptedPlayers = await _invitationRepository.GetAcceptedPlayersAsync(preview.MatchId);
+
+        return new JoinPreviewResponse
+        {
+            MatchId         = preview.MatchId,
+            SportName       = preview.SportName,
+            MatchDate       = preview.MatchDate,
+            StartTime       = preview.StartTime,
+            EndTime         = preview.EndTime,
+            PitchName       = preview.PitchName,
+            CityName        = preview.CityName,
+            OrganizerName   = preview.OrganizerName,
+            MaxPlayers      = preview.MaxPlayers,
+            CurrentPlayers  = preview.CurrentPlayers,
+            SpotsLeft       = Math.Max(0, preview.MaxPlayers - preview.CurrentPlayers),
+            PricePerPlayer  = preview.PricePerPlayer,
+            IsExpired       = preview.IsExpired,
+            IsOpenToJoin    = preview.IsOpenToJoin,
+            AcceptedPlayers = acceptedPlayers.Select(p => new AcceptedPlayer(p.UserId, p.Username)),
+        };
+    }
+
+    public async Task JoinViaTokenAsync(string token, int callerUserId)
+    {
+        var invitation = await _invitationRepository.GetByTokenAsync(token)
+            ?? throw new KeyNotFoundException("Invite link not found.");
+
+        if (invitation.ExpiresAt.HasValue && invitation.ExpiresAt.Value < DateTime.UtcNow)
+            throw new ArgumentException("This invite link has expired.");
+
+        var match = await _matchRepository.GetByIdAsync(invitation.MatchId)
+            ?? throw new KeyNotFoundException($"Match {invitation.MatchId} not found.");
+
+        if (match.BookingOwnerId == callerUserId)
+            throw new ArgumentException("You are the organizer of this match.");
+
+        // IsParticipantAsync runs SELECT EXISTS — cheaper than fetching the full row
+        if (await _matchRepository.IsParticipantAsync(invitation.MatchId, callerUserId))
+            throw new ArgumentException("You are already in this match.");
+
+        var acceptedCount = await _participantRepository.GetAcceptedCountAsync(invitation.MatchId);
+        if (acceptedCount >= match.MaxPlayers)
+            throw new ArgumentException("This match is full.");
+
+        // Public matches (IsOpenToJoin = true) bypass organizer approval: the link
+        // is just a convenient discovery channel for something already publicly joinable.
+        // Private matches keep the request → approve flow so the organizer stays in control.
+        if (match.IsOpenToJoin)
+        {
+            await _participantRepository.AddAcceptedAsync(invitation.MatchId, callerUserId);
+
+            await _notificationService.CreateAsync(
+                match.BookingOwnerId!.Value,
+                NotificationTypes.MatchJoined,
+                invitation.MatchId,
+                "A player joined your match via an invite link.");
+        }
+        else
+        {
+            await _participantRepository.AddAsync(invitation.MatchId, callerUserId);
+
+            // relatedEntityId points to the match, not the invitation row — the organizer
+            // needs to navigate to the match to accept or reject the join request.
+            await _notificationService.CreateAsync(
+                match.BookingOwnerId!.Value,
+                NotificationTypes.MatchJoinRequested,
+                invitation.MatchId,
+                "A player has requested to join your match via an invite link.");
+        }
     }
 
     public async Task<InvitationResponse> InviteByUsernameAsync(
         int currentUserId, string currentUsername, int matchId, string username)
     {
-        // 1. Match must exist. GetByIdAsync joins bookings so BookingOwnerId,
-        //    BookingStatus, and BookingDate are populated in one round-trip —
-        //    see MatchRepository.GetByIdAsync.
-        var match = await _matches.GetByIdAsync(matchId)
+        var match = await _matchRepository.GetByIdAsync(matchId)
             ?? throw new KeyNotFoundException($"Match {matchId} was not found.");
 
-        // 2. Anyone in the match may invite — the booking owner, or any accepted
-        //    participant. Pending invitees do NOT count; they haven't actually
-        //    joined yet. IsAcceptedParticipantAsync runs only if the cheaper
-        //    owner check fails.
         var isOwner = match.BookingOwnerId == currentUserId;
-        if (!isOwner && !await _matches.IsAcceptedParticipantAsync(matchId, currentUserId))
+        if (!isOwner && !await _matchRepository.IsAcceptedParticipantAsync(matchId, currentUserId))
             throw new ForbiddenException("Only players in this match can invite others.");
 
-        // 3. Underlying booking must be active and in the future. A cancelled or
-        //    past booking still has a matches row but should not accept invitations.
         if (match.BookingStatus != "confirmed")
             throw new ConflictException("This match's booking is not active.");
         if (match.BookingDate < DateOnly.FromDateTime(DateTime.Today))
             throw new ConflictException("This match has already taken place.");
 
-        // 4. Invitee must exist.
-        var invitee = await _users.GetByUsernameAsync(username)
+        var invitee = await _userRepository.GetByUsernameAsync(username)
             ?? throw new KeyNotFoundException($"User '{username}' was not found.");
 
-        // 5. Cannot invite yourself.
         if (invitee.Id == currentUserId)
             throw new ArgumentException("You cannot invite yourself to your own match.");
 
-        // 6. Cannot invite someone already in the match (counts accepted + pending
-        //    participants only; rejected users can be re-invited).
-        if (await _matches.IsParticipantAsync(matchId, invitee.Id))
+        if (await _matchRepository.IsParticipantAsync(matchId, invitee.Id))
             throw new ConflictException($"'{invitee.Username}' is already in this match.");
 
-        // 7. Cannot send a duplicate pending invite. Partial unique index
-        //    uq_invitations_pending (migration 022) backs this up against TOCTOU.
-        if (await _invitations.ExistsPendingAsync(matchId, invitee.Id))
+        if (await _invitationRepository.ExistsPendingAsync(matchId, invitee.Id))
             throw new ConflictException($"'{invitee.Username}' already has a pending invitation to this match.");
 
-        // 8. Persist the invitation. Token is required by the schema (it's the
-        //    lookup key for shareable links in SPDBTCP-80); for username invites
-        //    it's generated but never read.
-        var invitation = new Invitation
+        var created = await _invitationRepository.CreateAsync(new Invitation
         {
             MatchId       = matchId,
             InvitedById   = currentUserId,
             InvitedUserId = invitee.Id,
             Token         = Guid.NewGuid().ToString("N"),
             Status        = "pending"
-        };
-        var invitationId = await _invitations.CreateAsync(invitation);
+        });
 
-        // 9. Notify the invitee. Inviter name comes from the JWT claim — no DB lookup.
         var inviterName = string.IsNullOrWhiteSpace(currentUsername) ? "Someone" : currentUsername;
-        await _notifications.CreateAsync(
-            userId:          invitee.Id,
-            type:            NotificationTypes.MatchInvitation,
-            relatedEntityId: invitationId,
-            message:         $"{inviterName} invited you to a match.");
+        await _notificationService.CreateAsync(
+            invitee.Id,
+            NotificationTypes.MatchInvitation,
+            created.Id,
+            $"{inviterName} invited you to a match.");
 
         return new InvitationResponse
         {
-            Id              = invitationId,
+            Id              = created.Id,
             MatchId         = matchId,
             InvitedUsername = invitee.Username,
-            Status          = invitation.Status
+            Status          = created.Status
         };
     }
 }

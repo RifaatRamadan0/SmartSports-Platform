@@ -5,6 +5,27 @@ namespace SmartSports.BLL.Interfaces;
 public interface IInvitationService
 {
     /// <summary>
+    /// Generates (or returns an existing) invite link for the match.
+    /// Only the match organizer may call this.
+    /// Throws KeyNotFoundException (404) if match not found,
+    /// ForbiddenException (403) if caller is not the organizer.
+    /// </summary>
+    Task<InviteLinkResponse> GenerateInviteLinkAsync(int matchId, int callerUserId, string frontendBaseUrl);
+
+    /// <summary>
+    /// Returns the rich match preview for the join page.
+    /// Throws KeyNotFoundException (404) if the token does not exist.
+    /// </summary>
+    Task<JoinPreviewResponse> GetJoinPreviewAsync(string token);
+
+    /// <summary>
+    /// Joins the match via the invite token. Creates a pending participant record.
+    /// Throws KeyNotFoundException (404) if token not found,
+    /// ArgumentException (400) if expired / already a participant / organizer / match full.
+    /// </summary>
+    Task JoinViaTokenAsync(string token, int callerUserId);
+
+    /// <summary>
     /// Sends an invitation to the named user for the given match.
     /// The caller must already be in the match — either the booking owner
     /// or an accepted participant. Persists a pending invitation and a

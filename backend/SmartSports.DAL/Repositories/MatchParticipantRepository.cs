@@ -35,6 +35,25 @@ public class MatchParticipantRepository : IMatchParticipantRepository
         }
     }
 
+    public async Task<MatchParticipant> AddAcceptedAsync(int matchId, int userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        try
+        {
+            return await connection.QuerySingleAsync<MatchParticipant>(
+                """
+                INSERT INTO match_participants (match_id, user_id, status)
+                VALUES (@MatchId, @UserId, 'accepted'::participant_status)
+                RETURNING *
+                """,
+                new { MatchId = matchId, UserId = userId });
+        }
+        catch (PostgresException ex) when (ex.SqlState == "23505")
+        {
+            throw new ConflictException("Already in this match.");
+        }
+    }
+
     public async Task<MatchParticipant?> GetAsync(int matchId, int userId)
     {
         using var connection = _connectionFactory.CreateConnection();

@@ -15,4 +15,5 @@ public class Match
     // cancelled bookings or matches whose date is already in the past.
     public string?  BookingStatus  { get; set; }
     public DateOnly BookingDate    { get; set; }
+    public TimeOnly StartTime      { get; set; }
 }
