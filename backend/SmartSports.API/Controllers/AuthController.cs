@@ -92,6 +92,7 @@ public class AuthController : ControllerBase
 
     // POST api/auth/logout
     [HttpPost("logout")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Logout()
     {

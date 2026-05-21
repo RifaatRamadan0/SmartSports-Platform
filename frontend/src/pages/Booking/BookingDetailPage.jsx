@@ -332,7 +332,7 @@ export default function BookingDetailPage() {
         >
           <span>{toast.type === 'success' ? '✓' : '✕'}</span>
           <span>{toast.message}</span>
-          <button onClick={() => setToast(null)} className="ml-2 opacity-50 hover:opacity-100">×</button>
+          <button onClick={() => setToast(null)} aria-label="Close" className="ml-2 opacity-50 hover:opacity-100">×</button>
         </div>
       )}
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AuthContext } from './AuthContext'
-import api, { setAccessToken, refreshSession } from '../services/api'
+import api, { setAccessToken } from '../services/api'
+import { refreshSession } from '../services/authInterceptor'
 
 function parseUserId(accessToken) {
   try {

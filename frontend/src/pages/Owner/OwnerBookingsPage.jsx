@@ -2,16 +2,22 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { listContainerVariants, listItemVariants } from '../../lib/motion'
-import { getOwnerBookings } from '../../services/Booking/bookingService'
+import { getOwnerBookings, ownerCancelBooking } from '../../services/Booking/bookingService'
 import StatusBadge from '../../components/ui/StatusBadge'
 import Toast from '../../components/ui/Toast'
 import { parseApiError } from '../../utils/errorUtils'
 
-import { BOOKINGS_PAGE_SIZE } from '../../constants'
+import { BOOKINGS_PAGE_SIZE, CANCEL_BUFFER_MS } from '../../constants'
 
 const PAGE_SIZE = BOOKINGS_PAGE_SIZE
 
 const fmtTime = t => t.slice(0, 5)
+
+function isCancellable(booking) {
+  if (booking.status !== 'confirmed') return false
+  const start = new Date(`${booking.bookingDate}T${booking.startTime}`)
+  return start.getTime() > Date.now() + CANCEL_BUFFER_MS
+}
 
 // Skeleton
 
@@ -41,8 +47,9 @@ export default function OwnerBookingsPage() {
   const [filters,    setFilters]    = useState({ status: '', from: '', to: '' })
   const [isLoading,  setIsLoading]  = useState(true)
   const [error,      setError]      = useState(null)
-  // TODO: wire up when cancel booking is implemented (SPDBTCP-168)
-  const [toast,      setToast]      = useState(null)
+  const [toast,        setToast]        = useState(null)
+  const [cancelTarget, setCancelTarget] = useState(null)
+  const [isCancelling, setIsCancelling] = useState(false)
 
   // Fetch bookings 
 
@@ -86,6 +93,23 @@ export default function OwnerBookingsPage() {
     setFilters({ status: '', from: '', to: '' })
     setPage(1)
   }, [])
+
+  // Cancel handlers
+
+  const handleConfirmCancel = useCallback(async (reason) => {
+    if (!cancelTarget) return
+    setIsCancelling(true)
+    try {
+      await ownerCancelBooking(cancelTarget.id, reason?.trim() || null)
+      setCancelTarget(null)
+      setToast({ type: 'success', message: 'Booking cancelled.' })
+      await fetchBookings()
+    } catch (err) {
+      setToast({ type: 'error', message: parseApiError(err, 'Could not cancel booking.') })
+    } finally {
+      setIsCancelling(false)
+    }
+  }, [cancelTarget, fetchBookings])
 
   // Derived
 
@@ -239,8 +263,21 @@ export default function OwnerBookingsPage() {
                   ${Number(booking.totalPrice).toFixed(2)}
                 </p>
 
-                {/* Right — status */}
-                <StatusBadge status={booking.status} />
+                {/* Right — status + cancel */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <StatusBadge status={booking.status} />
+                  {isCancellable(booking) && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCancelTarget(booking) }}
+                      className="text-xs font-semibold text-neutral-500
+                                 hover:text-red-400 px-2 py-1 rounded-md
+                                 border border-transparent hover:border-red-800
+                                 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </motion.div>
             ))}
           </motion.div>
@@ -283,6 +320,16 @@ export default function OwnerBookingsPage() {
         </>
       )}
 
+      {/* Cancel dialog */}
+      {cancelTarget && (
+        <CancelDialog
+          booking={cancelTarget}
+          isSubmitting={isCancelling}
+          onConfirm={handleConfirmCancel}
+          onClose={() => !isCancelling && setCancelTarget(null)}
+        />
+      )}
+
       {/* Toast */}
       {toast && (
         <Toast
@@ -291,6 +338,79 @@ export default function OwnerBookingsPage() {
           onClose={() => setToast(null)}
         />
       )}
+    </div>
+  )
+}
+
+// Cancel dialog
+
+function CancelDialog({ booking, isSubmitting, onConfirm, onClose }) {
+  const [reason, setReason] = useState('')
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4
+                 bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-2xl border border-[#1f1f1f]
+                   bg-[#0d0d0d] p-6 shadow-2xl"
+      >
+        <p className="text-[10px] font-bold tracking-widest uppercase text-red-500">
+          Cancel Booking
+        </p>
+        <h2 className="text-lg font-bold text-white mt-1">
+          {booking.pitchName}
+        </h2>
+        <p className="text-xs text-neutral-500 mt-1">
+          {booking.bookingDate} · {fmtTime(booking.startTime)} → {fmtTime(booking.endTime)}
+        </p>
+
+        <p className="mt-4 text-sm text-neutral-400 leading-relaxed">
+          Cancel this booking on behalf of the player? They will be notified. This can't be undone.
+        </p>
+
+        <label className="block mt-5">
+          <span className="text-[10px] font-bold tracking-widest uppercase text-neutral-500">
+            Reason (optional)
+          </span>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={3}
+            maxLength={500}
+            placeholder="e.g. pitch maintenance, scheduling conflict…"
+            disabled={isSubmitting}
+            className="mt-2 w-full rounded-xl bg-[#080808] border border-[#1f1f1f]
+                       px-3 py-2 text-sm text-white placeholder:text-neutral-700
+                       focus:outline-none focus:ring-1 focus:ring-red-500
+                       disabled:opacity-60"
+          />
+        </label>
+
+        <div className="mt-5 flex items-center justify-end gap-2">
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="rounded-lg px-4 py-2 text-xs font-semibold border
+                       border-[#1f1f1f] text-neutral-400 hover:text-white hover:border-white/30
+                       transition-colors disabled:opacity-50"
+          >
+            Keep booking
+          </button>
+          <button
+            onClick={() => onConfirm(reason)}
+            disabled={isSubmitting}
+            className="rounded-lg px-4 py-2 text-xs font-bold
+                       bg-red-500 text-white hover:bg-red-400 active:scale-95
+                       transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? 'Cancelling…' : 'Cancel booking'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

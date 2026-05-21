@@ -48,3 +48,10 @@ export async function cancelBooking(id, cancellationReason) {
     cancellationReason: cancellationReason ?? null,
   })
 }
+
+//owner — PATCH /api/bookings/{id}/owner-cancel
+export async function ownerCancelBooking(id, cancellationReason) {
+  await api.patch(`/api/bookings/${id}/owner-cancel`, {
+    cancellationReason: cancellationReason ?? null,
+  })
+}

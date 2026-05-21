@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.Invitations;
 using SmartSports.BLL.Interfaces;
 
@@ -12,19 +11,16 @@ namespace SmartSports.API.Controllers;
 [Route("api")]
 [Authorize]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-public class InvitationsController : ControllerBase
+public class InvitationsController : BaseApiController
 {
-    private readonly IInvitationService  _invitationService;
-    private readonly ICurrentUserService _currentUser;
-    private readonly string              _frontendBaseUrl;
+    private readonly IInvitationService _invitationService;
+    private readonly string             _frontendBaseUrl;
 
     public InvitationsController(
-        IInvitationService  invitationService,
-        ICurrentUserService currentUser,
-        IConfiguration      configuration)
+        IInvitationService invitationService,
+        IConfiguration     configuration)
     {
         _invitationService = invitationService;
-        _currentUser       = currentUser;
         _frontendBaseUrl   = configuration["Frontend:BaseUrl"]
             ?? throw new InvalidOperationException("Frontend:BaseUrl is not configured.");
     }
@@ -41,7 +37,7 @@ public class InvitationsController : ControllerBase
     public async Task<IActionResult> GenerateInviteLink(int id)
     {
         var result = await _invitationService.GenerateInviteLinkAsync(
-            id, _currentUser.GetUserId()!.Value, _frontendBaseUrl);
+            id, GetUserId()!.Value, _frontendBaseUrl);
         return Ok(result);
     }
 
@@ -69,7 +65,7 @@ public class InvitationsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> JoinViaToken(string token)
     {
-        await _invitationService.JoinViaTokenAsync(token, _currentUser.GetUserId()!.Value);
+        await _invitationService.JoinViaTokenAsync(token, GetUserId()!.Value);
         return NoContent();
     }
 }

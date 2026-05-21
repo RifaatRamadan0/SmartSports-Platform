@@ -89,8 +89,8 @@ public class PitchRepository : IPitchRepository
             new { PitchId = pitchId });
     }
 
-    public async Task<(PitchDetailRow? Detail, IEnumerable<string> Images, IEnumerable<ScheduleRow> Schedule)>
-        GetDetailWithDataAsync(int pitchId)
+    public async Task<(PitchDetailRow? Detail, IEnumerable<string> Images, IEnumerable<ScheduleRow> Schedule, IEnumerable<ReviewRow> Reviews)>
+        GetDetailWithDataAsync(int pitchId, int reviewCount = 5)
     {
         using var connection = _connectionFactory.CreateConnection();
         using var multi = await connection.QueryMultipleAsync(
@@ -125,15 +125,27 @@ public class PitchRepository : IPitchRepository
                    is_active
             FROM   pitch_weekly_schedules
             WHERE  pitch_id = @PitchId
-            ORDER  BY day_of_week
+            ORDER  BY day_of_week;
+
+            SELECT r.id,
+                   u.username  AS reviewer_name,
+                   r.rating,
+                   r.comment,
+                   r.created_at
+            FROM   reviews r
+            JOIN   users   u ON u.id = r.user_id
+            WHERE  r.pitch_id = @PitchId
+            ORDER  BY r.created_at DESC
+            LIMIT  @ReviewCount
             """,
-            new { PitchId = pitchId, Status = (int)PitchStatus.Approved });
+            new { PitchId = pitchId, Status = (int)PitchStatus.Approved, ReviewCount = reviewCount });
 
         var detail   = await multi.ReadSingleOrDefaultAsync<PitchDetailRow>();
         var images   = (await multi.ReadAsync<string>()).ToList();
         var schedule = (await multi.ReadAsync<ScheduleRow>()).ToList();
+        var reviews  = (await multi.ReadAsync<ReviewRow>()).ToList();
 
-        return (detail, images, schedule);
+        return (detail, images, schedule, reviews);
     }
 
     public async Task<(IEnumerable<PitchListRow> Items, long TotalCount)> ListAsync(PitchFilterParams filters)
@@ -225,12 +237,18 @@ public class PitchRepository : IPitchRepository
         return (items, totalCount);
     }
 
-    public async Task<IEnumerable<PitchListRow>> ListByOwnerAsync(int ownerId)
+    public async Task<(IEnumerable<PitchListRow> Items, long TotalCount)> ListByOwnerAsync(int ownerId, int page, int pageSize)
     {
         using var connection = _connectionFactory.CreateConnection();
 
-        var rows = await connection.QueryAsync<PitchListRow>(
-            """
+        const string countSql = """
+            SELECT COUNT(*)
+            FROM   pitches p
+            WHERE  p.owner_id   = @OwnerId
+              AND  p.deleted_at IS NULL
+            """;
+
+        const string dataSql = """
             SELECT  p.id,
                     p.name,
                     p.address,
@@ -257,10 +275,15 @@ public class PitchRepository : IPitchRepository
             WHERE   p.owner_id   = @OwnerId
               AND   p.deleted_at IS NULL
             ORDER BY p.created_at DESC
-            """,
-            new { OwnerId = ownerId });
+            LIMIT   @PageSize
+            OFFSET  @Offset
+            """;
 
-        return rows;
+        var parameters = new { OwnerId = ownerId, PageSize = pageSize, Offset = (page - 1) * pageSize };
+        var totalCount = await connection.ExecuteScalarAsync<long>(countSql, parameters);
+        var items      = await connection.QueryAsync<PitchListRow>(dataSql, parameters);
+
+        return (items, totalCount);
     }
 
     public async Task<int> InsertAsync(PitchEntity pitch)

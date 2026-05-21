@@ -5,7 +5,7 @@ import { ROLES } from '../../constants/roles'
 import { getRoleHomePath } from '../../utils/roleUtils'
 import { requestPitchOwnerRole, addPlayerRoleInstantly, getMyRoleRequests } from '../../services/Settings/settingsService'
 import { parseApiError } from '../../utils/errorUtils'
-import { refreshSession } from '../../services/api'
+import { refreshSession } from '../../services/authInterceptor'
 
 // ── Status badge for role requests ───────────────────────────────────────────
 
@@ -113,7 +113,19 @@ export default function SettingsPage() {
     }
   }, [])
 
-  useEffect(() => { fetchRequests() }, [fetchRequests])
+  useEffect(() => {
+    fetchRequests()
+
+    // Poll while there's a pending request so the UI updates when an admin acts.
+    // TODO: replace with a SignalR push notification once the notification hub
+    //       broadcasts role-request outcomes (remove this interval at that point).
+    const hasPending = () => requests.some(r => r.status === 0)
+    const interval = setInterval(() => {
+      if (hasPending()) fetchRequests()
+    }, 30_000)
+
+    return () => clearInterval(interval)
+  }, [fetchRequests]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasPendingOwnerRequest = requests.some(
     r => r.requestedRole === 'PitchOwner' && r.status === 0
@@ -169,7 +181,7 @@ export default function SettingsPage() {
         >
           <span>{toast.type === 'success' ? '✓' : '✕'}</span>
           <span>{toast.message}</span>
-          <button onClick={() => setToast(null)} className="ml-2 opacity-50 hover:opacity-100">×</button>
+          <button onClick={() => setToast(null)} aria-label="Close" className="ml-2 opacity-50 hover:opacity-100">×</button>
         </div>
       )}
 

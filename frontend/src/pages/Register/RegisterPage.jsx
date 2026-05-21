@@ -115,6 +115,13 @@ function RegisterPage() {
   } = useRegisterForm()
   const [showPw, setShowPw] = useState(false)
 
+  useEffect(() => {
+    if (!Object.values(fieldErrors).some(Boolean)) return
+    const el = document.querySelector('[aria-invalid="true"]')
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el?.focus({ preventScroll: true })
+  }, [fieldErrors])
+
   const strength = pwStrength(form.password)
   const otpVisible = otpState === 'sent' || otpState === 'verifying' || otpState === 'error'
   const shake = otpState === 'error'

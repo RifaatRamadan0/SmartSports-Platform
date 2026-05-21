@@ -246,8 +246,18 @@ function DetailNavbar() {
               Pitches
             </button>
           </li>
-          <li><button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Leagues</button></li>
-          <li><button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Coaching</button></li>
+          <li className="relative group">
+            <button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Leagues</button>
+            <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#1a1f1c] border border-[#2a3330] px-2 py-1 text-[11px] text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+              Coming soon
+            </span>
+          </li>
+          <li className="relative group">
+            <button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Coaching</button>
+            <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#1a1f1c] border border-[#2a3330] px-2 py-1 text-[11px] text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+              Coming soon
+            </span>
+          </li>
         </ul>
 
         <div className="flex items-center gap-2 relative">
@@ -351,41 +361,21 @@ function DetailNavbar() {
 // Footer
 
 function DetailFooter() {
-  const cols = [
-    { title: 'Platform', links: ['Browse Pitches', 'Leagues', 'Coaching', 'Venues'] },
-    { title: 'Company',  links: ['About', 'Careers', 'Press', 'Contact'] },
-    { title: 'Support',  links: ['Help Centre', 'Cancellations', 'Privacy Policy', 'Terms'] },
-  ]
   return (
     <footer className="border-t border-white/[0.06] bg-[var(--bg)]">
-      <div className="mx-auto max-w-[1280px] px-6 py-12 grid grid-cols-2 sm:grid-cols-4 gap-10">
+      <div className="mx-auto max-w-[1280px] px-6 py-10 flex flex-wrap items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[var(--green)]" />
             <span className="text-sm font-bold tracking-tight text-white">SmartSports</span>
           </div>
-          <p className="text-xs text-[var(--text2)] mt-3 leading-relaxed max-w-[220px]">
+          <p className="text-xs text-[var(--text2)] mt-2 max-w-[220px] leading-relaxed">
             The easiest way to book sports facilities in your city.
           </p>
         </div>
-        {cols.map(col => (
-          <div key={col.title}>
-            <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)]">{col.title}</p>
-            <ul className="mt-3 space-y-2">
-              {col.links.map(l => (
-                <li key={l}>
-                  <button type="button" className="text-[13px] text-[var(--text2)] opacity-60 cursor-not-allowed" disabled>{l}</button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-      <div className="border-t border-white/[0.05]">
-        <div className="mx-auto max-w-[1280px] px-6 py-5 flex flex-wrap items-center justify-between gap-3 text-[12px] text-[var(--text3)]">
-          <p>© {new Date().getFullYear()} SmartSports Ltd.</p>
-          <p>Built for the city.</p>
-        </div>
+        <p className="text-[12px] text-[var(--text3)]">
+          © {new Date().getFullYear()} SmartSports Ltd. · Built for the city.
+        </p>
       </div>
     </footer>
   )

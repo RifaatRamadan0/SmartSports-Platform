@@ -97,6 +97,18 @@ public class BookingRepository : IBookingRepository
             await transaction.RollbackAsync();
             throw new ConflictException("This time slot conflicts with an existing booking.");
         }
+        catch (PostgresException ex) when (ex.SqlState == "23514")
+        {
+            // CHECK constraint violation — e.g. end_time > start_time, duration bounds
+            await transaction.RollbackAsync();
+            throw new ArgumentException($"Booking value is out of the allowed range: {ex.MessageText}");
+        }
+        catch (PostgresException ex) when (ex.SqlState == "23502")
+        {
+            // NOT NULL violation — a required field was missing
+            await transaction.RollbackAsync();
+            throw new ArgumentException($"A required booking field is missing: {ex.ColumnName ?? ex.MessageText}");
+        }
         catch
         {
             await transaction.RollbackAsync();

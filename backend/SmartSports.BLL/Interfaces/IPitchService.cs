@@ -18,9 +18,9 @@ public interface IPitchService
 
     /// <summary>
     /// Lists every pitch owned by the caller — including inactive and not-yet-approved
-    /// listings — but excludes soft-deleted rows.
+    /// listings — but excludes soft-deleted rows. Results are paged.
     /// </summary>
-    Task<IEnumerable<PitchListResponse>> ListMineAsync(int ownerId);
+    Task<PagedResult<PitchListResponse>> ListMineAsync(int ownerId, int page, int pageSize);
 
     /// <summary>
     /// Returns full pitch detail for an owned pitch, regardless of approval/active

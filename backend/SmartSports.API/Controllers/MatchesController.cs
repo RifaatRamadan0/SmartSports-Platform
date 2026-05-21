@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Match;
 using System.Collections.Generic;
@@ -13,17 +12,13 @@ namespace SmartSports.API.Controllers;
 [Route("api/matches")]
 [Authorize]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-public class MatchesController : ControllerBase
+public class MatchesController : BaseApiController
 {
-    private readonly IMatchService       _matchService;
-    private readonly ICurrentUserService _currentUser;
+    private readonly IMatchService _matchService;
 
-    public MatchesController(
-        IMatchService       matchService,
-        ICurrentUserService currentUser)
+    public MatchesController(IMatchService matchService)
     {
         _matchService = matchService;
-        _currentUser  = currentUser;
     }
 
     // SPDBTCP-83 — Existence check for direct deep-links into /matches/:id.
@@ -75,7 +70,7 @@ public class MatchesController : ControllerBase
         // [Required] on a nullable bool catches missing values; .Value is safe here.
         // [Authorize] guarantees GetUserId() is non-null for authenticated players.
         var response = await _matchService.UpdateVisibilityAsync(
-            _currentUser.GetUserId()!.Value, id, request.IsOpenToJoin!.Value);
+            GetUserId()!.Value, id, request.IsOpenToJoin!.Value);
 
         return Ok(response);
     }
@@ -88,7 +83,7 @@ public class MatchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Join(int id)
     {
-        var result = await _matchService.JoinAsync(_currentUser.GetUserId()!.Value, id);
+        var result = await _matchService.JoinAsync(GetUserId()!.Value, id);
         return CreatedAtAction(nameof(GetMyStatus), new { id }, result);
     }
 
@@ -98,7 +93,7 @@ public class MatchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetMyStatus(int id)
     {
-        var result = await _matchService.GetMyStatusAsync(_currentUser.GetUserId()!.Value, id);
+        var result = await _matchService.GetMyStatusAsync(GetUserId()!.Value, id);
         if (result is null) return NotFound();
         return Ok(result);
     }
@@ -109,7 +104,7 @@ public class MatchesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Leave(int id)
     {
-        await _matchService.LeaveAsync(_currentUser.GetUserId()!.Value, id);
+        await _matchService.LeaveAsync(GetUserId()!.Value, id);
         return NoContent();
     }
 
@@ -119,7 +114,7 @@ public class MatchesController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<PendingJoinRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPendingJoinRequests()
     {
-        var result = await _matchService.GetPendingJoinRequestsAsync(_currentUser.GetUserId()!.Value);
+        var result = await _matchService.GetPendingJoinRequestsAsync(GetUserId()!.Value);
         return Ok(result);
     }
 
@@ -133,7 +128,7 @@ public class MatchesController : ControllerBase
         int id, int userId, [FromBody] RespondToParticipantRequest request)
     {
         var result = await _matchService.RespondToParticipantAsync(
-            _currentUser.GetUserId()!.Value, id, userId, request.Action);
+            GetUserId()!.Value, id, userId, request.Action);
         return Ok(result);
     }
 }

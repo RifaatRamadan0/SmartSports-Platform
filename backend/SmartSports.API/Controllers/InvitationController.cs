@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.Invitations;
 using SmartSports.BLL.Interfaces;
 
@@ -11,17 +10,13 @@ namespace SmartSports.API.Controllers;
 [Route("api")]
 [Authorize]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-public class InvitationController : ControllerBase
+public class InvitationController : BaseApiController
 {
-    private readonly IInvitationService  _invitationService;
-    private readonly ICurrentUserService _currentUser;
+    private readonly IInvitationService _invitationService;
 
-    public InvitationController(
-        IInvitationService  invitationService,
-        ICurrentUserService currentUser)
+    public InvitationController(IInvitationService invitationService)
     {
         _invitationService = invitationService;
-        _currentUser       = currentUser;
     }
 
     // SPDBTCP-76 — Rifaat
@@ -38,8 +33,8 @@ public class InvitationController : ControllerBase
         int matchId, [FromBody] InviteByUsernameRequest request)
     {
         var response = await _invitationService.InviteByUsernameAsync(
-            _currentUser.GetUserId()!.Value,
-            _currentUser.GetUsername() ?? string.Empty,
+            GetUserId()!.Value,
+            GetUsername() ?? string.Empty,
             matchId,
             request.Username);
 
@@ -52,7 +47,7 @@ public class InvitationController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<PendingInvitationDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyPendingInvitations()
     {
-        var result = await _invitationService.GetPendingAsync(_currentUser.GetUserId()!.Value);
+        var result = await _invitationService.GetPendingAsync(GetUserId()!.Value);
         return Ok(result);
     }
 
@@ -64,7 +59,7 @@ public class InvitationController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> AcceptInvitation(int id)
     {
-        await _invitationService.AcceptAsync(id, _currentUser.GetUserId()!.Value);
+        await _invitationService.AcceptAsync(id, GetUserId()!.Value);
         return NoContent();
     }
 
@@ -76,7 +71,7 @@ public class InvitationController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DeclineInvitation(int id)
     {
-        await _invitationService.DeclineAsync(id, _currentUser.GetUserId()!.Value);
+        await _invitationService.DeclineAsync(id, GetUserId()!.Value);
         return NoContent();
     }
 }

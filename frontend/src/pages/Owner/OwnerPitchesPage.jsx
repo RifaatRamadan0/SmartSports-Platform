@@ -63,11 +63,59 @@ function StatusPill({ isActive, status }) {
   )
 }
 
+// Delete dialog
+
+function DeletePitchDialog({ pitch, isDeleting, onConfirm, onClose }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d] p-6 shadow-2xl"
+      >
+        <p className="text-[10px] font-bold tracking-widest uppercase text-red-500">
+          Delete Pitch
+        </p>
+        <h2 className="text-lg font-bold text-white mt-1">{pitch.name}</h2>
+        <p className="text-xs text-neutral-500 mt-1">{pitch.address}</p>
+
+        <p className="mt-4 text-sm text-neutral-400 leading-relaxed">
+          This pitch will be permanently removed from public listings. This action cannot be undone.
+        </p>
+        <p className="mt-2 text-sm text-amber-400 leading-relaxed">
+          Any confirmed bookings will remain visible to the players who made them — they will not be automatically cancelled.
+        </p>
+
+        <div className="mt-5 flex items-center justify-end gap-2">
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="rounded-lg px-4 py-2 text-xs font-semibold border
+                       border-[#1f1f1f] text-neutral-400 hover:text-white hover:border-white/30
+                       transition-colors disabled:opacity-50"
+          >
+            Keep pitch
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="rounded-lg px-4 py-2 text-xs font-bold
+                       bg-red-500 text-white hover:bg-red-400 active:scale-95
+                       transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isDeleting ? 'Deleting…' : 'Delete pitch'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Card
 
-function PitchCard({ pitch, onNavigate, onDelete, isDeleting }) {
-  const [confirming, setConfirming] = useState(false)
-
+function PitchCard({ pitch, onNavigate, onDelete, isDeleting, onDeleteRequest }) {
   return (
     <motion.div
       variants={cardVariants}
@@ -122,38 +170,16 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting }) {
           >
             Edit Details
           </button>
-
-          {confirming ? (
-            <>
-              <button
-                onClick={() => { setConfirming(false); onDelete(pitch.id) }}
-                disabled={isDeleting}
-                className="rounded-lg px-3 py-1.5 text-xs font-semibold
-                           bg-red-500/15 border border-red-500/40 text-red-400
-                           hover:bg-red-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isDeleting ? 'Deleting…' : 'Confirm Delete'}
-              </button>
-              <button
-                onClick={() => setConfirming(false)}
-                disabled={isDeleting}
-                className="rounded-lg px-3 py-1.5 text-xs font-semibold
-                           bg-[#141414] border border-[#1f1f1f] text-neutral-400
-                           hover:text-white hover:border-white/15 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={() => setConfirming(true)}
-              className="rounded-lg px-3 py-1.5 text-xs font-semibold
-                         bg-[#141414] border border-red-900/40 text-red-500
-                         hover:bg-red-500/10 hover:border-red-500/40 transition-colors"
-            >
-              Delete
-            </button>
-          )}
+          <button
+            onClick={() => onDeleteRequest(pitch)}
+            disabled={isDeleting}
+            className="rounded-lg px-3 py-1.5 text-xs font-semibold
+                       bg-[#141414] border border-red-900/40 text-red-500
+                       hover:bg-red-500/10 hover:border-red-500/40
+                       transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Delete
+          </button>
         </div>
       </div>
     </motion.div>
@@ -165,12 +191,13 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting }) {
 export default function OwnerPitchesPage() {
   const navigate = useNavigate()
 
-  const [pitches,    setPitches]   = useState([])
-  const [isLoading,  setIsLoading] = useState(true)
-  const [error,      setError]     = useState(null)
-  const [filter,     setFilter]    = useState('all')
-  const [deletingId, setDeletingId] = useState(null)
-  const [toast,      setToast]     = useState(null)
+  const [pitches,      setPitches]     = useState([])
+  const [isLoading,    setIsLoading]   = useState(true)
+  const [error,        setError]       = useState(null)
+  const [filter,       setFilter]      = useState('all')
+  const [deletingId,   setDeletingId]  = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [toast,        setToast]       = useState(null)
 
   const closeToast = useCallback(() => setToast(null), [])
 
@@ -179,7 +206,7 @@ export default function OwnerPitchesPage() {
     setError(null)
     try {
       const data = await listMyPitches()
-      setPitches(data ?? [])
+      setPitches(data?.items ?? [])
     } catch (err) {
       setError(parseApiError(err, 'Failed to load your pitches. Please try again.'))
     } finally {
@@ -189,10 +216,13 @@ export default function OwnerPitchesPage() {
 
   useEffect(() => { fetchPitches() }, [fetchPitches])
 
-  const handleDelete = useCallback(async (id) => {
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return
+    const id = deleteTarget.id
     setDeletingId(id)
     try {
       await deletePitch(id)
+      setDeleteTarget(null)
       setPitches(prev => prev.filter(p => p.id !== id))
       setToast({ message: 'Pitch deleted successfully.', type: 'success' })
     } catch (err) {
@@ -200,7 +230,7 @@ export default function OwnerPitchesPage() {
     } finally {
       setDeletingId(null)
     }
-  }, [])
+  }, [deleteTarget])
 
   const counts = {
     all:      pitches.length,
@@ -363,9 +393,19 @@ export default function OwnerPitchesPage() {
               onNavigate={navigate}
               onDelete={handleDelete}
               isDeleting={deletingId === p.id}
+              onDeleteRequest={setDeleteTarget}
             />
           ))}
         </motion.div>
+      )}
+
+      {deleteTarget && (
+        <DeletePitchDialog
+          pitch={deleteTarget}
+          isDeleting={!!deletingId}
+          onConfirm={handleDelete}
+          onClose={() => !deletingId && setDeleteTarget(null)}
+        />
       )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
