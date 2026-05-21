@@ -59,12 +59,16 @@ function AnimatedRoutes() {
           {/* Public match discovery — no auth required */}
           <Route path="/matches/open" element={<FindGamePage />} />
 
+          {/* Public invite-link preview — guests can read the match before deciding to sign in.
+              Backend GET /api/join/{token} is [AllowAnonymous]; auth is enforced at click time
+              inside JoinPage (handleJoin redirects to /login with from set). */}
+          <Route path="/join/:token" element={<JoinPage />} />
+
           {/* Protected: any authenticated user */}
           <Route element={<PrivateRoute />}>
             <Route path="/dashboard" element={<HomePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/bookings/:id" element={<BookingDetailPage />} />
-            <Route path="/join/:token" element={<JoinPage />} />
           </Route>
 
           {/* Protected: PitchOwner only */}

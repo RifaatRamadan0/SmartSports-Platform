@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Calendar, Clock, MapPin, User, Users, Link, ArrowLeft } from 'lucide-react'
 import { cardVariants, listContainerVariants, listItemVariants, cardTap, buttonHover, buttonTap } from '@/lib/motion'
@@ -245,8 +245,10 @@ function DetailRow({ icon: Icon, label, value, valueClass }) {
 export default function JoinPage() {
   const { token } = useParams()
   const navigate  = useNavigate()
-  const { roles } = useAuth()
-  const isPlayer  = roles.includes(ROLES.PLAYER)
+  const location  = useLocation()
+  const { token: authToken, roles } = useAuth()
+  const isAuthenticated = !!authToken
+  const isPlayer        = roles.includes(ROLES.PLAYER)
 
   const [preview,   setPreview]   = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -278,6 +280,20 @@ export default function JoinPage() {
   useEffect(() => { fetchPreview() }, [fetchPreview])
 
   async function handleJoin() {
+    // Action-level auth: the preview is public, but joining requires a Player.
+    // Guests get bounced to /login with `from` set so useLoginForm returns them
+    // here after sign-in (preserves search + hash too).
+    if (!isAuthenticated) {
+      navigate('/login', {
+        state: { from: location.pathname + location.search + location.hash },
+      })
+      return
+    }
+    if (!isPlayer) {
+      showToast('Switch to a player account to join matches.', 'error')
+      return
+    }
+
     setIsJoining(true)
     try {
       await joinViaToken(token)
@@ -302,9 +318,13 @@ export default function JoinPage() {
   if (isLoading) return <Skeleton />
   if (loadError) return <InvalidLink message={loadError} />
 
-  const countdown = timeUntil(preview.matchDate, preview.startTime)
-  const isFull    = preview.spotsLeft === 0
-  const canJoin   = isPlayer && !preview.isExpired && !isFull && !joined
+  const countdown    = timeUntil(preview.matchDate, preview.startTime)
+  const isFull       = preview.spotsLeft === 0
+  // Match state is independent of auth — guests can still see + click the button;
+  // handleJoin redirects them to /login. Only block authenticated non-players.
+  const matchJoinable = !preview.isExpired && !isFull && !joined
+  const canJoin       = matchJoinable && (!isAuthenticated || isPlayer)
+  const joinLabel     = isAuthenticated ? 'Join this game' : 'Sign in to join'
 
   const headBg   = SPORT_HEAD_BG[preview.sportName] ?? '#111'
   const tagClass = SPORT_TAG_CLASS[preview.sportName] ?? 'bg-muted/20 text-muted-foreground border-border'
@@ -434,12 +454,14 @@ export default function JoinPage() {
                                  hover:opacity-[0.88] transition-opacity disabled:opacity-50"
                       style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                     >
-                      {isJoining ? 'Sending…' : 'Join this game'}
+                      {isJoining ? 'Sending…' : joinLabel}
                     </motion.button>
                   ) : preview.isExpired ? (
                     <span className="text-[13px] text-muted-foreground font-medium px-2">Link expired</span>
                   ) : isFull ? (
                     <span className="text-[13px] text-muted-foreground font-medium px-2">Match full</span>
+                  ) : isAuthenticated && !isPlayer ? (
+                    <span className="text-[13px] text-muted-foreground font-medium px-2">Player account required</span>
                   ) : (
                     <span className="text-[13px] text-muted-foreground font-medium px-2">Not available</span>
                   )}

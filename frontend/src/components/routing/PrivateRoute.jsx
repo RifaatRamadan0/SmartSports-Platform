@@ -9,7 +9,10 @@ function PrivateRoute() {
 
   if (isLoading) return <Spinner />
 
-  if (!token) return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  if (!token) {
+    const from = location.pathname + location.search + location.hash
+    return <Navigate to="/login" state={{ from }} replace />
+  }
 
   return <PageWrapper><Outlet /></PageWrapper>
 }
