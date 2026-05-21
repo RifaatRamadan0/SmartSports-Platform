@@ -34,6 +34,14 @@ export async function listOpenMatches({ sport, city, page = 1, pageSize = 10 } =
   return data
 }
 
+// Returns upcoming matches the caller is involved in — either organising or
+// participating in (accepted/pending). Each item carries myRole + myStatus so
+// the UI can render the right action chip without an N+1 status fetch.
+export async function listMyMatches() {
+  const { data } = await api.get('/api/matches/my')
+  return data
+}
+
 // Joins a public match for the current player. Returns MatchParticipantResponse
 // with status='accepted' — public matches bypass organizer approval.
 export async function joinMatch(matchId) {

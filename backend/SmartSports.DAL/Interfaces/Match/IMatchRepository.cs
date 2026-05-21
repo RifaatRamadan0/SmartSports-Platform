@@ -50,4 +50,11 @@ public interface IMatchRepository
     /// and per-sport and per-city breakdowns.
     /// </summary>
     Task<(MatchStatsRow Summary, IEnumerable<MatchCountByName> BySport, IEnumerable<MatchCountByName> ByCity)> GetStatsAsync();
+
+    /// <summary>
+    /// Returns upcoming matches the user is involved in — either as organizer
+    /// (booking owner) or as an active participant (status pending or accepted).
+    /// Ordered by booking_date ASC, start_time ASC.
+    /// </summary>
+    Task<IEnumerable<MyMatchRow>> ListMyAsync(int userId);
 }

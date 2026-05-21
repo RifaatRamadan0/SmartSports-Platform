@@ -52,6 +52,13 @@ public interface IMatchService
     Task LeaveAsync(int callerUserId, int matchId);
 
     /// <summary>
+    /// Returns upcoming matches the caller is involved in — either organising or
+    /// participating in (accepted or pending). Each item carries MyRole and MyStatus
+    /// so the UI can render the right action chip.
+    /// </summary>
+    Task<IEnumerable<MyMatchSummaryResponse>> ListMyAsync(int callerUserId);
+
+    /// <summary>
     /// Returns all pending join requests for every match organised by the given user,
     /// enriched with match/pitch/sport/capacity details for display in the organiser inbox.
     /// </summary>
