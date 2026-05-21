@@ -259,6 +259,91 @@ public class MatchRepository : IMatchRepository
         return (summary, bySport, byCity);
     }
 
+    public async Task<IEnumerable<MyMatchRow>> ListMyAsync(int userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        var parameters = new
+        {
+            UserId         = userId,
+            ApprovedStatus = (short)PitchStatus.Approved,
+        };
+
+        // Two-source UNION: matches I organize (booking owner) and matches where I
+        // have an active participant record. A user can only be one or the other for
+        // a given match (organizer cannot join their own match — enforced in service),
+        // so UNION ALL is safe and avoids a needless DISTINCT sort.
+        //
+        // Both branches share the same display columns + AcceptedCount subquery so
+        // the result set matches OpenMatchRow shape. The pitch status/deleted guards
+        // mirror ListOpenAsync; we deliberately do NOT require is_open_to_join, since
+        // a player should still see their own private matches in "My Games".
+        const string sql = """
+            SELECT m.id                                              AS MatchId,
+                   p.name                                            AS PitchName,
+                   c.name                                            AS CityName,
+                   s.name                                            AS SportName,
+                   b.booking_date                                    AS BookingDate,
+                   b.start_time                                      AS StartTime,
+                   b.end_time                                        AS EndTime,
+                   (SELECT COUNT(*)::int FROM match_participants mp2
+                      WHERE mp2.match_id = m.id AND mp2.status = 'accepted') AS AcceptedCount,
+                   m.max_players                                     AS MaxPlayers,
+                   u.username                                        AS OrganizerName,
+                   u.id                                              AS OrganizerId,
+                   b.total_price                                     AS TotalPrice,
+                   ROUND(b.total_price / NULLIF(m.max_players, 0), 2) AS PricePerPlayer,
+                   'organizer'::text                                 AS MyRole,
+                   NULL::text                                        AS MyStatus
+            FROM   matches     m
+            JOIN   bookings    b ON b.id = m.booking_id
+            JOIN   users       u ON u.id = b.user_id
+            JOIN   pitches     p ON p.id = b.pitch_id
+            JOIN   sport_types s ON s.id = p.sport_type_id
+            JOIN   cities      c ON c.id = p.city_id
+            WHERE  b.user_id        = @UserId
+              AND  b.booking_date  >= CURRENT_DATE
+              AND  p.deleted_at     IS NULL
+              AND  p.status         = @ApprovedStatus
+
+            UNION ALL
+
+            SELECT m.id                                              AS MatchId,
+                   p.name                                            AS PitchName,
+                   c.name                                            AS CityName,
+                   s.name                                            AS SportName,
+                   b.booking_date                                    AS BookingDate,
+                   b.start_time                                      AS StartTime,
+                   b.end_time                                        AS EndTime,
+                   (SELECT COUNT(*)::int FROM match_participants mp2
+                      WHERE mp2.match_id = m.id AND mp2.status = 'accepted') AS AcceptedCount,
+                   m.max_players                                     AS MaxPlayers,
+                   u.username                                        AS OrganizerName,
+                   u.id                                              AS OrganizerId,
+                   b.total_price                                     AS TotalPrice,
+                   ROUND(b.total_price / NULLIF(m.max_players, 0), 2) AS PricePerPlayer,
+                   'participant'::text                               AS MyRole,
+                   mp.status::text                                   AS MyStatus
+            FROM   match_participants mp
+            JOIN   matches     m ON m.id = mp.match_id
+            JOIN   bookings    b ON b.id = m.booking_id
+            JOIN   users       u ON u.id = b.user_id
+            JOIN   pitches     p ON p.id = b.pitch_id
+            JOIN   sport_types s ON s.id = p.sport_type_id
+            JOIN   cities      c ON c.id = p.city_id
+            WHERE  mp.user_id       = @UserId
+              AND  mp.status        IN ('accepted', 'pending')
+              AND  b.booking_date  >= CURRENT_DATE
+              AND  p.deleted_at     IS NULL
+              AND  p.status         = @ApprovedStatus
+
+            ORDER  BY BookingDate ASC, StartTime ASC, MatchId ASC
+            """;
+
+        var rows = await connection.QueryAsync<MyMatchRow>(sql, parameters);
+        return rows;
+    }
+
     // Flat row used by ListOpenAsync to carry both the open-match columns and the
     // unpaginated total returned by COUNT(*) OVER(). Mirrors BookingWithCount.
     private record OpenMatchRowWithCount(

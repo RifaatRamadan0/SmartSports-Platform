@@ -58,6 +58,17 @@ public class MatchesController : BaseApiController
         return Ok(result);
     }
 
+    // "My Games" section on Find Games — returns matches the caller is organising
+    // OR has joined/requested. Player-only because owners/admins don't join matches.
+    [HttpGet("my")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(typeof(IEnumerable<MyMatchSummaryResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListMy()
+    {
+        var result = await _matchService.ListMyAsync(GetUserId()!.Value);
+        return Ok(result);
+    }
+
     // SPDBTCP-246
     [HttpPatch("{id:int}/visibility")]
     [Authorize(Policy = "PlayerOnly")]

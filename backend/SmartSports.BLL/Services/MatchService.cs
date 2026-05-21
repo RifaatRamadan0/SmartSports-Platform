@@ -94,6 +94,29 @@ public class MatchService : IMatchService
         };
     }
 
+    public async Task<IEnumerable<MyMatchSummaryResponse>> ListMyAsync(int callerUserId)
+    {
+        var rows = await _matchRepository.ListMyAsync(callerUserId);
+        return rows.Select(r => new MyMatchSummaryResponse
+        {
+            MatchId        = r.MatchId,
+            PitchName      = r.PitchName,
+            CityName       = r.CityName,
+            SportName      = r.SportName,
+            BookingDate    = r.BookingDate,
+            StartTime      = r.StartTime,
+            EndTime        = r.EndTime,
+            AcceptedCount  = r.AcceptedCount,
+            MaxPlayers     = r.MaxPlayers,
+            OrganizerName  = r.OrganizerName,
+            OrganizerId    = r.OrganizerId,
+            TotalPrice     = r.TotalPrice,
+            PricePerPlayer = r.PricePerPlayer,
+            MyRole         = r.MyRole,
+            MyStatus       = r.MyStatus,
+        });
+    }
+
     public async Task<MatchStatsResponse> GetStatsAsync()
     {
         var (summary, bySport, byCity) = await _matchRepository.GetStatsAsync();
