@@ -83,6 +83,7 @@ public class InvitationService : IInvitationService
             SpotsLeft       = Math.Max(0, preview.MaxPlayers - preview.CurrentPlayers),
             PricePerPlayer  = preview.PricePerPlayer,
             IsExpired       = preview.IsExpired,
+            IsOpenToJoin    = preview.IsOpenToJoin,
             AcceptedPlayers = acceptedPlayers.Select(p => new AcceptedPlayer(p.UserId, p.Username)),
         };
     }
@@ -109,15 +110,31 @@ public class InvitationService : IInvitationService
         if (acceptedCount >= match.MaxPlayers)
             throw new ArgumentException("This match is full.");
 
-        await _participantRepository.AddAsync(invitation.MatchId, callerUserId);
+        // Public matches (IsOpenToJoin = true) bypass organizer approval: the link
+        // is just a convenient discovery channel for something already publicly joinable.
+        // Private matches keep the request → approve flow so the organizer stays in control.
+        if (match.IsOpenToJoin)
+        {
+            await _participantRepository.AddAcceptedAsync(invitation.MatchId, callerUserId);
 
-        // relatedEntityId points to the match, not the invitation row — the organizer
-        // needs to navigate to the match to accept or reject the join request.
-        await _notificationService.CreateAsync(
-            match.BookingOwnerId!.Value,
-            NotificationTypes.MatchJoinRequested,
-            invitation.MatchId,
-            "A player has requested to join your match via an invite link.");
+            await _notificationService.CreateAsync(
+                match.BookingOwnerId!.Value,
+                NotificationTypes.MatchJoined,
+                invitation.MatchId,
+                "A player joined your match via an invite link.");
+        }
+        else
+        {
+            await _participantRepository.AddAsync(invitation.MatchId, callerUserId);
+
+            // relatedEntityId points to the match, not the invitation row — the organizer
+            // needs to navigate to the match to accept or reject the join request.
+            await _notificationService.CreateAsync(
+                match.BookingOwnerId!.Value,
+                NotificationTypes.MatchJoinRequested,
+                invitation.MatchId,
+                "A player has requested to join your match via an invite link.");
+        }
     }
 
     public async Task<InvitationResponse> InviteByUsernameAsync(

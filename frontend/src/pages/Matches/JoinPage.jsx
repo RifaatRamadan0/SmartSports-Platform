@@ -160,7 +160,7 @@ function FillBar({ current, max }) {
 
 // ── Join success overlay ──────────────────────────────────────────────────────
 
-function JoinSuccess({ organizerName, onGoHome }) {
+function JoinSuccess({ organizerName, isInstant, onGoHome }) {
   return (
     <motion.div
       key="success"
@@ -204,10 +204,14 @@ function JoinSuccess({ organizerName, onGoHome }) {
           className="text-[22px] font-extrabold text-foreground mb-2"
           style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-0.5px' }}
         >
-          Request sent!
+          {isInstant ? "You're in!" : 'Request sent!'}
         </p>
         <p className="text-[14px] text-muted-foreground leading-relaxed mb-7">
-          @{organizerName} will review your request.<br />You'll be notified when it's accepted.
+          {isInstant ? (
+            <>You've joined @{organizerName}'s match.<br />See you on the pitch.</>
+          ) : (
+            <>@{organizerName} will review your request.<br />You'll be notified when it's accepted.</>
+          )}
         </p>
         <motion.button
           whileHover={buttonHover}
@@ -298,7 +302,9 @@ export default function JoinPage() {
     try {
       await joinViaToken(token)
       setJoined(true)
-      showToast('Request sent! The organizer will review it.')
+      showToast(isInstantJoin
+        ? "You're in! Enjoy the match."
+        : 'Request sent! The organizer will review it.')
     } catch (err) {
       showToast(parseApiError(err, 'Could not join match.'), 'error')
     } finally {
@@ -324,7 +330,12 @@ export default function JoinPage() {
   // handleJoin redirects them to /login. Only block authenticated non-players.
   const matchJoinable = !preview.isExpired && !isFull && !joined
   const canJoin       = matchJoinable && (!isAuthenticated || isPlayer)
-  const joinLabel     = isAuthenticated ? 'Join this game' : 'Sign in to join'
+  // Public matches (isOpenToJoin) auto-accept the join — no organizer approval needed.
+  // Private matches stay on the request → approve flow.
+  const isInstantJoin = preview.isOpenToJoin
+  const joinLabel = !isAuthenticated
+    ? 'Sign in to join'
+    : (isInstantJoin ? 'Join now' : 'Request to join')
 
   const headBg   = SPORT_HEAD_BG[preview.sportName] ?? '#111'
   const tagClass = SPORT_TAG_CLASS[preview.sportName] ?? 'bg-muted/20 text-muted-foreground border-border'
@@ -367,7 +378,7 @@ export default function JoinPage() {
         {/* Main card / success — AnimatePresence swaps between them */}
         <AnimatePresence mode="wait">
           {joined ? (
-            <JoinSuccess key="success" organizerName={preview.organizerName} onGoHome={() => navigate('/dashboard')} />
+            <JoinSuccess key="success" organizerName={preview.organizerName} isInstant={isInstantJoin} onGoHome={() => navigate('/dashboard')} />
           ) : (
             <motion.div
               key="card"

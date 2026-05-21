@@ -104,7 +104,8 @@ public class InvitationRepository : IInvitationRepository
                    COUNT(mp.id)::int                                   AS CurrentPlayers,
                    ROUND(b.total_price / NULLIF(m.max_players, 0), 2) AS PricePerPlayer,
                    (inv.expires_at IS NOT NULL
-                    AND inv.expires_at < NOW())                        AS IsExpired
+                    AND inv.expires_at < NOW())                        AS IsExpired,
+                   m.is_open_to_join                                   AS IsOpenToJoin
             FROM   invitations        inv
             JOIN   matches            m   ON m.id  = inv.match_id
             JOIN   bookings           b   ON b.id  = m.booking_id
@@ -117,7 +118,7 @@ public class InvitationRepository : IInvitationRepository
               AND  inv.invited_user_id IS NULL
             GROUP  BY m.id, s.name, b.booking_date, b.start_time, b.end_time,
                       p.name, c.name, u.username, m.max_players, b.total_price,
-                      inv.expires_at
+                      inv.expires_at, m.is_open_to_join
             """,
             new { Token = token });
     }

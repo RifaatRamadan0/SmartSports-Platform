@@ -14,4 +14,5 @@ public record InvitePreviewRow
     public int      CurrentPlayers { get; init; }
     public decimal  PricePerPlayer { get; init; }
     public bool     IsExpired      { get; init; }
+    public bool     IsOpenToJoin   { get; init; }
 }

@@ -22,7 +22,8 @@ export async function listOpenMatches({ sport, city, page = 1, pageSize = 10 } =
   return data
 }
 
-// Sends a join request for the current player. Returns MatchParticipantResponse (status='pending').
+// Joins a public match for the current player. Returns MatchParticipantResponse
+// with status='accepted' — public matches bypass organizer approval.
 export async function joinMatch(matchId) {
   const { data } = await api.post(`/api/matches/${matchId}/join`)
   return data

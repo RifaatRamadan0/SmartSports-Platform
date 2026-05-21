@@ -5,6 +5,12 @@ namespace SmartSports.DAL.Interfaces.Match;
 public interface IMatchParticipantRepository
 {
     Task<MatchParticipant>  AddAsync(int matchId, int userId);
+
+    /// <summary>
+    /// Inserts a participant already in the 'accepted' state. Used for join paths
+    /// that bypass organizer approval — currently invite-link joins on public matches.
+    /// </summary>
+    Task<MatchParticipant>  AddAcceptedAsync(int matchId, int userId);
     Task<MatchParticipant?> GetAsync(int matchId, int userId);
     Task<int>               GetAcceptedCountAsync(int matchId);
     Task<bool>              UpdateStatusAsync(int matchId, int userId, string status);

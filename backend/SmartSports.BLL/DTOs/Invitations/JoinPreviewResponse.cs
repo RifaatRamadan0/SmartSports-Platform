@@ -15,6 +15,7 @@ public class JoinPreviewResponse
     public int                         SpotsLeft       { get; init; }
     public decimal                     PricePerPlayer  { get; init; }
     public bool                        IsExpired       { get; init; }
+    public bool                        IsOpenToJoin    { get; init; }
     public IEnumerable<AcceptedPlayer> AcceptedPlayers { get; init; } = [];
 }
 
