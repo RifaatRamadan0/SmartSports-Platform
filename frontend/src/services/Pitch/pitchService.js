@@ -24,8 +24,8 @@ export async function listPitches({
   return data
 }
 
-export async function listMyPitches() {
-  const { data } = await api.get('/api/pitches/mine')
+export async function listMyPitches({ page = 1, pageSize = 100 } = {}) {
+  const { data } = await api.get('/api/pitches/mine', { params: { page, pageSize } })
   return data
 }
 

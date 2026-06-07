@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { buttonHover, buttonTap } from '../../lib/motion'
@@ -119,6 +119,7 @@ export default function OwnerPitchFormPage() {
   const [loadError,   setLoadError]   = useState(null)
   const [isSubmitting,setIsSubmitting]= useState(false)
   const [submitError, setSubmitError] = useState(null)
+  const isDirtyRef = useRef(false)
 
   // Initial load
 
@@ -156,17 +157,34 @@ export default function OwnerPitchFormPage() {
 
   useEffect(() => { loadInitial() }, [loadInitial])
 
+  useEffect(() => {
+    const handler = (e) => {
+      if (!isDirtyRef.current) return
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [])
+
   // Handlers
 
   const setField = (key, value) => {
+    isDirtyRef.current = true
     setForm(prev => ({ ...prev, [key]: value }))
     if (errors[key]) setErrors(prev => ({ ...prev, [key]: undefined }))
   }
 
   const handleRegionChange = value => {
+    isDirtyRef.current = true
     setForm(prev => ({ ...prev, regionId: value, cityId: '' }))
     if (errors.regionId) setErrors(prev => ({ ...prev, regionId: undefined }))
     if (errors.cityId)   setErrors(prev => ({ ...prev, cityId:   undefined }))
+  }
+
+  const safeNavigate = (path) => {
+    if (isDirtyRef.current && !window.confirm('You have unsaved changes. Leave without saving?')) return
+    navigate(path)
   }
 
   const regions = (() => {
@@ -196,6 +214,7 @@ export default function OwnerPitchFormPage() {
       } else {
         await createPitch(payload)
       }
+      isDirtyRef.current = false
       navigate('/dashboard/pitches')
     } catch (err) {
       setSubmitError(parseApiError(err, `Failed to ${isEdit ? 'update' : 'create'} the pitch.`))
@@ -245,7 +264,7 @@ export default function OwnerPitchFormPage() {
 
         {/* Header */}
         <button
-          onClick={() => navigate('/dashboard/pitches')}
+          onClick={() => safeNavigate('/dashboard/pitches')}
           className="text-xs text-neutral-500 hover:text-white transition-colors mb-3"
         >
           ← Back to My Pitches
@@ -466,7 +485,7 @@ export default function OwnerPitchFormPage() {
             </motion.button>
             <button
               type="button"
-              onClick={() => navigate('/dashboard/pitches')}
+              onClick={() => safeNavigate('/dashboard/pitches')}
               disabled={isSubmitting}
               className="rounded-xl px-5 py-2.5 text-sm font-semibold
                          bg-[#141414] border border-[#1f1f1f] text-neutral-300

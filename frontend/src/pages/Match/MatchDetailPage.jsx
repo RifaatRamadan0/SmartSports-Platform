@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { inviteByUsername } from '../../services/Invitation/invitationService'
+import { getMatchById } from '../../services/Match/matchService'
 import { parseApiError } from '../../utils/errorUtils'
 import Toast from '../../components/ui/Toast'
 
@@ -13,9 +14,35 @@ export default function MatchDetailPage() {
   const { matchId } = useParams()
   const navigate = useNavigate()
 
+  // SPDBTCP-83 — Existence guard. We don't render the page shell until we know
+  // the match exists, so a deep-link to a deleted/typo'd id falls through to
+  // the catch-all NotFoundPage instead of showing an invite form for nothing.
+  const [isCheckingMatch, setIsCheckingMatch] = useState(true)
+  const [toast, setToast] = useState(null)
   const [username, setUsername] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [toast, setToast] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function verifyMatchExists() {
+      try {
+        const match = await getMatchById(matchId)
+        if (cancelled) return
+        if (match === null) { navigate('/404', { replace: true }); return }
+        setIsCheckingMatch(false)
+      } catch (err) {
+        if (cancelled) return
+        if (err?.response?.status === 404) {
+          navigate('/404', { replace: true })
+          return
+        }
+        setToast({ message: parseApiError(err, 'Could not load match details.'), type: 'error' })
+        setIsCheckingMatch(false)
+      }
+    }
+    verifyMatchExists()
+    return () => { cancelled = true }
+  }, [matchId, navigate])
 
   const showToast = (message, type = 'success') => setToast({ message, type })
 
@@ -34,6 +61,10 @@ export default function MatchDetailPage() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (isCheckingMatch) {
+    return <div className="min-h-screen bg-[#080808]" aria-busy="true" />
   }
 
   return (

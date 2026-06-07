@@ -9,6 +9,7 @@ import { ROLES } from '@/constants/roles'
 import { getJoinPreview, joinViaToken } from '@/services/Invitation/invitationService'
 import { parseApiError } from '@/utils/errorUtils'
 import Toast from '@/components/ui/Toast'
+import FieldLines from '@/components/Match/FieldLines'
 
 // ── Sport colours (mirrors FindGamePage) ──────────────────────────────────────
 
@@ -26,26 +27,6 @@ const SPORT_TAG_CLASS = {
   Tennis:     'bg-purple-500/10 text-purple-400 border-purple-500/20',
 }
 
-// ── Field-lines watermark (reused from FindGamePage) ─────────────────────────
-
-function FieldLines() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity: 0.08 }}
-      viewBox="0 0 400 160"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect x="1" y="1" width="398" height="158" rx="3" stroke="white" strokeWidth="2" />
-      <line x1="200" y1="1" x2="200" y2="159" stroke="white" strokeWidth="1.5" />
-      <circle cx="200" cy="80" r="36" stroke="white" strokeWidth="1.5" />
-      <rect x="1" y="48" width="46" height="64" stroke="white" strokeWidth="1.5" />
-      <rect x="353" y="48" width="46" height="64" stroke="white" strokeWidth="1.5" />
-    </svg>
-  )
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -364,14 +345,15 @@ export default function JoinPage() {
           transition={{ duration: 0.25 }}
           className="mb-7"
         >
+          {/* Fix #11: heading adapts to match state so expired/full users aren't misled */}
           <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-primary mb-1">
-            You're invited
+            {preview.isExpired ? 'Link expired' : preview.spotsLeft === 0 ? 'Match full' : "You're invited"}
           </p>
           <h1
             className="text-[32px] font-extrabold leading-none text-foreground"
             style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-1px' }}
           >
-            Join the game
+            {preview.isExpired ? 'This link has expired' : preview.spotsLeft === 0 ? 'This match is full' : 'Join the game'}
           </h1>
         </motion.div>
 
@@ -503,7 +485,7 @@ export default function JoinPage() {
               >
                 {preview.acceptedPlayers.map(p => (
                   <motion.span
-                    key={p.userId}
+                    key={p.username}
                     variants={listItemVariants}
                     className="flex items-center gap-1.5 px-3 py-1 rounded-full
                                bg-muted border border-border

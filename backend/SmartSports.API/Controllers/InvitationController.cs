@@ -1,31 +1,26 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.Invitations;
 using SmartSports.BLL.Interfaces;
 
 namespace SmartSports.API.Controllers;
 
 [ApiController]
-[Route("api/matches/{matchId:int}/invitations")]
+[Route("api")]
 [Authorize]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-public class InvitationController : ControllerBase
+public class InvitationController : BaseApiController
 {
-    private readonly IInvitationService  _invitationService;
-    private readonly ICurrentUserService _currentUser;
+    private readonly IInvitationService _invitationService;
 
-    public InvitationController(
-        IInvitationService  invitationService,
-        ICurrentUserService currentUser)
+    public InvitationController(IInvitationService invitationService)
     {
         _invitationService = invitationService;
-        _currentUser       = currentUser;
     }
 
-    // SPDBTCP-76 — POST /api/matches/{matchId}/invitations
-    [HttpPost]
+    // SPDBTCP-76 — Rifaat
+    [HttpPost("matches/{matchId:int}/invitations")]
     [Authorize(Policy = "PlayerOnly")]
     [EnableRateLimiting("invitations")]
     [ProducesResponseType(typeof(InvitationResponse), StatusCodes.Status201Created)]
@@ -38,11 +33,45 @@ public class InvitationController : ControllerBase
         int matchId, [FromBody] InviteByUsernameRequest request)
     {
         var response = await _invitationService.InviteByUsernameAsync(
-            _currentUser.GetUserId()!.Value,
-            _currentUser.GetUsername() ?? string.Empty,
+            GetUserId()!.Value,
+            GetUsername() ?? string.Empty,
             matchId,
             request.Username);
 
         return StatusCode(StatusCodes.Status201Created, response);
+    }
+
+    // SPDBTCP-83 — Rifaat
+    [HttpGet("invitations/me")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(typeof(IEnumerable<PendingInvitationDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyPendingInvitations()
+    {
+        var result = await _invitationService.GetPendingAsync(GetUserId()!.Value);
+        return Ok(result);
+    }
+
+    // SPDBTCP-83 — Rifaat
+    [HttpPut("invitations/{id:int}/accept")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> AcceptInvitation(int id)
+    {
+        await _invitationService.AcceptAsync(id, GetUserId()!.Value);
+        return NoContent();
+    }
+
+    // SPDBTCP-83 — Rifaat
+    [HttpPut("invitations/{id:int}/decline")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> DeclineInvitation(int id)
+    {
+        await _invitationService.DeclineAsync(id, GetUserId()!.Value);
+        return NoContent();
     }
 }

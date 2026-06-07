@@ -213,13 +213,20 @@ export default function BookingDetailPage() {
 
   useEffect(() => { fetchBooking() }, [fetchBooking])
 
+  // Fix #9: separate the two failure modes — generation failure vs. clipboard failure
   const handleShareLink = async () => {
+    let shareUrl
     try {
-      const { shareUrl } = await generateInviteLink(booking.match.id)
+      ;({ shareUrl } = await generateInviteLink(booking.match.id))
+    } catch {
+      showToast('Could not generate invite link.', 'error')
+      return
+    }
+    try {
       await navigator.clipboard.writeText(shareUrl)
       showToast('Invite link copied to clipboard!')
     } catch {
-      showToast('Could not generate invite link.', 'error')
+      showToast('Could not copy — please copy the URL manually.', 'error')
     }
   }
 
@@ -325,7 +332,7 @@ export default function BookingDetailPage() {
         >
           <span>{toast.type === 'success' ? '✓' : '✕'}</span>
           <span>{toast.message}</span>
-          <button onClick={() => setToast(null)} className="ml-2 opacity-50 hover:opacity-100">×</button>
+          <button onClick={() => setToast(null)} aria-label="Close" className="ml-2 opacity-50 hover:opacity-100">×</button>
         </div>
       )}
 

@@ -180,7 +180,7 @@ export default function OwnerDashboardPage() {
     setPitchError(null)
     try {
       const data = await listMyPitches()
-      setPitches(data ?? [])
+      setPitches(data?.items ?? [])
     } catch (err) {
       setPitchError(parseApiError(err, 'Could not load pitches.'))
     } finally {

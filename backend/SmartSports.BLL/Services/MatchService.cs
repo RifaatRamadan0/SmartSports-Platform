@@ -94,6 +94,29 @@ public class MatchService : IMatchService
         };
     }
 
+    public async Task<IEnumerable<MyMatchSummaryResponse>> ListMyAsync(int callerUserId)
+    {
+        var rows = await _matchRepository.ListMyAsync(callerUserId);
+        return rows.Select(r => new MyMatchSummaryResponse
+        {
+            MatchId        = r.MatchId,
+            PitchName      = r.PitchName,
+            CityName       = r.CityName,
+            SportName      = r.SportName,
+            BookingDate    = r.BookingDate,
+            StartTime      = r.StartTime,
+            EndTime        = r.EndTime,
+            AcceptedCount  = r.AcceptedCount,
+            MaxPlayers     = r.MaxPlayers,
+            OrganizerName  = r.OrganizerName,
+            OrganizerId    = r.OrganizerId,
+            TotalPrice     = r.TotalPrice,
+            PricePerPlayer = r.PricePerPlayer,
+            MyRole         = r.MyRole,
+            MyStatus       = r.MyStatus,
+        });
+    }
+
     public async Task<MatchStatsResponse> GetStatsAsync()
     {
         var (summary, bySport, byCity) = await _matchRepository.GetStatsAsync();
@@ -105,6 +128,26 @@ public class MatchService : IMatchService
             BySport        = bySport.Select(r => new NameCountItem { Name = r.Name, Count = r.Count }),
             ByCity         = byCity.Select(r  => new NameCountItem { Name = r.Name, Count = r.Count }),
         };
+    }
+
+    public async Task<IEnumerable<PendingJoinRequestDto>> GetPendingJoinRequestsAsync(int organizerUserId)
+    {
+        var rows = await _participantRepository.GetPendingByOrganizerAsync(organizerUserId);
+        return rows.Select(r => new PendingJoinRequestDto
+        {
+            ParticipantId   = r.ParticipantId,
+            MatchId         = r.MatchId,
+            RequesterUserId = r.RequesterUserId,
+            RequesterName   = r.RequesterName,
+            PitchName       = r.PitchName,
+            SportName       = r.SportName,
+            BookingDate     = r.BookingDate,
+            StartTime       = r.StartTime,
+            EndTime         = r.EndTime,
+            MaxPlayers      = r.MaxPlayers,
+            SpotsLeft       = r.SpotsLeft,
+            PricePerPlayer  = r.PricePerPlayer,
+        });
     }
 
     public async Task<MatchParticipantResponse> JoinAsync(int callerUserId, int matchId)

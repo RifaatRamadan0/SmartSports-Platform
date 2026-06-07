@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SmartSports.API.Services;
 using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.Interfaces;
 
@@ -10,17 +9,13 @@ namespace SmartSports.API.Controllers;
 [Route("api/bookings")]
 [Authorize]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-public class BookingController : ControllerBase
+public class BookingController : BaseApiController
 {
-    private readonly IBookingService     _bookingService;
-    private readonly ICurrentUserService _currentUser;
+    private readonly IBookingService _bookingService;
 
-    public BookingController(
-        IBookingService     bookingService,
-        ICurrentUserService currentUser)
+    public BookingController(IBookingService bookingService)
     {
         _bookingService = bookingService;
-        _currentUser    = currentUser;
     }
 
     // SPDBTCP-166 — Rifaat
@@ -55,6 +50,22 @@ public class BookingController : ControllerBase
             return Unauthorized();
 
         await _bookingService.CancelBookingAsync(userId.Value, id, request?.CancellationReason);
+        return NoContent();
+    }
+
+    [HttpPatch("{id:int}/owner-cancel")]
+    [Authorize(Policy = "PitchOwnerOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> OwnerCancelBooking(int id, [FromBody] CancelBookingRequest? request)
+    {
+        var ownerId = GetUserId();
+        if (ownerId is null)
+            return Unauthorized();
+
+        await _bookingService.CancelBookingByOwnerAsync(ownerId.Value, id, request?.CancellationReason);
         return NoContent();
     }
 
@@ -111,5 +122,4 @@ public class BookingController : ControllerBase
         return Ok(result);
     }
 
-    private int? GetUserId() => _currentUser.GetUserId();
 }

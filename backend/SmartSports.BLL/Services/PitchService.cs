@@ -3,6 +3,7 @@ using SmartSports.BLL.DTOs.Pitch;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Parameters;
+using SmartSports.Domain.Entities.Projections;
 using SmartSports.Domain.Enums;
 using SmartSports.Domain.Exceptions;
 using PitchEntity = SmartSports.Domain.Entities.Pitch;
@@ -12,22 +13,18 @@ namespace SmartSports.BLL.Services;
 public class PitchService : IPitchService
 {
     private readonly IPitchRepository _pitchRepository;
-    private readonly IReviewService   _reviewService;
 
-    public PitchService(IPitchRepository pitchRepository, IReviewService reviewService)
+    public PitchService(IPitchRepository pitchRepository)
     {
         _pitchRepository = pitchRepository;
-        _reviewService   = reviewService;
     }
 
     public async Task<PitchDetailResponse> GetDetailAsync(int pitchId)
     {
-        var (detail, images, schedule) = await _pitchRepository.GetDetailWithDataAsync(pitchId);
+        var (detail, images, schedule, reviewRows) = await _pitchRepository.GetDetailWithDataAsync(pitchId);
 
         if (detail is null)
             throw new KeyNotFoundException($"Pitch with ID {pitchId} was not found.");
-
-        var reviews = await _reviewService.GetRecentByPitchAsync(pitchId, 5);
 
         return new PitchDetailResponse
         {
@@ -49,7 +46,14 @@ public class PitchService : IPitchService
                 CloseTime = s.CloseTime,
                 IsActive  = s.IsActive,
             }),
-            RecentReviews             = reviews,
+            RecentReviews             = reviewRows.Select(r => new ReviewSummary
+            {
+                Id           = r.Id,
+                ReviewerName = r.ReviewerName,
+                Rating       = r.Rating,
+                Comment      = r.Comment,
+                CreatedAt    = r.CreatedAt,
+            }),
         };
     }
 
@@ -102,26 +106,36 @@ public class PitchService : IPitchService
         };
     }
 
-    public async Task<IEnumerable<PitchListResponse>> ListMineAsync(int ownerId)
+    public async Task<PagedResult<PitchListResponse>> ListMineAsync(int ownerId, int page, int pageSize)
     {
-        var rows = await _pitchRepository.ListByOwnerAsync(ownerId);
+        if (page     < 1)  page     = 1;
+        if (pageSize < 1)  pageSize = 20;
+        if (pageSize > 100) pageSize = 100;
 
-        return rows.Select(r => new PitchListResponse
+        var (rows, total) = await _pitchRepository.ListByOwnerAsync(ownerId, page, pageSize);
+
+        return new PagedResult<PitchListResponse>
         {
-            Id                        = r.Id,
-            Name                      = r.Name,
-            Address                   = r.Address,
-            PricePerHour              = r.PricePerHour,
-            Rating                    = r.Rating,
-            SportName                 = r.SportName,
-            MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
-            Capacity                  = r.Capacity,
-            CityName                  = r.CityName,
-            CoverImageUrl             = r.CoverImageUrl,
-            ImageCount                = r.ImageCount,
-            IsActive = r.IsActive,
-            Status   = r.Status,
-        });
+            Items = rows.Select(r => new PitchListResponse
+            {
+                Id                        = r.Id,
+                Name                      = r.Name,
+                Address                   = r.Address,
+                PricePerHour              = r.PricePerHour,
+                Rating                    = r.Rating,
+                SportName                 = r.SportName,
+                MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
+                Capacity                  = r.Capacity,
+                CityName                  = r.CityName,
+                CoverImageUrl             = r.CoverImageUrl,
+                ImageCount                = r.ImageCount,
+                IsActive = r.IsActive,
+                Status   = r.Status,
+            }),
+            TotalCount = (int)Math.Min(total, int.MaxValue),
+            Page       = page,
+            PageSize   = pageSize,
+        };
     }
 
     public async Task<PitchResponse> GetOwnedByIdAsync(int ownerId, int pitchId)

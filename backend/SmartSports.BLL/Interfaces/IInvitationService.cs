@@ -37,4 +37,25 @@ public interface IInvitationService
     /// </param>
     Task<InvitationResponse> InviteByUsernameAsync(
         int currentUserId, string currentUsername, int matchId, string username);
+
+    /// <summary>
+    /// Returns all non-expired pending invitations addressed to the given user,
+    /// enriched with match/pitch/sport/inviter details for display in the inbox.
+    /// </summary>
+    Task<IEnumerable<PendingInvitationDto>> GetPendingAsync(int userId);
+
+    /// <summary>
+    /// Accepts the invitation: adds the invitee to the match as an accepted participant
+    /// and marks the related notification as read. Throws ConflictException when the
+    /// invitation is not found, already actioned, or the match is at capacity.
+    /// Throws ForbiddenException when the invitation does not belong to the caller.
+    /// </summary>
+    Task AcceptAsync(int invitationId, int userId);
+
+    /// <summary>
+    /// Declines the invitation and marks the related notification as read.
+    /// Throws ConflictException when the invitation is not found or already actioned.
+    /// Throws ForbiddenException when the invitation does not belong to the caller.
+    /// </summary>
+    Task DeclineAsync(int invitationId, int userId);
 }

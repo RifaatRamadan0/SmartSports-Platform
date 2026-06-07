@@ -7,11 +7,12 @@ import {
 import PageWrapper from '@/components/routing/PageWrapper'
 import { cardVariants, cardTap, listContainerVariants } from '@/lib/motion'
 import { cn } from '@/lib/utils'
-import { listOpenMatches, getMatchStats, joinMatch, leaveMatch, getMyMatchStatus } from '../../services/Match/matchService'
+import { listOpenMatches, listMyMatches, getMatchStats, joinMatch, leaveMatch, getMyMatchStatus } from '../../services/Match/matchService'
 import { parseApiError } from '../../utils/errorUtils'
 import { useAuth } from '../../hooks/useAuth'
 import Toast from '../../components/ui/Toast'
 import { ROLES } from '../../constants/roles'
+import FieldLines from '../../components/Match/FieldLines'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -35,27 +36,6 @@ const SPORT_TAG_CLASS = {
   Futsal:     'bg-blue-500/10 text-blue-400 border-blue-500/20',
   Basketball: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   Tennis:     'bg-purple-500/10 text-purple-400 border-purple-500/20',
-}
-
-// ── field-lines watermark (inline SVG — card head only) ──────────────────────
-
-function FieldLines() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity: 0.08 }}
-      viewBox="0 0 400 160"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect x="1" y="1" width="398" height="158" rx="3" stroke="white" strokeWidth="2" />
-      <line x1="200" y1="1" x2="200" y2="159" stroke="white" strokeWidth="1.5" />
-      <circle cx="200" cy="80" r="36" stroke="white" strokeWidth="1.5" />
-      <rect x="1" y="48" width="46" height="64" stroke="white" strokeWidth="1.5" />
-      <rect x="353" y="48" width="46" height="64" stroke="white" strokeWidth="1.5" />
-    </svg>
-  )
 }
 
 // ── stats banner ─────────────────────────────────────────────────────────────
@@ -614,6 +594,101 @@ function Pagination({ page, totalPages, hasPrev, hasNext, onPrev, onNext, setPag
   )
 }
 
+// ── my games section ─────────────────────────────────────────────────────────
+
+// Title row + green count pill on the left, muted right-aligned subtitle —
+// mirrors the design reference where "My Games" sits opposite "Matches you're
+// organising or have joined".
+function MyGamesHeader({ count }) {
+  return (
+    <div className="flex items-baseline justify-between mb-4">
+      <h2
+        className="text-[24px] font-extrabold text-foreground flex items-center gap-2.5"
+        style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-0.5px' }}
+      >
+        My Games
+        {count != null && (
+          <span
+            className="inline-flex items-center justify-center min-w-[26px] h-[26px] rounded-full bg-primary text-[#061008] text-[12px] font-bold px-2 shadow-[0_0_18px_var(--green-glow)]"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          >
+            {count}
+          </span>
+        )}
+      </h2>
+      <span className="text-[13px] text-muted-foreground">
+        Matches you're organising or have joined
+      </span>
+    </div>
+  )
+}
+
+function MyGamesSection({ myMatches, error, onRetry, userId, onLeave, actionLoading }) {
+  // Loading: skeletons identical to Open Games but capped at 3 rows since the
+  // typical user has only a handful of in-flight matches.
+  if (myMatches === null) {
+    return (
+      <section className="mb-10">
+        <MyGamesHeader count={null} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} delay={i * 0.1} />)}
+        </div>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className="mb-10">
+        <MyGamesHeader count={null} />
+        <ErrorBanner message={error} onRetry={onRetry} />
+      </section>
+    )
+  }
+
+  // Empty: a single muted callout, not the big "🏟️ No matches" used by Open
+  // Games, so users don't think the whole page failed.
+  if (myMatches.length === 0) {
+    return (
+      <section className="mb-10">
+        <MyGamesHeader count={0} />
+        <div className="rounded-[18px] border border-dashed border-border bg-card/40 px-6 py-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            You're not in any upcoming matches yet. Browse Open Games below to join one.
+          </p>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="mb-10">
+      <MyGamesHeader count={myMatches.length} />
+      <motion.div
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
+        variants={listContainerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {myMatches.map(m => (
+          <MatchCard
+            key={`my-${m.matchId}`}
+            match={m}
+            userStatus={m.myStatus ?? null}
+            isOrganizer={m.myRole === 'organizer' || m.organizerId === userId}
+            onJoin={null}
+            onLeave={onLeave}
+            onLoginRedirect={null}
+            actionLoading={actionLoading?.matchId === m.matchId}
+            actionVerb={actionLoading?.matchId === m.matchId ? actionLoading.verb : null}
+            statusLoading={false}
+          />
+        ))}
+      </motion.div>
+    </section>
+  )
+}
+
 // ── page ──────────────────────────────────────────────────────────────────────
 
 export default function FindGamePage() {
@@ -632,10 +707,28 @@ export default function FindGamePage() {
   const [result,        setResult]        = useState(null)
   const [isLoading,     setIsLoading]     = useState(true)
   const [error,         setError]         = useState(null)
+  const [myMatches,     setMyMatches]     = useState(null)   // null = loading / not fetched, [] = none
+  const [myMatchesError, setMyMatchesError] = useState(null)
   const [joinedMatches, setJoinedMatches] = useState(new Map()) // matchId → 'pending'|'accepted'|'rejected'
   const [actionLoading,   setActionLoading]   = useState(null)  // { matchId, verb } | null
   const [isStatusLoading, setIsStatusLoading] = useState(false) // true while pre-fetching join statuses
   const [toast,           setToast]           = useState(null)
+
+  // Fetch "My Games" — only meaningful for authenticated players. Refreshed
+  // whenever refreshKey bumps (e.g. after join/leave) so the section stays in
+  // sync with the user's actions on the Open Games list.
+  useEffect(() => {
+    if (!isPlayer || !userId) {
+      setMyMatches([])
+      return
+    }
+    let cancelled = false
+    setMyMatchesError(null)
+    listMyMatches()
+      .then(data => { if (!cancelled) setMyMatches(data ?? []) })
+      .catch(err  => { if (!cancelled) setMyMatchesError(parseApiError(err, 'Could not load your games.')) })
+    return () => { cancelled = true }
+  }, [isPlayer, userId, refreshKey])
 
   // Load stats once on mount — false = "failed but done" so the banner exits skeleton state
   useEffect(() => {
@@ -696,6 +789,7 @@ export default function FindGamePage() {
           m.matchId === matchId ? { ...m, acceptedCount: (m.acceptedCount ?? 0) + 1 } : m
         ),
       })
+      setRefreshKey(k => k + 1)  // refresh My Games so the new join appears there
       setToast({ type: 'success', message: "You're in! Enjoy the match." })
     } catch (err) {
       const status = err.response?.status
@@ -725,6 +819,7 @@ export default function FindGamePage() {
           ),
         })
       }
+      setRefreshKey(k => k + 1)  // refresh My Games so the dropped row disappears
       setToast({ type: 'success', message: 'You left the match.' })
     } catch (err) {
       setToast({ type: 'error', message: parseApiError(err, 'Could not leave the match.') })
@@ -756,6 +851,16 @@ export default function FindGamePage() {
   const hasActiveFilters = !!(urlSport || urlCity)
   const filters = { sport: urlSport || null, city: urlCity || null }
 
+  // De-dupe: a match the user organises or has joined already appears in
+  // "My Games", so filter it out of "Other Open Games" client-side. Backend
+  // returns both lists independently — this is the join layer.
+  // Set-based lookup keeps the per-render cost O(items + my); for typical
+  // page sizes (<10) it's negligible vs. a useMemo.
+  const myMatchIds      = new Set((myMatches ?? []).map(m => m.matchId))
+  const openItems       = (result?.items ?? []).filter(m => !myMatchIds.has(m.matchId))
+  const hiddenOnPageCount = (result?.items?.length ?? 0) - openItems.length
+  const otherOpenCount  = result ? Math.max(0, result.totalCount - hiddenOnPageCount) : null
+
   return (
     <>
     <FindGameNavbar />
@@ -768,15 +873,48 @@ export default function FindGamePage() {
             className="text-[40px] font-extrabold leading-none mb-2 text-foreground"
             style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-1px' }}
           >
-            Find Open Games
+            Find Games
           </h1>
           <p className="text-[16px] text-muted-foreground max-w-[540px] leading-relaxed">
-            Join a match without organizing a full team — find a game with open spots and show up ready to play.
+            Catch up on the matches you're organising or have joined, and find open spots in other games.
           </p>
         </div>
 
         {/* Stats banner */}
         <StatsBanner statsResult={statsResult} />
+
+        {/* My Games section — only for authenticated players. Hidden entirely
+            for guests and pitch owners since they have no matches to track. */}
+        {isPlayer && userId && (
+          <MyGamesSection
+            myMatches={myMatches}
+            error={myMatchesError}
+            onRetry={() => setRefreshKey(k => k + 1)}
+            userId={userId}
+            onLeave={handleLeave}
+            actionLoading={actionLoading}
+          />
+        )}
+
+        {/* Divider between My Games and Open Games — only renders when My Games
+            section is present (i.e. authenticated player) so guests don't see a
+            floating rule above the only section on the page. */}
+        {isPlayer && userId && <div className="border-t border-border mb-7" />}
+
+        {/* Other Open Games heading + count pill */}
+        <div className="flex items-baseline justify-between mb-4">
+          <h2
+            className="text-[24px] font-extrabold text-foreground flex items-center gap-2.5"
+            style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-0.5px' }}
+          >
+            Other Open Games
+            {otherOpenCount != null && (
+              <span className="inline-flex items-center justify-center min-w-[26px] h-[26px] rounded-full bg-muted text-muted-foreground text-[12px] font-bold px-2">
+                {otherOpenCount}
+              </span>
+            )}
+          </h2>
+        </div>
 
         {/* Filter bar */}
         <FilterBar
@@ -785,7 +923,7 @@ export default function FindGamePage() {
           setFilter={setFilter}
           clearAllFilters={clearAllFilters}
           totalCount={statsResult?.openGamesCount ?? null}
-          resultCount={!isLoading && !error && result ? result.totalCount : null}
+          resultCount={!isLoading && !error && result ? otherOpenCount : null}
         />
 
         {/* Results */}
@@ -802,11 +940,11 @@ export default function FindGamePage() {
             <ErrorBanner message={error} onRetry={() => setRefreshKey(k => k + 1)} />
           )}
 
-          {!isLoading && !error && result?.items?.length === 0 && (
+          {!isLoading && !error && openItems.length === 0 && (
             <EmptyState hasFilters={hasActiveFilters} onClear={clearAllFilters} />
           )}
 
-          {!isLoading && !error && result?.items?.length > 0 && (
+          {!isLoading && !error && openItems.length > 0 && (
             <>
               <AnimatePresence mode="wait">
                 <motion.div
@@ -816,7 +954,7 @@ export default function FindGamePage() {
                   initial="hidden"
                   animate="visible"
                 >
-                  {result.items.map(m => (
+                  {openItems.map(m => (
                     <MatchCard
                       key={m.matchId}
                       match={m}
@@ -832,17 +970,19 @@ export default function FindGamePage() {
                   ))}
                 </motion.div>
               </AnimatePresence>
-
-              <Pagination
-                page={result.page}
-                totalPages={result.totalPages}
-                hasPrev={result.hasPreviousPage}
-                hasNext={result.hasNextPage}
-                onPrev={() => setPage(urlPage - 1)}
-                onNext={() => setPage(urlPage + 1)}
-                setPage={setPage}
-              />
             </>
+          )}
+
+          {!isLoading && !error && result && result.totalPages > 1 && (
+            <Pagination
+              page={result.page}
+              totalPages={result.totalPages}
+              hasPrev={result.hasPreviousPage}
+              hasNext={result.hasNextPage}
+              onPrev={() => setPage(urlPage - 1)}
+              onNext={() => setPage(urlPage + 1)}
+              setPage={setPage}
+            />
           )}
         </main>
       </div>

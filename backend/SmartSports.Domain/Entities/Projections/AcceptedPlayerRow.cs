@@ -1,3 +1,3 @@
 namespace SmartSports.Domain.Entities.Projections;
 
-public record AcceptedPlayerRow(int UserId, string Username);
+public record AcceptedPlayerRow(string Username);

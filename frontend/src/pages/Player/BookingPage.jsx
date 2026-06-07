@@ -363,7 +363,7 @@ export default function BookingPage() {
             <SectionLabel>Choose Date</SectionLabel>
             <div className="flex items-center gap-2">
               <ArrowButton
-                disabled={!canPrevDate}
+                disabled={!canPrevDate || isSubmitting}
                 onClick={() => setDateOffset((o) => Math.max(0, o - VISIBLE_DATES))}
                 direction="left"
               />
@@ -374,6 +374,7 @@ export default function BookingPage() {
                     <button
                       key={toApiDate(date)}
                       onClick={() => setSelectedDate(date)}
+                      disabled={isSubmitting}
                       className={`
                         flex-1 min-w-0 flex flex-col items-center justify-center
                         h-16 rounded-xl border transition-all duration-150
@@ -395,7 +396,7 @@ export default function BookingPage() {
                 })}
               </div>
               <ArrowButton
-                disabled={!canNextDate}
+                disabled={!canNextDate || isSubmitting}
                 onClick={() =>
                   setDateOffset((o) => Math.min(dates.length - VISIBLE_DATES, o + VISIBLE_DATES))
                 }
@@ -419,6 +420,7 @@ export default function BookingPage() {
                       <button
                         key={minutes}
                         onClick={() => setDuration(minutes)}
+                        disabled={isSubmitting}
                         className={`
                           flex-1 py-3 rounded-xl border transition-all duration-150
                           flex flex-col items-center justify-center
@@ -476,14 +478,14 @@ export default function BookingPage() {
 
             {!isLoading && !error && futureSlots.length > 0 && (
               <>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {visibleSlots.map((slot) => {
                     const bookable   = slotIsBookable(slot)
                     const isSelected = selectedSlot?.startTime === slot.startTime
                     return (
                       <button
                         key={slot.startTime}
-                        disabled={!bookable}
+                        disabled={!bookable || isSubmitting}
                         onClick={() => handleSlotClick(slot)}
                         className={`
                           flex flex-col items-center justify-center
@@ -595,9 +597,11 @@ export default function BookingPage() {
                 type="button"
                 onClick={() => setIsOpen(true)}
                 aria-pressed={isOpen}
+                disabled={isSubmitting}
                 className={`
                   relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-colors
                   ${isOpen ? 'text-black' : 'text-neutral-400 hover:text-white'}
+                  disabled:cursor-not-allowed
                 `}
               >
                 <GlobeIcon className="w-3.5 h-3.5" />
@@ -607,9 +611,11 @@ export default function BookingPage() {
                 type="button"
                 onClick={() => setIsOpen(false)}
                 aria-pressed={!isOpen}
+                disabled={isSubmitting}
                 className={`
                   relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-colors
                   ${!isOpen ? 'text-white' : 'text-neutral-400 hover:text-white'}
+                  disabled:cursor-not-allowed
                 `}
               >
                 <LockIcon className="w-3.5 h-3.5" />

@@ -19,4 +19,4 @@ public class JoinPreviewResponse
     public IEnumerable<AcceptedPlayer> AcceptedPlayers { get; init; } = [];
 }
 
-public record AcceptedPlayer(int UserId, string Username);
+public record AcceptedPlayer(string Username);
