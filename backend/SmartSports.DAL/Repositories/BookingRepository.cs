@@ -101,13 +101,13 @@ public class BookingRepository : IBookingRepository
         {
             // CHECK constraint violation — e.g. end_time > start_time, duration bounds
             await transaction.RollbackAsync();
-            throw new ArgumentException($"Booking value is out of the allowed range: {ex.MessageText}");
+            throw new ArgumentException("Booking values are out of the allowed range.");
         }
         catch (PostgresException ex) when (ex.SqlState == "23502")
         {
             // NOT NULL violation — a required field was missing
             await transaction.RollbackAsync();
-            throw new ArgumentException($"A required booking field is missing: {ex.ColumnName ?? ex.MessageText}");
+            throw new ArgumentException("A required booking field is missing.");
         }
         catch
         {

@@ -18,22 +18,31 @@ export default function MatchDetailPage() {
   // the match exists, so a deep-link to a deleted/typo'd id falls through to
   // the catch-all NotFoundPage instead of showing an invite form for nothing.
   const [isCheckingMatch, setIsCheckingMatch] = useState(true)
+  const [toast, setToast] = useState(null)
+  const [username, setUsername] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     async function verifyMatchExists() {
-      const match = await getMatchById(matchId)
-      if (cancelled) return
-      if (match === null) { navigate('/404', { replace: true }); return }
-      setIsCheckingMatch(false)
+      try {
+        const match = await getMatchById(matchId)
+        if (cancelled) return
+        if (match === null) { navigate('/404', { replace: true }); return }
+        setIsCheckingMatch(false)
+      } catch (err) {
+        if (cancelled) return
+        if (err?.response?.status === 404) {
+          navigate('/404', { replace: true })
+          return
+        }
+        setToast({ message: parseApiError(err, 'Could not load match details.'), type: 'error' })
+        setIsCheckingMatch(false)
+      }
     }
     verifyMatchExists()
     return () => { cancelled = true }
   }, [matchId, navigate])
-
-  const [username, setUsername] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [toast, setToast] = useState(null)
 
   const showToast = (message, type = 'success') => setToast({ message, type })
 

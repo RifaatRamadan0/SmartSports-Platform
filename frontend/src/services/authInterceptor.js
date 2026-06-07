@@ -54,6 +54,8 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    originalRequest._retry = true
+
     if (refreshPromise) {
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject })
@@ -64,8 +66,6 @@ api.interceptors.response.use(
         })
         .catch((err) => Promise.reject(err))
     }
-
-    originalRequest._retry = true
 
     try {
       const { data } = await refreshSession()

@@ -149,6 +149,7 @@ public class InvitationRepository : IInvitationRepository
             WHERE  id              = @InvitationId
               AND  invited_user_id = @UserId
               AND  status          = 'pending'
+              AND  (expires_at IS NULL OR expires_at > NOW())
             """,
             new { InvitationId = invitationId, UserId = userId, NewStatus = newStatus });
     }

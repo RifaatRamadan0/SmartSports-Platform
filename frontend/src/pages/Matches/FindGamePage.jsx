@@ -858,7 +858,7 @@ export default function FindGamePage() {
   // page sizes (<10) it's negligible vs. a useMemo.
   const myMatchIds      = new Set((myMatches ?? []).map(m => m.matchId))
   const openItems       = (result?.items ?? []).filter(m => !myMatchIds.has(m.matchId))
-  const otherOpenCount  = result ? Math.max(0, result.totalCount - myMatchIds.size) : null
+  const otherOpenCount  = result ? result.totalCount : null
 
   return (
     <>
@@ -969,17 +969,19 @@ export default function FindGamePage() {
                   ))}
                 </motion.div>
               </AnimatePresence>
-
-              <Pagination
-                page={result.page}
-                totalPages={result.totalPages}
-                hasPrev={result.hasPreviousPage}
-                hasNext={result.hasNextPage}
-                onPrev={() => setPage(urlPage - 1)}
-                onNext={() => setPage(urlPage + 1)}
-                setPage={setPage}
-              />
             </>
+          )}
+
+          {!isLoading && !error && result && result.totalPages > 1 && (
+            <Pagination
+              page={result.page}
+              totalPages={result.totalPages}
+              hasPrev={result.hasPreviousPage}
+              hasNext={result.hasNextPage}
+              onPrev={() => setPage(urlPage - 1)}
+              onNext={() => setPage(urlPage + 1)}
+              setPage={setPage}
+            />
           )}
         </main>
       </div>
