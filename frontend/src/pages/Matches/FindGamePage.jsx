@@ -858,7 +858,8 @@ export default function FindGamePage() {
   // page sizes (<10) it's negligible vs. a useMemo.
   const myMatchIds      = new Set((myMatches ?? []).map(m => m.matchId))
   const openItems       = (result?.items ?? []).filter(m => !myMatchIds.has(m.matchId))
-  const otherOpenCount  = result ? result.totalCount : null
+  const hiddenOnPageCount = (result?.items?.length ?? 0) - openItems.length
+  const otherOpenCount  = result ? Math.max(0, result.totalCount - hiddenOnPageCount) : null
 
   return (
     <>
