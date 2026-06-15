@@ -12,6 +12,14 @@ public interface IMatchParticipantRepository
     /// that bypass organizer approval — currently invite-link joins on public matches.
     /// </summary>
     Task<MatchParticipant>  AddAcceptedAsync(int matchId, int userId);
+
+    /// <summary>
+    /// Atomically inserts a participant as 'accepted' only if the match still has
+    /// capacity. The count check and the insert happen in one statement, so two
+    /// concurrent join requests cannot both succeed when only one spot remains.
+    /// Returns the new row, or null if the match is already full.
+    /// </summary>
+    Task<MatchParticipant?> TryAddAcceptedAsync(int matchId, int userId, int maxPlayers);
     Task<MatchParticipant?> GetAsync(int matchId, int userId);
     Task<int>               GetAcceptedCountAsync(int matchId);
     Task<bool>              UpdateStatusAsync(int matchId, int userId, string status);

@@ -126,16 +126,14 @@ public class InvitationService : IInvitationService
         if (await _matchRepository.IsParticipantAsync(invitation.MatchId, callerUserId))
             throw new ArgumentException("You are already in this match.");
 
-        var acceptedCount = await _participantRepository.GetAcceptedCountAsync(invitation.MatchId);
-        if (acceptedCount >= match.MaxPlayers)
-            throw new ArgumentException("This match is full.");
-
         // Public matches (IsOpenToJoin = true) bypass organizer approval: the link
         // is just a convenient discovery channel for something already publicly joinable.
         // Private matches keep the request → approve flow so the organizer stays in control.
         if (match.IsOpenToJoin)
         {
-            await _participantRepository.AddAcceptedAsync(invitation.MatchId, callerUserId);
+            // Atomic capacity-guarded insert — prevents overfill under concurrent joins.
+            var joined = await _participantRepository.TryAddAcceptedAsync(invitation.MatchId, callerUserId, match.MaxPlayers)
+                ?? throw new ArgumentException("This match is full.");
 
             await _notificationService.CreateAsync(
                 match.BookingOwnerId!.Value,

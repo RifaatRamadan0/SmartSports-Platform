@@ -161,15 +161,10 @@ public class MatchService : IMatchService
         if (match.BookingOwnerId == callerUserId)
             throw new ArgumentException("You cannot join your own match.");
 
-        var acceptedCount = await _participantRepository.GetAcceptedCountAsync(matchId);
-        if (acceptedCount >= match.MaxPlayers)
-            throw new ArgumentException("This match is full.");
-
-        // Public matches auto-accept — the IsOpenToJoin guard above means we only
-        // reach this point for matches the organizer has already marked joinable.
-        // The invite-link path (InvitationService.JoinViaTokenAsync) uses the same rule.
-        // ConflictException from the UNIQUE constraint is surfaced as-is (409).
-        var participant = await _participantRepository.AddAcceptedAsync(matchId, callerUserId);
+        // Atomic capacity-guarded insert — count check and insert happen in one statement
+        // so two concurrent requests cannot both succeed when only one spot remains.
+        var participant = await _participantRepository.TryAddAcceptedAsync(matchId, callerUserId, match.MaxPlayers)
+            ?? throw new ArgumentException("This match is full.");
 
         await _notificationService.CreateAsync(
             match.BookingOwnerId!.Value,

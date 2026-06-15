@@ -90,6 +90,29 @@ public class MatchParticipantRepository : IMatchParticipantRepository
         return rows > 0;
     }
 
+    public async Task<MatchParticipant?> TryAddAcceptedAsync(int matchId, int userId, int maxPlayers)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        try
+        {
+            return await connection.QuerySingleOrDefaultAsync<MatchParticipant>(
+                """
+                INSERT INTO match_participants (match_id, user_id, status)
+                SELECT @MatchId, @UserId, 'accepted'::participant_status
+                WHERE (
+                    SELECT COUNT(*) FROM match_participants
+                    WHERE match_id = @MatchId AND status = 'accepted'
+                ) < @MaxPlayers
+                RETURNING *
+                """,
+                new { MatchId = matchId, UserId = userId, MaxPlayers = maxPlayers });
+        }
+        catch (PostgresException ex) when (ex.SqlState == "23505")
+        {
+            throw new ConflictException("Already in this match.");
+        }
+    }
+
     public async Task<bool> TryAcceptAsync(int matchId, int userId, int maxPlayers)
     {
         using var connection = _connectionFactory.CreateConnection();
