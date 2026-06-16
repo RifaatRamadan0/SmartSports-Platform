@@ -178,7 +178,7 @@ function AvatarUpload({ src, username, onUploaded, onError }) {
 
 // ── Section: Profile ──────────────────────────────────────────────────────────
 
-function ProfileSection({ profile, profileLoading, showToast }) {
+function ProfileSection({ profile, profileLoading, showToast, onProfileUpdated }) {
   const [form,   setForm]   = useState({
     username: '', phoneNumber: '', profilePicture: '', skillLevel: '', preferredPosition: '',
   })
@@ -201,17 +201,20 @@ function ProfileSection({ profile, profileLoading, showToast }) {
     e.preventDefault()
     setSaving(true)
     try {
-      await updateMyProfile({
+      const phoneChanged = form.phoneNumber !== profile?.phoneNumber
+      const updated = await updateMyProfile({
         username:          form.username,
         phoneNumber:       form.phoneNumber,
         profilePicture:    form.profilePicture   || null,
         skillLevel:        form.skillLevel ? Number(form.skillLevel) : null,
         preferredPosition: form.preferredPosition || null,
       })
-      showToast('Profile updated.')
-      if (form.phoneNumber !== profile?.phoneNumber) {
-        showToast('Phone number updated — please re-verify your phone in Security settings.', 'error')
-      }
+      onProfileUpdated(updated)
+      showToast(
+        phoneChanged
+          ? 'Profile updated. Please re-verify your phone in Security settings.'
+          : 'Profile updated.'
+      )
     } catch (err) {
       showToast(parseApiError(err, 'Could not update profile.'), 'error')
     } finally {
@@ -877,6 +880,7 @@ export default function SettingsPage() {
                     profile={profile}
                     profileLoading={profileLoading}
                     showToast={showToast}
+                    onProfileUpdated={setProfile}
                   />
                 </SectionPane>
               )}

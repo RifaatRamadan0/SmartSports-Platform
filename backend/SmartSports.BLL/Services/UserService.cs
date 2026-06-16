@@ -17,7 +17,8 @@ public class UserService(IUserRepository userRepository, ITwilioService twilioSe
 
     public async Task<UserProfileResponse> UpdateProfileAsync(int userId, UpdateProfileRequest request)
     {
-        if (request.ProfilePicture != null && !request.ProfilePicture.StartsWith("https://"))
+        if (request.ProfilePicture != null &&
+            !request.ProfilePicture.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Profile picture must be a valid HTTPS URL.");
 
         var rowUpdated = await userRepository.UpdateProfileAsync(
