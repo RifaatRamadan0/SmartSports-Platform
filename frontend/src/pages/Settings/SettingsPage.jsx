@@ -17,6 +17,8 @@ import { uploadToImageKit, isImageKitConfigured } from '../../services/imagekit'
 
 const SKILL_LABELS = { 1: 'Beginner', 2: 'Intermediate', 3: 'Advanced', 4: 'Professional' }
 
+const inputCls = 'rounded-xl bg-[var(--bg)] border border-white/[0.08] px-3 py-2.5 text-[13px] text-white placeholder-[var(--text3)] focus:outline-none focus:border-[var(--green)]/60 transition-colors'
+
 const NAV_ITEMS = [
   { id: 'profile',  label: 'Profile',  icon: User   },
   { id: 'security', label: 'Security', icon: Lock   },
@@ -51,12 +53,7 @@ function FieldLabel({ children }) {
 function TextInput({ className, ...props }) {
   return (
     <input
-      className={cn(
-        'rounded-xl bg-[var(--bg)] border border-white/[0.08] px-3 py-2.5',
-        'text-[13px] text-white placeholder-[var(--text3)]',
-        'focus:outline-none focus:border-[var(--green)]/60 transition-colors',
-        className
-      )}
+      className={cn(inputCls, className)}
       {...props}
     />
   )
@@ -212,6 +209,9 @@ function ProfileSection({ profile, profileLoading, showToast }) {
         preferredPosition: form.preferredPosition || null,
       })
       showToast('Profile updated.')
+      if (form.phoneNumber !== profile?.phoneNumber) {
+        showToast('Phone number updated — please re-verify your phone in Security settings.', 'error')
+      }
     } catch (err) {
       showToast(parseApiError(err, 'Could not update profile.'), 'error')
     } finally {
@@ -242,7 +242,9 @@ function ProfileSection({ profile, profileLoading, showToast }) {
         <div>
           <p className="text-[15px] font-semibold text-white">{profile?.username}</p>
           <p className="text-[12px] text-[var(--text3)]">{profile?.email}</p>
-          <p className="text-[11px] text-[var(--text3)] mt-0.5">Click the avatar to change your photo</p>
+          {isImageKitConfigured() && (
+            <p className="text-[11px] text-[var(--text3)] mt-0.5">Click the avatar to change your photo</p>
+          )}
         </div>
       </div>
 
@@ -273,8 +275,7 @@ function ProfileSection({ profile, profileLoading, showToast }) {
           <select
             value={form.skillLevel}
             onChange={set('skillLevel')}
-            className="rounded-xl bg-[var(--bg)] border border-white/[0.08] px-3 py-2.5
-                       text-[13px] text-white focus:outline-none focus:border-[var(--green)]/60 transition-colors"
+            className={cn(inputCls)}
           >
             <option value="">— Not set —</option>
             {Object.entries(SKILL_LABELS).map(([val, label]) => (
@@ -304,10 +305,11 @@ function ProfileSection({ profile, profileLoading, showToast }) {
 // ── Section: Security ─────────────────────────────────────────────────────────
 
 function SecuritySection({ profile, showToast, onPhoneVerified }) {
-  const [form,        setForm]        = useState({ currentPassword: '', newPassword: '' })
+  const [form,        setForm]        = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
   const [saving,      setSaving]      = useState(false)
   const [showCurrent, setShowCurrent] = useState(false)
   const [showNew,     setShowNew]     = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   // Phone re-verification flow
   const [otpSent,     setOtpSent]     = useState(false)
@@ -319,12 +321,17 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
 
   const handleSubmit = async e => {
     e.preventDefault()
+    if (form.newPassword !== form.confirmPassword) {
+      showToast('New passwords do not match.', 'error')
+      return
+    }
     setSaving(true)
     try {
-      await changeMyPassword(form)
-      setForm({ currentPassword: '', newPassword: '' })
+      await changeMyPassword({ currentPassword: form.currentPassword, newPassword: form.newPassword })
+      setForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
       setShowCurrent(false)
       setShowNew(false)
+      setShowConfirm(false)
       showToast('Password changed.')
     } catch (err) {
       showToast(parseApiError(err, 'Could not change password.'), 'error')
@@ -433,7 +440,7 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
                 />
                 <button
                   type="submit"
-                  disabled={otpVerifying || otpCode.length < 4}
+                  disabled={otpVerifying || otpCode.length < 6}
                   className="px-4 py-2 rounded-full bg-amber-500 text-black text-[12px] font-bold
                              hover:brightness-110 transition-all disabled:opacity-50"
                 >
@@ -501,6 +508,28 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
             </div>
             <p className="text-[11px] text-[var(--text3)]">Minimum 8 characters.</p>
           </label>
+
+          <label className="flex flex-col gap-1.5">
+            <FieldLabel>Confirm New Password</FieldLabel>
+            <div className="relative">
+              <TextInput
+                type={showConfirm ? 'text' : 'password'}
+                value={form.confirmPassword}
+                onChange={set('confirmPassword')}
+                className="w-full pr-10"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-white transition-colors"
+                aria-label={showConfirm ? 'Hide password' : 'Show password'}
+              >
+                {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+          </label>
+
           <div className="flex justify-end">
             <SaveButton loading={saving} label="Change Password" />
           </div>

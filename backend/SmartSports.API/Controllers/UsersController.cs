@@ -24,6 +24,7 @@ public class UsersController(IUserService userService) : BaseApiController
     }
 
     [HttpPut("me")]
+    [EnableRateLimiting("lookups")]
     [ProducesResponseType(typeof(UserProfileResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -37,6 +38,7 @@ public class UsersController(IUserService userService) : BaseApiController
     }
 
     [HttpPatch("me/password")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)

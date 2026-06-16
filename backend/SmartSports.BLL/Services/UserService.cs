@@ -17,10 +17,10 @@ public class UserService(IUserRepository userRepository, ITwilioService twilioSe
 
     public async Task<UserProfileResponse> UpdateProfileAsync(int userId, UpdateProfileRequest request)
     {
-        var user = await userRepository.GetByIdAsync(userId)
-            ?? throw new KeyNotFoundException("User not found.");
+        if (request.ProfilePicture != null && !request.ProfilePicture.StartsWith("https://"))
+            throw new ArgumentException("Profile picture must be a valid HTTPS URL.");
 
-        await userRepository.UpdateProfileAsync(
+        var rowUpdated = await userRepository.UpdateProfileAsync(
             userId,
             request.Username,
             request.PhoneNumber,
@@ -28,10 +28,13 @@ public class UserService(IUserRepository userRepository, ITwilioService twilioSe
             request.SkillLevel,
             request.PreferredPosition);
 
-        // Re-fetch so the response reflects exactly what is now in the DB.
-        var updated = await userRepository.GetByIdAsync(userId)!;
-        var roles   = await userRepository.GetUserRolesAsync(userId);
-        return MapToResponse(updated!, roles);
+        if (!rowUpdated)
+            throw new KeyNotFoundException("User not found.");
+
+        var updated = await userRepository.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("User not found.");
+        var roles = await userRepository.GetUserRolesAsync(userId);
+        return MapToResponse(updated, roles);
     }
 
     public async Task ChangePasswordAsync(int userId, ChangePasswordRequest request)

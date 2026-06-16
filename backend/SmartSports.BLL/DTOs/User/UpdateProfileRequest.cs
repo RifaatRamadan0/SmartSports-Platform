@@ -13,6 +13,7 @@ public class UpdateProfileRequest
         ErrorMessage = "Enter a valid Lebanese mobile number.")]
     public string PhoneNumber { get; set; } = string.Empty;
 
+    [Url]
     public string? ProfilePicture    { get; set; }
 
     [Range(1, 4)]

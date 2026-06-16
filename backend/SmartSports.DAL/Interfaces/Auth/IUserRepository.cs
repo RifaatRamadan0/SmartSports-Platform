@@ -30,6 +30,6 @@ public interface IUserRepository
     Task AddRoleAsync(int userId, int roleId);
 
     // -- Profile management --
-    Task UpdateProfileAsync(int userId, string username, string phoneNumber,
+    Task<bool> UpdateProfileAsync(int userId, string username, string phoneNumber,
         string? profilePicture, short? skillLevel, string? preferredPosition);
 }

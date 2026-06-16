@@ -89,21 +89,22 @@ export default function BookingPage() {
   // Always fetch full pitch detail — the optimistic state from the card
   // (name, price, duration) drives the first paint while the network call
   // hydrates the images array and any other up-to-date fields.
+  // Phone verification is loaded lazily after the pitch resolves so it
+  // never competes with the critical-path fetch.
   useEffect(() => {
     let cancelled = false
     getPitchById(pitchId)
-      .then((p) => { if (!cancelled) setPitch(p) })
+      .then((p) => {
+        if (!cancelled) {
+          setPitch(p)
+          getMyProfile()
+            .then((profile) => { if (!cancelled) setIsPhoneVerified(profile.isPhoneVerified) })
+            .catch(() => {})
+        }
+      })
       .catch(() => { if (!cancelled) setFetchError(true) })
     return () => { cancelled = true }
   }, [pitchId])
-
-  // Fire-and-forget: check phone verification status for the amber banner.
-  // Never blocks the booking flow — only drives the informational warning.
-  useEffect(() => {
-    getMyProfile()
-      .then((p) => setIsPhoneVerified(p.isPhoneVerified))
-      .catch(() => {})
-  }, [])
 
   // Use optimistic name/display info from location.state for fast first paint.
   // Price and duration limits come exclusively from the API response to prevent

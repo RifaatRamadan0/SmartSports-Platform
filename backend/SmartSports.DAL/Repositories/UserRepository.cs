@@ -3,6 +3,7 @@ using Npgsql;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.Domain.Entities;
+using SmartSports.Domain.Exceptions;
 
 namespace SmartSports.DAL.Repositories;
 
@@ -171,13 +172,13 @@ public class UserRepository : IUserRepository
 
     // -- Profile management --
 
-    public async Task UpdateProfileAsync(int userId, string username, string phoneNumber,
+    public async Task<bool> UpdateProfileAsync(int userId, string username, string phoneNumber,
         string? profilePicture, short? skillLevel, string? preferredPosition)
     {
         using var connection = _connectionFactory.CreateConnection();
         try
         {
-            await connection.ExecuteAsync(
+            var rows = await connection.ExecuteAsync(
                 """
                 UPDATE users
                 SET username           = @Username,
@@ -192,6 +193,7 @@ public class UserRepository : IUserRepository
                 new { UserId = userId, Username = username, PhoneNumber = phoneNumber,
                       ProfilePicture = profilePicture, SkillLevel = skillLevel,
                       PreferredPosition = preferredPosition });
+            return rows > 0;
         }
         catch (PostgresException ex) when (ex.SqlState == "23505")
         {
@@ -201,7 +203,7 @@ public class UserRepository : IUserRepository
                 "users_phone_number_key"   => "Phone number is already registered.",
                 _                          => "A conflict occurred with existing account details."
             };
-            throw new ArgumentException(message);
+            throw new ConflictException(message);
         }
     }
 
