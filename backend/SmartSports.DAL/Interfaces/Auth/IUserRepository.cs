@@ -23,6 +23,13 @@ public interface IUserRepository
     // -- Email verification --
     Task VerifyEmailAsync(int userId);
 
+    // -- Phone verification --
+    Task VerifyPhoneAsync(int userId);
+
     // -- Role management --
     Task AddRoleAsync(int userId, int roleId);
+
+    // -- Profile management --
+    Task UpdateProfileAsync(int userId, string username, string phoneNumber,
+        string? profilePicture, short? skillLevel, string? preferredPosition);
 }
