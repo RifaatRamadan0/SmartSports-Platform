@@ -317,23 +317,53 @@ public class UserRepository : IUserRepository
 
     public async Task SoftDeleteAsync(int userId)
     {
-        // Anonymize the unique/PII fields so the original email/username are released
-        // for re-registration and no personal data is retained, then stamp deleted_at.
-        // The id is guaranteed unique, so the placeholder values never collide.
+        // Atomically retire an account in a single transaction so it can never be left
+        // half-deleted (e.g. pitches removed while the user row survives, or vice versa):
+        //   1. Anonymize the unique/PII fields so the original email/username/phone are
+        //      released for re-registration and no personal data is retained, then stamp
+        //      deleted_at. The id is unique, so the placeholder values never collide.
+        //   2. Soft-delete any pitches the user owns so they don't linger as live,
+        //      unmanageable listings. Callers must ensure no upcoming bookings exist.
+        //   3. Revoke every refresh token so live sessions can't be refreshed.
         using var connection = _connectionFactory.CreateConnection();
-        var rows = await connection.ExecuteAsync(
-            """
-            UPDATE users
-            SET deleted_at      = NOW(),
-                email           = 'deleted_' || id || '@deleted.local',
-                username        = 'deleted_user_' || id,
-                phone_number    = 'deleted_' || id,
-                profile_picture = NULL
-            WHERE id = @UserId
-              AND deleted_at IS NULL
-            """,
-            new { UserId = userId });
-        if (rows == 0)
-            throw new KeyNotFoundException("User not found.");
+        await connection.OpenAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
+        try
+        {
+            var rows = await connection.ExecuteAsync(
+                """
+                UPDATE users
+                SET deleted_at      = NOW(),
+                    email           = 'deleted_' || id || '@deleted.local',
+                    username        = 'deleted_user_' || id,
+                    phone_number    = 'deleted_' || id,
+                    profile_picture = NULL
+                WHERE id = @UserId
+                  AND deleted_at IS NULL
+                """,
+                new { UserId = userId }, transaction);
+            if (rows == 0)
+                throw new KeyNotFoundException("User not found.");
+
+            await connection.ExecuteAsync(
+                """
+                UPDATE pitches
+                SET    deleted_at = NOW()
+                WHERE  owner_id   = @UserId
+                  AND  deleted_at IS NULL
+                """,
+                new { UserId = userId }, transaction);
+
+            await connection.ExecuteAsync(
+                "UPDATE refresh_tokens SET is_revoked = TRUE WHERE user_id = @UserId",
+                new { UserId = userId }, transaction);
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 }

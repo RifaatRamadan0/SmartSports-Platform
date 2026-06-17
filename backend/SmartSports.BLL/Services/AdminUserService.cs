@@ -2,15 +2,13 @@ using SmartSports.BLL.DTOs.Admin;
 using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Auth;
-using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.Domain.Entities.Projections;
 
 namespace SmartSports.BLL.Services;
 
 public class AdminUserService(
     IUserRepository userRepository,
-    IRefreshTokenRepository refreshTokenRepository,
-    IPitchRepository pitchRepository) : IAdminUserService
+    IRefreshTokenRepository refreshTokenRepository) : IAdminUserService
 {
     public async Task<PagedResult<AdminUserSummaryResponse>> ListUsersAsync(
         int page, int pageSize, string? role, bool? isBanned)
@@ -97,12 +95,11 @@ public class AdminUserService(
             throw new ArgumentException(
                 "This user has active upcoming bookings (as a player or pitch owner). Resolve those before deleting the account.");
 
-        // Take down the owner's pitches so they don't linger as live, unmanageable
-        // listings after the account is gone. The booking guard above guarantees none
-        // of these pitches have upcoming bookings.
-        await pitchRepository.SoftDeleteByOwnerAsync(userId);
+        // Atomically retire the account: anonymize + stamp the user row, take down the
+        // owner's pitches so they don't linger as live, unmanageable listings, and revoke
+        // every refresh token. The booking guard above guarantees none of those pitches
+        // have upcoming bookings.
         await userRepository.SoftDeleteAsync(userId);
-        await refreshTokenRepository.RevokeAllForUserAsync(userId);
     }
 
     private static AdminUserSummaryResponse MapToResponse(AdminUserRow row) => new()

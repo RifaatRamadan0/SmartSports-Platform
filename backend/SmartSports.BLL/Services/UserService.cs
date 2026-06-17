@@ -1,15 +1,13 @@
 using SmartSports.BLL.DTOs.User;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Auth;
-using SmartSports.DAL.Interfaces.Pitch;
 
 namespace SmartSports.BLL.Services;
 
 public class UserService(
     IUserRepository userRepository,
     ITwilioService twilioService,
-    IRefreshTokenRepository refreshTokenRepository,
-    IPitchRepository pitchRepository) : IUserService
+    IRefreshTokenRepository refreshTokenRepository) : IUserService
 {
     public async Task<UserProfileResponse> GetProfileAsync(int userId)
     {
@@ -53,6 +51,12 @@ public class UserService(
 
         var newHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
         await userRepository.UpdatePasswordAsync(userId, newHash);
+
+        // Evict every other session so a changed password actually locks out anyone
+        // holding an old refresh token (e.g. after a suspected compromise). Mirrors the
+        // password-reset flow. The caller's current session continues on its existing
+        // access token until it expires (≤15 min) and then simply re-authenticates.
+        await refreshTokenRepository.RevokeAllForUserAsync(userId);
     }
 
     public async Task SendPhoneVerificationAsync(int userId)
@@ -94,12 +98,11 @@ public class UserService(
             throw new ArgumentException(
                 "You have active upcoming bookings. Cancel them before deleting your account.");
 
-        // Take down any pitches this user owns so they don't linger as live,
-        // unmanageable listings. The booking guard above guarantees none have
-        // upcoming bookings.
-        await pitchRepository.SoftDeleteByOwnerAsync(userId);
+        // Atomically retire the account: the user row is anonymized + stamped
+        // deleted_at, any pitches they own are taken down (so they don't linger as
+        // live, unmanageable listings), and every refresh token is revoked. The
+        // booking guard above guarantees none of those pitches have upcoming bookings.
         await userRepository.SoftDeleteAsync(userId);
-        await refreshTokenRepository.RevokeAllForUserAsync(userId);
     }
 
     private static UserProfileResponse MapToResponse(
