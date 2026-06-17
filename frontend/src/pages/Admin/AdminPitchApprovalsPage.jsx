@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import {
   listPendingPitches, approvePitch, rejectPitch,
   listPendingRoleRequests, approveRoleRequest, rejectRoleRequest,
@@ -519,6 +520,11 @@ export default function AdminPitchApprovalsPage() {
             {tab.label}
           </button>
         ))}
+        <Link to="/admin/users"
+          className="px-5 py-2.5 text-[13px] font-semibold border-b-2 -mb-px transition-colors
+                     border-transparent text-neutral-500 hover:text-white ml-2">
+          Users
+        </Link>
       </div>
 
       {/* Tab content */}

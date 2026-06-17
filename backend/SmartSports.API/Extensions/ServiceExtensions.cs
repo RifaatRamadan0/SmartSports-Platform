@@ -230,6 +230,9 @@ public static class ServiceExtensions
         services.AddScoped<IRoleRequestService, RoleRequestService>();
         services.AddScoped<IAdminRoleRequestService, AdminRoleRequestService>();
 
+        // Admin user management
+        services.AddScoped<IAdminUserService, AdminUserService>();
+
         // Invitations / Notifications (SPDBTCP-76)
         // IMatchRepository is already registered above in the Match (SPDBTCP-245) block.
         services.AddScoped<IInvitationRepository, InvitationRepository>();

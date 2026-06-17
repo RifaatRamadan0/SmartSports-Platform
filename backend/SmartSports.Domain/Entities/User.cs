@@ -12,5 +12,6 @@ public class User
     public string? PreferredPosition { get; set; }
     public bool IsEmailVerified { get; set; }
     public bool IsPhoneVerified { get; set; }
+    public bool IsBanned { get; set; }
     public DateTime CreatedAt { get; set; }
 }

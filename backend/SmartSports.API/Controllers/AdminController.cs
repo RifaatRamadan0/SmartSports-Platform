@@ -14,13 +14,16 @@ public class AdminController : BaseApiController
 {
     private readonly IAdminPitchService       _adminPitchService;
     private readonly IAdminRoleRequestService _adminRoleRequestService;
+    private readonly IAdminUserService        _adminUserService;
 
     public AdminController(
         IAdminPitchService       adminPitchService,
-        IAdminRoleRequestService adminRoleRequestService)
+        IAdminRoleRequestService adminRoleRequestService,
+        IAdminUserService        adminUserService)
     {
         _adminPitchService       = adminPitchService;
         _adminRoleRequestService = adminRoleRequestService;
+        _adminUserService        = adminUserService;
     }
 
     /// <summary>
@@ -112,6 +115,52 @@ public class AdminController : BaseApiController
         if (adminId is null) return Unauthorized();
 
         await _adminRoleRequestService.RejectRequestAsync(id, adminId.Value, request.Reason);
+        return NoContent();
+    }
+
+    // ── User Management ──────────────────────────────────────────────────────
+
+    [HttpGet("users")]
+    [ProducesResponseType(typeof(PagedResult<AdminUserSummaryResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetUsers(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? role = null,
+        [FromQuery] bool? isBanned = null)
+    {
+        var result = await _adminUserService.ListUsersAsync(page, pageSize, role, isBanned);
+        return Ok(result);
+    }
+
+    [HttpGet("users/{id:int}")]
+    [ProducesResponseType(typeof(AdminUserSummaryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUser(int id)
+    {
+        var user = await _adminUserService.GetUserAsync(id);
+        return Ok(user);
+    }
+
+    [HttpPatch("users/{id:int}/ban")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> BanUser(int id)
+    {
+        var adminId = GetUserId();
+        if (adminId is null) return Unauthorized();
+
+        await _adminUserService.BanUserAsync(adminId.Value, id);
+        return NoContent();
+    }
+
+    [HttpPatch("users/{id:int}/unban")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UnbanUser(int id)
+    {
+        await _adminUserService.UnbanUserAsync(id);
         return NoContent();
     }
 }

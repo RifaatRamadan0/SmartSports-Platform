@@ -28,6 +28,7 @@ const OwnerDashboardPage      = lazy(() => import('./pages/Owner/OwnerDashboardP
 const PlayerBookingsPage      = lazy(() => import('./pages/Player/PlayerBookingsPage'))
 const BookingPage             = lazy(() => import('./pages/Player/BookingPage'))
 const AdminPitchApprovalsPage = lazy(() => import('./pages/Admin/AdminPitchApprovalsPage'))
+const AdminUsersPage          = lazy(() => import('./pages/Admin/AdminUsersPage'))
 const SettingsPage            = lazy(() => import('./pages/Settings/SettingsPage'))
 const BookingDetailPage       = lazy(() => import('./pages/Booking/BookingDetailPage'))
 const MatchDetailPage         = lazy(() => import('./pages/Match/MatchDetailPage'))
@@ -84,6 +85,7 @@ function AnimatedRoutes() {
           {/* Protected: Admin only */}
           <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]} />}>
             <Route path="/admin/pitches" element={<AdminPitchApprovalsPage />} />
+            <Route path="/admin/users"   element={<AdminUsersPage />} />
           </Route>
 
           {/* Protected: Player only */}

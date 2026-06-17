@@ -129,6 +129,9 @@ public class AuthService : IAuthService
         if (!user.IsEmailVerified)
             throw new ForbiddenException("Your email address has not been verified. Please check your inbox.");
 
+        if (user.IsBanned)
+            throw new UnauthorizedAccessException("Your account has been banned.");
+
         var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();
         if (userRoles.Count == 0)
             return null;
@@ -168,7 +171,7 @@ public class AuthService : IAuthService
             return null;
 
         var user = await _userRepository.GetByIdAsync(storedToken.UserId);
-        if (user == null)
+        if (user == null || user.IsBanned)
             return null;
 
         var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();

@@ -3,6 +3,7 @@ using Npgsql;
 using SmartSports.DAL.Data;
 using SmartSports.DAL.Interfaces.Auth;
 using SmartSports.Domain.Entities;
+using SmartSports.Domain.Entities.Projections;
 using SmartSports.Domain.Exceptions;
 
 namespace SmartSports.DAL.Repositories;
@@ -94,7 +95,7 @@ public class UserRepository : IUserRepository
             """
             SELECT id, username, email, password_hash, phone_number,
                    profile_picture, skill_level, preferred_position,
-                   is_email_verified, is_phone_verified, created_at
+                   is_email_verified, is_phone_verified, is_banned, created_at
             FROM users
             WHERE LOWER(email) = LOWER(@Email)
             """,
@@ -108,7 +109,7 @@ public class UserRepository : IUserRepository
             """
             SELECT id, username, email, password_hash, phone_number,
                    profile_picture, skill_level, preferred_position,
-                   is_email_verified, is_phone_verified, created_at
+                   is_email_verified, is_phone_verified, is_banned, created_at
             FROM users
             WHERE LOWER(username) = LOWER(@Username)
             """,
@@ -122,7 +123,7 @@ public class UserRepository : IUserRepository
             """
             SELECT id, username, email, password_hash, phone_number,
                    profile_picture, skill_level, preferred_position,
-                   is_email_verified, is_phone_verified, created_at
+                   is_email_verified, is_phone_verified, is_banned, created_at
             FROM users
             WHERE id = @UserId
             """,
@@ -229,5 +230,56 @@ public class UserRepository : IUserRepository
             ON CONFLICT DO NOTHING
             """,
             new { UserId = userId, RoleId = roleId });
+    }
+
+    // -- Admin user management --
+
+    public async Task<(IEnumerable<AdminUserRow> Users, int TotalCount)> ListUsersAsync(
+        int page, int pageSize, string? role, bool? isBanned)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        var offset = (page - 1) * pageSize;
+
+        using var multi = await connection.QueryMultipleAsync(
+            """
+            SELECT u.id, u.username, u.email, u.phone_number, u.is_banned, u.created_at,
+                   COALESCE(STRING_AGG(r.name, ',' ORDER BY r.name), '') AS role_names
+            FROM users u
+            LEFT JOIN user_roles ur ON ur.user_id = u.id
+            LEFT JOIN roles r ON r.id = ur.role_id
+            WHERE (@Role IS NULL OR EXISTS (
+                SELECT 1 FROM user_roles ur2
+                INNER JOIN roles r2 ON r2.id = ur2.role_id
+                WHERE ur2.user_id = u.id AND r2.name = @Role
+            ))
+            AND (@IsBanned IS NULL OR u.is_banned = @IsBanned)
+            GROUP BY u.id, u.username, u.email, u.phone_number, u.is_banned, u.created_at
+            ORDER BY u.created_at DESC
+            LIMIT @PageSize OFFSET @Offset;
+
+            SELECT COUNT(*)
+            FROM users u
+            WHERE (@Role IS NULL OR EXISTS (
+                SELECT 1 FROM user_roles ur2
+                INNER JOIN roles r2 ON r2.id = ur2.role_id
+                WHERE ur2.user_id = u.id AND r2.name = @Role
+            ))
+            AND (@IsBanned IS NULL OR u.is_banned = @IsBanned);
+            """,
+            new { Role = role, IsBanned = isBanned, PageSize = pageSize, Offset = offset });
+
+        var users      = await multi.ReadAsync<AdminUserRow>();
+        var totalCount = await multi.ReadSingleAsync<int>();
+        return (users, totalCount);
+    }
+
+    public async Task SetBannedAsync(int userId, bool isBanned)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        var rows = await connection.ExecuteAsync(
+            "UPDATE users SET is_banned = @IsBanned WHERE id = @UserId",
+            new { UserId = userId, IsBanned = isBanned });
+        if (rows == 0)
+            throw new KeyNotFoundException("User not found.");
     }
 }
