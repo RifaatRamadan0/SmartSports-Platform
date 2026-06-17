@@ -20,3 +20,7 @@ export async function banUser(id) {
 export async function unbanUser(id) {
   await api.patch(`/api/admin/users/${id}/unban`)
 }
+
+export async function deleteUser(id) {
+  await api.delete(`/api/admin/users/${id}`)
+}

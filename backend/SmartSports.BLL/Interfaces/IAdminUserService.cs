@@ -9,4 +9,5 @@ public interface IAdminUserService
     Task<AdminUserSummaryResponse> GetUserAsync(int userId);
     Task BanUserAsync(int requestingAdminId, int userId);
     Task UnbanUserAsync(int userId);
+    Task DeleteUserAsync(int requestingAdminId, int userId);
 }

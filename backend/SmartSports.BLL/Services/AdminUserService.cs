@@ -2,13 +2,15 @@ using SmartSports.BLL.DTOs.Admin;
 using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Auth;
+using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.Domain.Entities.Projections;
 
 namespace SmartSports.BLL.Services;
 
 public class AdminUserService(
     IUserRepository userRepository,
-    IRefreshTokenRepository refreshTokenRepository) : IAdminUserService
+    IRefreshTokenRepository refreshTokenRepository,
+    IPitchRepository pitchRepository) : IAdminUserService
 {
     public async Task<PagedResult<AdminUserSummaryResponse>> ListUsersAsync(
         int page, int pageSize, string? role, bool? isBanned)
@@ -77,6 +79,30 @@ public class AdminUserService(
             throw new ArgumentException("User is not banned.");
 
         await userRepository.SetBannedAsync(userId, false);
+    }
+
+    public async Task DeleteUserAsync(int requestingAdminId, int userId)
+    {
+        if (userId == requestingAdminId)
+            throw new ArgumentException("You cannot delete your own account.");
+
+        var user = await userRepository.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("User not found.");
+
+        var roles = await userRepository.GetUserRolesAsync(userId);
+        if (roles.Contains("Admin"))
+            throw new ArgumentException("Admin accounts cannot be deleted.");
+
+        if (await userRepository.HasActiveFutureBookingsAsync(userId))
+            throw new ArgumentException(
+                "This user has active upcoming bookings (as a player or pitch owner). Resolve those before deleting the account.");
+
+        // Take down the owner's pitches so they don't linger as live, unmanageable
+        // listings after the account is gone. The booking guard above guarantees none
+        // of these pitches have upcoming bookings.
+        await pitchRepository.SoftDeleteByOwnerAsync(userId);
+        await userRepository.SoftDeleteAsync(userId);
+        await refreshTokenRepository.RevokeAllForUserAsync(userId);
     }
 
     private static AdminUserSummaryResponse MapToResponse(AdminUserRow row) => new()

@@ -38,4 +38,6 @@ public interface IUserRepository
     Task<(IEnumerable<AdminUserRow> Users, int TotalCount)> ListUsersAsync(
         int page, int pageSize, string? role, bool? isBanned);
     Task SetBannedAsync(int userId, bool isBanned);
+    Task<bool> HasActiveFutureBookingsAsync(int userId);
+    Task SoftDeleteAsync(int userId);
 }

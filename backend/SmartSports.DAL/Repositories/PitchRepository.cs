@@ -350,6 +350,20 @@ public class PitchRepository : IPitchRepository
         return rows > 0;
     }
 
+    public async Task<int> SoftDeleteByOwnerAsync(int ownerId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        return await connection.ExecuteAsync(
+            """
+            UPDATE pitches
+            SET    deleted_at = NOW()
+            WHERE  owner_id   = @OwnerId
+              AND  deleted_at IS NULL
+            """,
+            new { OwnerId = ownerId });
+    }
+
     public async Task<(IEnumerable<AdminPitchRow> Items, long TotalCount)> ListPendingAsync(int page, int pageSize)
     {
         using var connection = _connectionFactory.CreateConnection();

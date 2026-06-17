@@ -63,6 +63,13 @@ public interface IPitchRepository
     /// </summary>
     Task<bool> SoftDeleteAsync(int pitchId);
 
+    /// <summary>
+    /// Soft-deletes every non-deleted pitch owned by the given user (stamps
+    /// deleted_at = NOW()). Used when an owner's account is deleted so their
+    /// listings come down with them. Returns the number of pitches affected.
+    /// </summary>
+    Task<int> SoftDeleteByOwnerAsync(int ownerId);
+
     /// Returns all images for a pitch ordered cover-first, then by display_order, then id.
     /// </summary>
     Task<IEnumerable<PitchImage>> GetPitchImagesAsync(int pitchId);

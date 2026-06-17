@@ -6,7 +6,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { ROLES } from '../../constants/roles'
 import { getRoleHomePath } from '../../utils/roleUtils'
 import { requestPitchOwnerRole, addPlayerRoleInstantly, getMyRoleRequests } from '../../services/Settings/settingsService'
-import { getMyProfile, updateMyProfile, changeMyPassword, sendPhoneVerification, verifyPhone } from '../../services/User/userService'
+import { getMyProfile, updateMyProfile, changeMyPassword, sendPhoneVerification, verifyPhone, deleteMyAccount } from '../../services/User/userService'
 import { parseApiError } from '../../utils/errorUtils'
 import { refreshSession } from '../../services/authInterceptor'
 import { tweenTransition } from '../../lib/motion'
@@ -546,7 +546,7 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
 
 function AccountSection({ roles, showToast }) {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, logout } = useAuth()
 
   const isPlayer = roles.includes(ROLES.PLAYER)
   const isOwner  = roles.includes(ROLES.PITCH_OWNER)
@@ -555,6 +555,24 @@ function AccountSection({ roles, showToast }) {
   const [requests,      setRequests]      = useState([])
   const [isLoadingReqs, setIsLoadingReqs] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+
+  // Delete-account flow
+  const [showDelete,    setShowDelete]    = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleting,      setDeleting]      = useState(false)
+
+  const handleDeleteAccount = async e => {
+    e.preventDefault()
+    setDeleting(true)
+    try {
+      await deleteMyAccount(deletePassword)
+      await logout()
+      navigate('/login', { replace: true })
+    } catch (err) {
+      showToast(parseApiError(err, 'Could not delete your account.'), 'error')
+      setDeleting(false)
+    }
+  }
 
   const fetchRequests = useCallback(async () => {
     setIsLoadingReqs(true)
@@ -727,6 +745,84 @@ function AccountSection({ roles, showToast }) {
           )}
         </div>
       )}
+
+      {/* Danger zone — self-service account deletion (not available to admins) */}
+      {!isAdmin && (
+        <div className="rounded-2xl border border-red-600/30 bg-[#1a0f0f] p-5">
+          <p className="text-[11px] font-bold tracking-widest uppercase text-red-500 mb-1">
+            Danger Zone
+          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[14px] font-semibold text-white">Delete account</p>
+              <p className="text-[12px] text-[var(--text2)] mt-1">
+                Permanently delete your account and personal data. This cannot be undone.
+              </p>
+            </div>
+            <button
+              onClick={() => { setDeletePassword(''); setShowDelete(true) }}
+              className="shrink-0 px-4 py-2 rounded-full text-[12px] font-bold transition-all
+                         bg-red-500/15 border border-red-500/40 text-red-400 hover:bg-red-500/25"
+            >
+              Delete account
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      <AnimatePresence>
+        {showDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={tweenTransition}
+              className="w-full max-w-sm rounded-2xl border border-red-600/30 bg-[var(--surface)] p-6"
+            >
+              <p className="text-base font-bold text-white mb-1">Delete your account?</p>
+              <p className="text-[13px] text-[var(--text2)] mb-5">
+                This permanently removes your account and personal data, takes down any
+                pitches you own, and logs you out. Enter your password to confirm.
+              </p>
+              <form onSubmit={handleDeleteAccount} className="flex flex-col gap-4">
+                <label className="flex flex-col gap-1.5">
+                  <FieldLabel>Current Password</FieldLabel>
+                  <TextInput
+                    type="password"
+                    value={deletePassword}
+                    onChange={e => setDeletePassword(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </label>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowDelete(false)}
+                    disabled={deleting}
+                    className="px-4 py-2 rounded-full text-[12px] font-semibold bg-[var(--bg)]
+                               border border-white/[0.08] text-[var(--text2)] hover:text-white
+                               transition-colors disabled:opacity-40"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={deleting}
+                    className="px-4 py-2 rounded-full text-[12px] font-bold transition-all
+                               bg-red-500/20 border border-red-500/50 text-red-400
+                               hover:bg-red-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {deleting ? 'Deleting…' : 'Delete account'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

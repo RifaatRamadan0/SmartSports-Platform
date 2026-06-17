@@ -14,4 +14,5 @@ public class User
     public bool IsPhoneVerified { get; set; }
     public bool IsBanned { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }

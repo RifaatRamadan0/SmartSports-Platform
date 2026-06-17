@@ -21,3 +21,7 @@ export async function sendPhoneVerification() {
 export async function verifyPhone(code) {
   await api.post('/api/users/me/phone/verify', { code })
 }
+
+export async function deleteMyAccount(currentPassword) {
+  await api.delete('/api/users/me', { data: { currentPassword } })
+}

@@ -163,4 +163,17 @@ public class AdminController : BaseApiController
         await _adminUserService.UnbanUserAsync(id);
         return NoContent();
     }
+
+    [HttpDelete("users/{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeleteUser(int id)
+    {
+        var adminId = GetUserId();
+        if (adminId is null) return Unauthorized();
+
+        await _adminUserService.DeleteUserAsync(adminId.Value, id);
+        return NoContent();
+    }
 }

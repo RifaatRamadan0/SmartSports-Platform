@@ -63,6 +63,19 @@ public class UsersController(IUserService userService) : BaseApiController
         return NoContent();
     }
 
+    [HttpDelete("me")]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeleteMe([FromBody] DeleteAccountRequest request)
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        await userService.DeleteOwnAccountAsync(userId.Value, request);
+        return NoContent();
+    }
+
     [HttpPost("me/phone/verify")]
     [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

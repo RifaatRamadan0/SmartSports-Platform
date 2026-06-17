@@ -95,9 +95,10 @@ public class UserRepository : IUserRepository
             """
             SELECT id, username, email, password_hash, phone_number,
                    profile_picture, skill_level, preferred_position,
-                   is_email_verified, is_phone_verified, is_banned, created_at
+                   is_email_verified, is_phone_verified, is_banned, created_at, deleted_at
             FROM users
             WHERE LOWER(email) = LOWER(@Email)
+              AND deleted_at IS NULL
             """,
             new { Email = email });
     }
@@ -109,9 +110,10 @@ public class UserRepository : IUserRepository
             """
             SELECT id, username, email, password_hash, phone_number,
                    profile_picture, skill_level, preferred_position,
-                   is_email_verified, is_phone_verified, is_banned, created_at
+                   is_email_verified, is_phone_verified, is_banned, created_at, deleted_at
             FROM users
             WHERE LOWER(username) = LOWER(@Username)
+              AND deleted_at IS NULL
             """,
             new { Username = username });
     }
@@ -123,9 +125,10 @@ public class UserRepository : IUserRepository
             """
             SELECT id, username, email, password_hash, phone_number,
                    profile_picture, skill_level, preferred_position,
-                   is_email_verified, is_phone_verified, is_banned, created_at
+                   is_email_verified, is_phone_verified, is_banned, created_at, deleted_at
             FROM users
             WHERE id = @UserId
+              AND deleted_at IS NULL
             """,
             new { UserId = userId });
     }
@@ -247,7 +250,8 @@ public class UserRepository : IUserRepository
             FROM users u
             LEFT JOIN user_roles ur ON ur.user_id = u.id
             LEFT JOIN roles r ON r.id = ur.role_id
-            WHERE (@Role IS NULL OR EXISTS (
+            WHERE u.deleted_at IS NULL
+            AND (@Role IS NULL OR EXISTS (
                 SELECT 1 FROM user_roles ur2
                 INNER JOIN roles r2 ON r2.id = ur2.role_id
                 WHERE ur2.user_id = u.id AND r2.name = @Role
@@ -259,7 +263,8 @@ public class UserRepository : IUserRepository
 
             SELECT COUNT(*)
             FROM users u
-            WHERE (@Role IS NULL OR EXISTS (
+            WHERE u.deleted_at IS NULL
+            AND (@Role IS NULL OR EXISTS (
                 SELECT 1 FROM user_roles ur2
                 INNER JOIN roles r2 ON r2.id = ur2.role_id
                 WHERE ur2.user_id = u.id AND r2.name = @Role
@@ -277,8 +282,57 @@ public class UserRepository : IUserRepository
     {
         using var connection = _connectionFactory.CreateConnection();
         var rows = await connection.ExecuteAsync(
-            "UPDATE users SET is_banned = @IsBanned WHERE id = @UserId",
+            "UPDATE users SET is_banned = @IsBanned WHERE id = @UserId AND deleted_at IS NULL",
             new { UserId = userId, IsBanned = isBanned });
+        if (rows == 0)
+            throw new KeyNotFoundException("User not found.");
+    }
+
+    public async Task<bool> HasActiveFutureBookingsAsync(int userId)
+    {
+        // True if the user has any non-cancelled booking from today onwards, either as
+        // the booking player or as the owner of the booked pitch. Used to block account
+        // deletion while obligations are outstanding (no refund flow exists yet).
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<bool>(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM bookings b
+                WHERE b.user_id = @UserId
+                  AND b.status != 'cancelled'::booking_status
+                  AND b.booking_date >= CURRENT_DATE
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM bookings b
+                INNER JOIN pitches p ON p.id = b.pitch_id
+                WHERE p.owner_id = @UserId
+                  AND b.status != 'cancelled'::booking_status
+                  AND b.booking_date >= CURRENT_DATE
+            )
+            """,
+            new { UserId = userId });
+    }
+
+    public async Task SoftDeleteAsync(int userId)
+    {
+        // Anonymize the unique/PII fields so the original email/username are released
+        // for re-registration and no personal data is retained, then stamp deleted_at.
+        // The id is guaranteed unique, so the placeholder values never collide.
+        using var connection = _connectionFactory.CreateConnection();
+        var rows = await connection.ExecuteAsync(
+            """
+            UPDATE users
+            SET deleted_at      = NOW(),
+                email           = 'deleted_' || id || '@deleted.local',
+                username        = 'deleted_user_' || id,
+                phone_number    = 'deleted_' || id,
+                profile_picture = NULL
+            WHERE id = @UserId
+              AND deleted_at IS NULL
+            """,
+            new { UserId = userId });
         if (rows == 0)
             throw new KeyNotFoundException("User not found.");
     }

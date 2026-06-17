@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { listAdminUsers, banUser, unbanUser } from '../../services/Admin/adminUserService'
+import { listAdminUsers, banUser, unbanUser, deleteUser } from '../../services/Admin/adminUserService'
 import { parseApiError } from '../../utils/errorUtils'
 
 const PAGE_SIZE = 20
@@ -73,8 +73,29 @@ function RoleBadge({ role }) {
 
 // ── Confirm modal ─────────────────────────────────────────────────────────────
 
+const CONFIRM_COPY = {
+  ban: {
+    title:   'Ban user?',
+    confirm: 'Ban user',
+    danger:  true,
+    body: u => <>Are you sure you want to ban <span className="text-white font-medium">{u.username}</span>? They will not be able to log in.</>,
+  },
+  unban: {
+    title:   'Unban user?',
+    confirm: 'Unban user',
+    danger:  false,
+    body: u => <>Are you sure you want to unban <span className="text-white font-medium">{u.username}</span>? They will regain access immediately.</>,
+  },
+  delete: {
+    title:   'Delete user?',
+    confirm: 'Delete account',
+    danger:  true,
+    body: u => <>Permanently delete <span className="text-white font-medium">{u.username}</span>? Their personal data is removed, any pitches they own are taken down, and they are logged out. This cannot be undone, though the email can be used to register a new account later.</>,
+  },
+}
+
 function ConfirmModal({ user, action, onConfirm, onCancel, loading }) {
-  const isBanning = action === 'ban'
+  const copy = CONFIRM_COPY[action] ?? CONFIRM_COPY.ban
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape' && !loading) onCancel() }
@@ -85,15 +106,8 @@ function ConfirmModal({ user, action, onConfirm, onCancel, loading }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="w-full max-w-sm rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d] p-6">
-        <p className="text-base font-bold text-white mb-1">
-          {isBanning ? 'Ban user?' : 'Unban user?'}
-        </p>
-        <p className="text-sm text-neutral-400 mb-6">
-          {isBanning
-            ? <>Are you sure you want to ban <span className="text-white font-medium">{user.username}</span>? They will not be able to log in.</>
-            : <>Are you sure you want to unban <span className="text-white font-medium">{user.username}</span>? They will regain access immediately.</>
-          }
-        </p>
+        <p className="text-base font-bold text-white mb-1">{copy.title}</p>
+        <p className="text-sm text-neutral-400 mb-6">{copy.body(user)}</p>
         <div className="flex gap-3 justify-end">
           <button
             onClick={onCancel}
@@ -108,12 +122,12 @@ function ConfirmModal({ user, action, onConfirm, onCancel, loading }) {
             onClick={onConfirm}
             disabled={loading}
             className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed
-              ${isBanning
+              ${copy.danger
                 ? 'bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30'
                 : 'bg-green-500/15 border border-green-500/40 text-green-400 hover:bg-green-500/25'
               }`}
           >
-            {loading ? 'Processing…' : (isBanning ? 'Ban user' : 'Unban user')}
+            {loading ? 'Processing…' : copy.confirm}
           </button>
         </div>
       </div>
@@ -125,6 +139,7 @@ function ConfirmModal({ user, action, onConfirm, onCancel, loading }) {
 
 function UserRow({ user, onAction, isProcessing }) {
   const initials = user.username ? user.username.slice(0, 2).toUpperCase() : '??'
+  const isAdmin = user.roles?.includes('Admin')
   const fmtDate = d => new Date(d).toLocaleDateString('en-GB', {
     day: 'numeric', month: 'short', year: 'numeric',
   })
@@ -171,28 +186,44 @@ function UserRow({ user, onAction, isProcessing }) {
       </p>
 
       {/* Action */}
-      <div className="shrink-0">
-        {user.isBanned ? (
-          <button
-            onClick={() => onAction(user, 'unban')}
-            disabled={isProcessing}
-            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold
-                       bg-green-500/15 border border-green-500/40 text-green-400
-                       hover:bg-green-500/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Unban
-          </button>
+      <div className="shrink-0 flex items-center gap-2">
+        {isAdmin ? (
+          <span className="text-[11px] text-neutral-600 italic">Protected</span>
         ) : (
-          <button
-            onClick={() => onAction(user, 'ban')}
-            disabled={isProcessing}
-            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold
-                       bg-[#141414] border border-red-900/40 text-red-500
-                       hover:bg-red-500/10 hover:border-red-500/40
-                       transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Ban
-          </button>
+          <>
+            {user.isBanned ? (
+              <button
+                onClick={() => onAction(user, 'unban')}
+                disabled={isProcessing}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-semibold
+                           bg-green-500/15 border border-green-500/40 text-green-400
+                           hover:bg-green-500/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Unban
+              </button>
+            ) : (
+              <button
+                onClick={() => onAction(user, 'ban')}
+                disabled={isProcessing}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-semibold
+                           bg-[#141414] border border-red-900/40 text-red-500
+                           hover:bg-red-500/10 hover:border-red-500/40
+                           transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Ban
+              </button>
+            )}
+            <button
+              onClick={() => onAction(user, 'delete')}
+              disabled={isProcessing}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold
+                         bg-[#141414] border border-[#2a2a2a] text-neutral-500
+                         hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400
+                         transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Delete
+            </button>
+          </>
         )}
       </div>
     </div>
@@ -279,6 +310,9 @@ export default function AdminUsersPage() {
       if (confirm.action === 'ban') {
         await banUser(confirm.user.id)
         setToast({ message: `${confirm.user.username} has been banned.`, type: 'success' })
+      } else if (confirm.action === 'delete') {
+        await deleteUser(confirm.user.id)
+        setToast({ message: `${confirm.user.username} has been deleted.`, type: 'success' })
       } else {
         await unbanUser(confirm.user.id)
         setToast({ message: `${confirm.user.username} has been unbanned.`, type: 'success' })

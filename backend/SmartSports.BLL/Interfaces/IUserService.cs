@@ -9,4 +9,5 @@ public interface IUserService
     Task ChangePasswordAsync(int userId, ChangePasswordRequest request);
     Task SendPhoneVerificationAsync(int userId);
     Task ConfirmPhoneVerificationAsync(int userId, string code);
+    Task DeleteOwnAccountAsync(int userId, DeleteAccountRequest request);
 }

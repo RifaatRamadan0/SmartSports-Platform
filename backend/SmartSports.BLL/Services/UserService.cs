@@ -1,10 +1,15 @@
 using SmartSports.BLL.DTOs.User;
 using SmartSports.BLL.Interfaces;
 using SmartSports.DAL.Interfaces.Auth;
+using SmartSports.DAL.Interfaces.Pitch;
 
 namespace SmartSports.BLL.Services;
 
-public class UserService(IUserRepository userRepository, ITwilioService twilioService) : IUserService
+public class UserService(
+    IUserRepository userRepository,
+    ITwilioService twilioService,
+    IRefreshTokenRepository refreshTokenRepository,
+    IPitchRepository pitchRepository) : IUserService
 {
     public async Task<UserProfileResponse> GetProfileAsync(int userId)
     {
@@ -71,6 +76,30 @@ public class UserService(IUserRepository userRepository, ITwilioService twilioSe
             throw new ArgumentException("The code is incorrect or has expired.");
 
         await userRepository.VerifyPhoneAsync(userId);
+    }
+
+    public async Task DeleteOwnAccountAsync(int userId, DeleteAccountRequest request)
+    {
+        var user = await userRepository.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("User not found.");
+
+        if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            throw new ArgumentException("Current password is incorrect.");
+
+        var roles = await userRepository.GetUserRolesAsync(userId);
+        if (roles.Contains("Admin"))
+            throw new ArgumentException("Admin accounts cannot be deleted from settings.");
+
+        if (await userRepository.HasActiveFutureBookingsAsync(userId))
+            throw new ArgumentException(
+                "You have active upcoming bookings. Cancel them before deleting your account.");
+
+        // Take down any pitches this user owns so they don't linger as live,
+        // unmanageable listings. The booking guard above guarantees none have
+        // upcoming bookings.
+        await pitchRepository.SoftDeleteByOwnerAsync(userId);
+        await userRepository.SoftDeleteAsync(userId);
+        await refreshTokenRepository.RevokeAllForUserAsync(userId);
     }
 
     private static UserProfileResponse MapToResponse(
