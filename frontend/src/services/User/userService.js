@@ -11,7 +11,10 @@ export async function updateMyProfile(payload) {
 }
 
 export async function changeMyPassword(payload) {
-  await api.patch('/api/users/me/password', payload)
+  // Returns a fresh { accessToken, expiresIn, roles } so the current device stays
+  // signed in after the server revokes every other session.
+  const { data } = await api.patch('/api/users/me/password', payload)
+  return data
 }
 
 export async function sendPhoneVerification() {

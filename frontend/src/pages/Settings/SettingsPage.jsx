@@ -308,6 +308,7 @@ function ProfileSection({ profile, profileLoading, showToast, onProfileUpdated }
 // ── Section: Security ─────────────────────────────────────────────────────────
 
 function SecuritySection({ profile, showToast, onPhoneVerified }) {
+  const { login } = useAuth()
   const [form,        setForm]        = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
   const [saving,      setSaving]      = useState(false)
   const [showCurrent, setShowCurrent] = useState(false)
@@ -330,12 +331,15 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
     }
     setSaving(true)
     try {
-      await changeMyPassword({ currentPassword: form.currentPassword, newPassword: form.newPassword })
+      // The server revokes every other session and returns a fresh token pair for
+      // this device — adopt it so we stay signed in instead of being logged out.
+      const session = await changeMyPassword({ currentPassword: form.currentPassword, newPassword: form.newPassword })
+      login(session)
       setForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
       setShowCurrent(false)
       setShowNew(false)
       setShowConfirm(false)
-      showToast('Password changed.')
+      showToast('Password changed. Other devices have been signed out.')
     } catch (err) {
       showToast(parseApiError(err, 'Could not change password.'), 'error')
     } finally {

@@ -136,28 +136,7 @@ public class AuthService : IAuthService
         if (userRoles.Count == 0)
             return null;
 
-        var expiryMinutes        = GetAccessTokenExpiryMinutes();
-        var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
-
-        var refreshTokenValue    = GenerateRefreshToken();
-        var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
-
-        await _refreshTokenRepository.CreateAsync(new RefreshToken
-        {
-            UserId    = user.Id,
-            Token     = HashToken(refreshTokenValue),
-            ExpiresAt = refreshTokenExpiresAt,
-            IsRevoked = false
-        });
-
-        return new AuthResponse
-        {
-            AccessToken          = GenerateJwtToken(user.Id, user.Username, user.Email, userRoles, expiryMinutes),
-            ExpiresIn            = expiryMinutes * 60,
-            RefreshToken         = refreshTokenValue,
-            RefreshTokenExpiresAt = refreshTokenExpiresAt,
-            Roles                = userRoles
-        };
+        return await IssueSessionAsync(user, userRoles);
     }
 
     // -- Refresh Token --
@@ -182,27 +161,53 @@ public class AuthService : IAuthService
         if (revoked == 0)
             return null;
 
-        var expiryMinutes        = GetAccessTokenExpiryMinutes();
+        return await IssueSessionAsync(user, userRoles);
+    }
+
+    // -- Session issuance --
+
+    /// <summary>
+    /// Mints a fresh refresh token + access token for an already-authenticated user
+    /// and returns the new session. Used after a password change, where every existing
+    /// refresh token has just been revoked but the caller's current device should stay
+    /// signed in. Returns null if the user no longer exists, is banned, or has no roles.
+    /// </summary>
+    public async Task<AuthResponse?> IssueSessionForUserAsync(int userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null || user.IsBanned)
+            return null;
+
+        var userRoles = (await _userRepository.GetUserRolesAsync(user.Id)).ToList();
+        if (userRoles.Count == 0)
+            return null;
+
+        return await IssueSessionAsync(user, userRoles);
+    }
+
+    private async Task<AuthResponse> IssueSessionAsync(User user, List<string> userRoles)
+    {
+        var expiryMinutes          = GetAccessTokenExpiryMinutes();
         var refreshTokenExpiryDays = GetRefreshTokenExpiryDays();
 
-        var newRefreshTokenValue  = GenerateRefreshToken();
+        var refreshTokenValue     = GenerateRefreshToken();
         var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
 
         await _refreshTokenRepository.CreateAsync(new RefreshToken
         {
             UserId    = user.Id,
-            Token     = HashToken(newRefreshTokenValue),
+            Token     = HashToken(refreshTokenValue),
             ExpiresAt = refreshTokenExpiresAt,
             IsRevoked = false
         });
 
         return new AuthResponse
         {
-            AccessToken          = GenerateJwtToken(user.Id, user.Username, user.Email, userRoles, expiryMinutes),
-            ExpiresIn            = expiryMinutes * 60,
-            RefreshToken         = newRefreshTokenValue,
+            AccessToken           = GenerateJwtToken(user.Id, user.Username, user.Email, userRoles, expiryMinutes),
+            ExpiresIn             = expiryMinutes * 60,
+            RefreshToken          = refreshTokenValue,
             RefreshTokenExpiresAt = refreshTokenExpiresAt,
-            Roles                = userRoles
+            Roles                 = userRoles
         };
     }
 
