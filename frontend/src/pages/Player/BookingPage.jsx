@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useParams, useLocation, useNavigate } from 'react-router-dom'
+import { useParams, useLocation, useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getAvailableSlots } from '../../services/Availability/availabilityService'
 import { createBooking } from '../../services/Booking/bookingService'
 import { getPitchById } from '../../services/Pitch/pitchService'
+import { getMyProfile } from '../../services/User/userService'
 import { parseApiError } from '../../utils/errorUtils'
 import Toast from '../../components/ui/Toast'
 import { springTransition, stepVariants, confirmCardVariants, buttonHover, buttonTap } from '../../lib/motion'
@@ -83,14 +84,24 @@ export default function BookingPage() {
   const [fetchError, setFetchError] = useState(false)
   const [lightboxOpen,  setLightboxOpen]  = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [isPhoneVerified, setIsPhoneVerified] = useState(null)
 
   // Always fetch full pitch detail — the optimistic state from the card
   // (name, price, duration) drives the first paint while the network call
   // hydrates the images array and any other up-to-date fields.
+  // Phone verification is loaded lazily after the pitch resolves so it
+  // never competes with the critical-path fetch.
   useEffect(() => {
     let cancelled = false
     getPitchById(pitchId)
-      .then((p) => { if (!cancelled) setPitch(p) })
+      .then((p) => {
+        if (!cancelled) {
+          setPitch(p)
+          getMyProfile()
+            .then((profile) => { if (!cancelled) setIsPhoneVerified(profile.isPhoneVerified) })
+            .catch(() => {})
+        }
+      })
       .catch(() => { if (!cancelled) setFetchError(true) })
     return () => { cancelled = true }
   }, [pitchId])
@@ -277,6 +288,20 @@ export default function BookingPage() {
         />
       ) : (
         <motion.div key="form" variants={stepVariants} initial="initial" animate="animate" exit="exit">
+
+        {/* Unverified phone banner — informational only, never blocks booking */}
+        {isPhoneVerified === false && (
+          <div className="flex items-center gap-3 px-6 sm:px-8 py-3 bg-amber-950/40 border-b border-amber-800/40 text-amber-300 text-sm">
+            <span className="shrink-0">⚠</span>
+            <span>
+              Your phone number isn&apos;t verified — pitch owners may not be able to reach you.{' '}
+              <Link to="/settings" className="underline underline-offset-2 hover:text-amber-100 transition-colors">
+                Verify now →
+              </Link>
+            </span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-start justify-between px-6 sm:px-8 py-5 border-b border-[#1a1f1c]">
           <div>

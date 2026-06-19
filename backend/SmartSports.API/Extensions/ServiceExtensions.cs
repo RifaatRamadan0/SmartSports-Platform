@@ -196,6 +196,7 @@ public static class ServiceExtensions
         services.AddSingleton<ITwilioService, TwilioVerifyService>();
         services.AddScoped<IPhoneProofService, PhoneProofService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUserService, UserService>();
         services.AddScoped<IBookingService, BookingService>();
         services.AddHostedService<ExpiredTokenCleanupService>();
 
