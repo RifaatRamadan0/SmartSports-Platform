@@ -155,6 +155,13 @@ public class MatchService : IMatchService
         var match = await _matchRepository.GetByIdAsync(matchId)
             ?? throw new KeyNotFoundException($"Match {matchId} not found.");
 
+        // Reject joins to a match whose underlying booking is cancelled or already past —
+        // mirrors InvitationService.JoinViaTokenAsync so both join paths behave the same.
+        if (match.BookingStatus != "confirmed")
+            throw new ConflictException("This match's booking is no longer active.");
+        if (match.BookingDate < DateOnly.FromDateTime(DateTime.Today))
+            throw new ConflictException("This match has already taken place.");
+
         if (!match.IsOpenToJoin)
             throw new ArgumentException("This match is not open to join.");
 
