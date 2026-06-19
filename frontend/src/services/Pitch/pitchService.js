@@ -47,3 +47,15 @@ export async function updatePitch(id, payload) {
 export async function deletePitch(id) {
   await api.delete(`/api/pitches/${id}`)
 }
+
+// Toggles the favorite for the current player and returns the new state (boolean).
+export async function toggleFavorite(id) {
+  const { data } = await api.post(`/api/pitches/${id}/favorite`)
+  return data.isFavorited
+}
+
+// Returns the current player's saved pitches as a paged result.
+export async function listFavorites({ page = 1, pageSize = 12 } = {}) {
+  const { data } = await api.get('/api/users/me/favorites', { params: { page, pageSize } })
+  return data
+}

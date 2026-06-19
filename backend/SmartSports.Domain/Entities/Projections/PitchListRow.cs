@@ -17,4 +17,10 @@ public record PitchListRow
     public int      ImageCount                { get; init; }
     public bool        IsActive { get; init; }
     public PitchStatus Status   { get; init; }
+
+    /// <summary>
+    /// True when the current user has favorited this pitch. Populated only by
+    /// queries that select an is_favorited column; defaults to false otherwise.
+    /// </summary>
+    public bool IsFavorited { get; init; }
 }

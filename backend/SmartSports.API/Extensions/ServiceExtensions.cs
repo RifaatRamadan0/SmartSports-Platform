@@ -222,6 +222,8 @@ public static class ServiceExtensions
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IPitchService, PitchService>();
         services.AddScoped<IPitchImageService, PitchImageService>();
+        services.AddScoped<IFavoritePitchRepository, FavoritePitchRepository>();
+        services.AddScoped<IFavoriteService, FavoriteService>();
         services.AddSingleton<IImageKitAuthService, ImageKitAuthService>();
         services.AddScoped<IAdminPitchService, AdminPitchService>();
 
@@ -305,6 +307,20 @@ public static class ServiceExtensions
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            // Caps the favorite-toggle endpoint per IP. It's a cheap authenticated
+            // write, but uncapped a single JWT could churn rows; 60/min is generous
+            // for a real player tapping hearts and tight for a script.
+            options.AddPolicy("favorites", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 60,
                         Window = TimeSpan.FromMinutes(1),
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                         QueueLimit = 0

@@ -10,4 +10,11 @@ public record PitchDetailRow(
     decimal  PricePerHour,
     decimal? Rating,
     int      MaxBookingDurationMinutes,
-    int      Capacity);
+    int      Capacity)
+{
+    /// <summary>
+    /// True when the current user has favorited this pitch. Populated only by
+    /// queries that select an is_favorited column; defaults to false otherwise.
+    /// </summary>
+    public bool IsFavorited { get; init; }
+}

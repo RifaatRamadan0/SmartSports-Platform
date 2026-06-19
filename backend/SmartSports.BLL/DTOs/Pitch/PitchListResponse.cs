@@ -17,4 +17,7 @@ public class PitchListResponse
     public int      ImageCount                { get; set; }
     public bool        IsActive { get; set; }
     public PitchStatus Status   { get; set; }
+
+    /// <summary>True when the authenticated player has favorited this pitch; false for guests.</summary>
+    public bool IsFavorited { get; set; }
 }

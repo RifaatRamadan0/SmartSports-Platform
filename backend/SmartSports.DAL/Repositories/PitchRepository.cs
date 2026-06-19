@@ -90,7 +90,7 @@ public class PitchRepository : IPitchRepository
     }
 
     public async Task<(PitchDetailRow? Detail, IEnumerable<string> Images, IEnumerable<ScheduleRow> Schedule, IEnumerable<ReviewRow> Reviews)>
-        GetDetailWithDataAsync(int pitchId, int reviewCount = 5)
+        GetDetailWithDataAsync(int pitchId, int? currentUserId = null, int reviewCount = 5)
     {
         using var connection = _connectionFactory.CreateConnection();
         using var multi = await connection.QueryMultipleAsync(
@@ -104,7 +104,11 @@ public class PitchRepository : IPitchRepository
                    p.price_per_hour,
                    p.rating,
                    p.max_booking_duration_minutes,
-                   p.capacity
+                   p.capacity,
+                   EXISTS (
+                       SELECT 1 FROM user_favorite_pitches f
+                       WHERE  f.pitch_id = p.id AND f.user_id = @CurrentUserId
+                   )       AS is_favorited
             FROM   pitches     p
             JOIN   sport_types s ON s.id = p.sport_type_id
             JOIN   cities      c ON c.id = p.city_id
@@ -138,7 +142,7 @@ public class PitchRepository : IPitchRepository
             ORDER  BY r.created_at DESC
             LIMIT  @ReviewCount
             """,
-            new { PitchId = pitchId, Status = (int)PitchStatus.Approved, ReviewCount = reviewCount });
+            new { PitchId = pitchId, Status = (int)PitchStatus.Approved, ReviewCount = reviewCount, CurrentUserId = currentUserId });
 
         var detail   = await multi.ReadSingleOrDefaultAsync<PitchDetailRow>();
         var images   = (await multi.ReadAsync<string>()).ToList();
@@ -148,7 +152,7 @@ public class PitchRepository : IPitchRepository
         return (detail, images, schedule, reviews);
     }
 
-    public async Task<(IEnumerable<PitchListRow> Items, long TotalCount)> ListAsync(PitchFilterParams filters)
+    public async Task<(IEnumerable<PitchListRow> Items, long TotalCount)> ListAsync(PitchFilterParams filters, int? currentUserId = null)
     {
         using var connection = _connectionFactory.CreateConnection();
 
@@ -191,6 +195,7 @@ public class PitchRepository : IPitchRepository
             PageSize       = filters.PageSize,
             Offset         = (filters.Page - 1) * filters.PageSize,
             ApprovedStatus = (int)PitchStatus.Approved,
+            CurrentUserId  = currentUserId,
         };
 
         var countSql = $"""
@@ -214,7 +219,11 @@ public class PitchRepository : IPitchRepository
                     cover.image_url     AS cover_image_url,
                     (SELECT COUNT(*) FROM pitch_images WHERE pitch_id = p.id) AS image_count,
                     p.is_active,
-                    p.status
+                    p.status,
+                    EXISTS (
+                        SELECT 1 FROM user_favorite_pitches f
+                        WHERE  f.pitch_id = p.id AND f.user_id = @CurrentUserId
+                    )                   AS is_favorited
             FROM    pitches             p
             JOIN    sport_types         s    ON s.id = p.sport_type_id
             JOIN    cities              c    ON c.id = p.city_id
