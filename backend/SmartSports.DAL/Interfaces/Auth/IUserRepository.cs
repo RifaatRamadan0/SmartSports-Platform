@@ -1,4 +1,5 @@
 using SmartSports.Domain.Entities;
+using SmartSports.Domain.Entities.Projections;
 
 namespace SmartSports.DAL.Interfaces.Auth;
 
@@ -32,4 +33,11 @@ public interface IUserRepository
     // -- Profile management --
     Task<bool> UpdateProfileAsync(int userId, string username, string phoneNumber,
         string? profilePicture, short? skillLevel, string? preferredPosition);
+
+    // -- Admin user management --
+    Task<(IEnumerable<AdminUserRow> Users, int TotalCount)> ListUsersAsync(
+        int page, int pageSize, string? role, bool? isBanned);
+    Task SetBannedAsync(int userId, bool isBanned);
+    Task<bool> HasActiveFutureBookingsAsync(int userId);
+    Task SoftDeleteAsync(int userId);
 }

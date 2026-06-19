@@ -19,5 +19,6 @@ public class UpdateProfileRequest
     [Range(1, 4)]
     public short?  SkillLevel        { get; set; }
 
+    [MaxLength(50)]
     public string? PreferredPosition { get; set; }
 }

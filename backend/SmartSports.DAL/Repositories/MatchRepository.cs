@@ -105,6 +105,7 @@ public class MatchRepository : IMatchRepository
         var conditions = new List<string>
         {
             "m.is_open_to_join = TRUE",
+            "b.status          = 'confirmed'::booking_status",
             "b.booking_date    >= CURRENT_DATE",
             "p.deleted_at      IS NULL",
             "p.status          = @ApprovedStatus",
@@ -214,6 +215,7 @@ public class MatchRepository : IMatchRepository
                 JOIN   cities               c  ON c.id = p.city_id
                 LEFT JOIN match_participants mp ON mp.match_id = m.id AND mp.status = 'accepted'
                 WHERE  m.is_open_to_join = TRUE
+                  AND  b.status          = 'confirmed'::booking_status
                   AND  b.booking_date   >= CURRENT_DATE
                   AND  p.deleted_at      IS NULL
                   AND  p.status          = @ApprovedStatus
@@ -302,6 +304,7 @@ public class MatchRepository : IMatchRepository
             JOIN   sport_types s ON s.id = p.sport_type_id
             JOIN   cities      c ON c.id = p.city_id
             WHERE  b.user_id        = @UserId
+              AND  b.status         = 'confirmed'::booking_status
               AND  b.booking_date  >= CURRENT_DATE
               AND  p.deleted_at     IS NULL
               AND  p.status         = @ApprovedStatus
@@ -333,6 +336,7 @@ public class MatchRepository : IMatchRepository
             JOIN   cities      c ON c.id = p.city_id
             WHERE  mp.user_id       = @UserId
               AND  mp.status        IN ('accepted', 'pending')
+              AND  b.status         = 'confirmed'::booking_status
               AND  b.booking_date  >= CURRENT_DATE
               AND  p.deleted_at     IS NULL
               AND  p.status         = @ApprovedStatus

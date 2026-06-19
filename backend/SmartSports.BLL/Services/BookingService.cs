@@ -63,9 +63,12 @@ public class BookingService : IBookingService
         if (bookingDate > DateOnly.FromDateTime(DateTime.Today.AddDays(30)))
             throw new ArgumentException("Bookings can only be made up to 30 days in advance.");
 
-        // 5. Pitch must exist (404) and be active/approved (400 — exists but in a non-bookable state)
-        var pitch = await _pitchRepository.GetByIdAsync(request.PitchId)
-            ?? throw new KeyNotFoundException($"Pitch {request.PitchId} was not found.");
+        // 5. Pitch must exist (404) and be active/approved (400 — exists but in a non-bookable state).
+        // A soft-deleted pitch is treated as not found: discovery hides it and its owner can no
+        // longer manage it, so it must not accept new bookings even when reached via a known id.
+        var pitch = await _pitchRepository.GetByIdAsync(request.PitchId);
+        if (pitch is null || pitch.DeletedAt is not null)
+            throw new KeyNotFoundException($"Pitch {request.PitchId} was not found.");
 
         if (!pitch.IsActive || pitch.Status != PitchStatus.Approved)
             throw new ArgumentException($"Pitch {request.PitchId} is not currently accepting bookings.");

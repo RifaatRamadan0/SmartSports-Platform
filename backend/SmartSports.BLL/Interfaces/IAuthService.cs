@@ -11,6 +11,7 @@ public interface IAuthService
     // -- Login & Authentication --
     Task<AuthResponse?> LoginAsync(LoginRequest request);
     Task<AuthResponse?> RefreshTokenAsync(string refreshToken);
+    Task<AuthResponse?> IssueSessionForUserAsync(int userId);
     Task LogoutAsync(string refreshToken);
 
     // -- Phone Verification --

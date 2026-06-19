@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using SmartSports.API.Helpers;
 using SmartSports.BLL.DTOs.Auth;
 using SmartSports.BLL.Interfaces;
 using Twilio.Exceptions;
@@ -12,8 +13,6 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IConfiguration _configuration;
-
-    private const string RefreshTokenCookieName = "refreshToken";
 
     public AuthController(IAuthService authService, IConfiguration configuration)
     {
@@ -64,9 +63,9 @@ public class AuthController : ControllerBase
         if (result is null)
             return Unauthorized(new { Message = "Invalid credentials." });
 
-        SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAt);
+        RefreshTokenCookie.Append(Response, result.RefreshToken, result.RefreshTokenExpiresAt);
 
-        return Ok(ToClientResponse(result));
+        return Ok(ClientAuthResponse.From(result));
     }
 
     // POST api/auth/refresh
@@ -75,7 +74,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh()
     {
-        var refreshToken = Request.Cookies[RefreshTokenCookieName];
+        var refreshToken = Request.Cookies[RefreshTokenCookie.Name];
 
         if (string.IsNullOrEmpty(refreshToken))
             return Unauthorized(new { Message = "Refresh token is missing." });
@@ -85,9 +84,9 @@ public class AuthController : ControllerBase
         if (result is null)
             return Unauthorized(new { Message = "Invalid or expired refresh token." });
 
-        SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAt);
+        RefreshTokenCookie.Append(Response, result.RefreshToken, result.RefreshTokenExpiresAt);
 
-        return Ok(ToClientResponse(result));
+        return Ok(ClientAuthResponse.From(result));
     }
 
     // POST api/auth/logout
@@ -96,18 +95,12 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Logout()
     {
-        var refreshToken = Request.Cookies[RefreshTokenCookieName];
+        var refreshToken = Request.Cookies[RefreshTokenCookie.Name];
 
         if (!string.IsNullOrEmpty(refreshToken))
             await _authService.LogoutAsync(refreshToken);
 
-        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure   = true,
-            SameSite = SameSiteMode.None,
-            Path     = "/api/auth"
-        });
+        RefreshTokenCookie.Delete(Response);
 
         return Ok(new { Message = "Logged out successfully." });
     }
@@ -198,35 +191,4 @@ public class AuthController : ControllerBase
         }
     }
 
-    // -- Private Helpers --
-
-    private static ClientAuthResponse ToClientResponse(AuthResponse r) => new()
-    {
-        AccessToken = r.AccessToken,
-        ExpiresIn   = r.ExpiresIn,
-        Roles       = r.Roles,
-    };
-
-    private void SetRefreshTokenCookie(string refreshToken, DateTime expiresAt)
-    {
-        // SameSite=None is intentional.
-        // The frontend (e.g. http://localhost:5173) and API (e.g. http://localhost:5000)
-        // run on different origins, so the /api/auth/refresh call is a cross-site
-        // credentialed XHR. SameSite=Lax allows top-level GET navigations but blocks
-        // the cookie on cross-site fetch/XHR, which is what would break silent refresh.
-        // SameSite=None + Secure is the only combination that lets the browser send
-        // the cookie on a cross-origin fetch.
-        // CSRF risk is acceptable here because:
-        //   - The cookie is HttpOnly (unreachable by JS)
-        //   - This endpoint only issues a new access token; it performs no state mutation
-        //   - Access tokens expire in 15 minutes, limiting blast radius
-        Response.Cookies.Append(RefreshTokenCookieName, refreshToken, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure   = true,
-            SameSite = SameSiteMode.None,
-            Expires  = expiresAt,
-            Path     = "/api/auth"
-        });
-    }
 }

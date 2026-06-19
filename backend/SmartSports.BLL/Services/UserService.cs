@@ -4,7 +4,10 @@ using SmartSports.DAL.Interfaces.Auth;
 
 namespace SmartSports.BLL.Services;
 
-public class UserService(IUserRepository userRepository, ITwilioService twilioService) : IUserService
+public class UserService(
+    IUserRepository userRepository,
+    ITwilioService twilioService,
+    IRefreshTokenRepository refreshTokenRepository) : IUserService
 {
     public async Task<UserProfileResponse> GetProfileAsync(int userId)
     {
@@ -46,8 +49,17 @@ public class UserService(IUserRepository userRepository, ITwilioService twilioSe
         if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
             throw new ArgumentException("Current password is incorrect.");
 
+        if (BCrypt.Net.BCrypt.Verify(request.NewPassword, user.PasswordHash))
+            throw new ArgumentException("New password must be different from the current password.");
+
         var newHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
         await userRepository.UpdatePasswordAsync(userId, newHash);
+
+        // Revoke every refresh token — including the caller's own — so a changed password
+        // locks out anyone holding an old token (e.g. after a suspected compromise). This
+        // also kills the current session's refresh token, so the controller re-mints a
+        // fresh session for the caller afterwards to keep this device signed in.
+        await refreshTokenRepository.RevokeAllForUserAsync(userId);
     }
 
     public async Task SendPhoneVerificationAsync(int userId)
@@ -71,6 +83,29 @@ public class UserService(IUserRepository userRepository, ITwilioService twilioSe
             throw new ArgumentException("The code is incorrect or has expired.");
 
         await userRepository.VerifyPhoneAsync(userId);
+    }
+
+    public async Task DeleteOwnAccountAsync(int userId, DeleteAccountRequest request)
+    {
+        var user = await userRepository.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("User not found.");
+
+        if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            throw new ArgumentException("Current password is incorrect.");
+
+        var roles = await userRepository.GetUserRolesAsync(userId);
+        if (roles.Contains("Admin"))
+            throw new ArgumentException("Admin accounts cannot be deleted from settings.");
+
+        if (await userRepository.HasActiveFutureBookingsAsync(userId))
+            throw new ArgumentException(
+                "You have active upcoming bookings. Cancel them before deleting your account.");
+
+        // Atomically retire the account: the user row is anonymized + stamped
+        // deleted_at, any pitches they own are taken down (so they don't linger as
+        // live, unmanageable listings), and every refresh token is revoked. The
+        // booking guard above guarantees none of those pitches have upcoming bookings.
+        await userRepository.SoftDeleteAsync(userId);
     }
 
     private static UserProfileResponse MapToResponse(
