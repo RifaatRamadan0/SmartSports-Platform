@@ -49,13 +49,16 @@ public class UserService(
         if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
             throw new ArgumentException("Current password is incorrect.");
 
+        if (BCrypt.Net.BCrypt.Verify(request.NewPassword, user.PasswordHash))
+            throw new ArgumentException("New password must be different from the current password.");
+
         var newHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
         await userRepository.UpdatePasswordAsync(userId, newHash);
 
-        // Evict every other session so a changed password actually locks out anyone
-        // holding an old refresh token (e.g. after a suspected compromise). Mirrors the
-        // password-reset flow. The caller's current session continues on its existing
-        // access token until it expires (≤15 min) and then simply re-authenticates.
+        // Revoke every refresh token — including the caller's own — so a changed password
+        // locks out anyone holding an old token (e.g. after a suspected compromise). This
+        // also kills the current session's refresh token, so the controller re-mints a
+        // fresh session for the caller afterwards to keep this device signed in.
         await refreshTokenRepository.RevokeAllForUserAsync(userId);
     }
 
