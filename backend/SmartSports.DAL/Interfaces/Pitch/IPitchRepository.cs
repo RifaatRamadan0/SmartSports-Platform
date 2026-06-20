@@ -22,6 +22,13 @@ public interface IPitchRepository
     Task<PitchDetailRow?> GetDetailAsync(int pitchId);
 
     /// <summary>
+    /// Returns true when the pitch is publicly visible (active, approved, non-deleted).
+    /// A lightweight EXISTS check for callers that only need a visibility gate and
+    /// would otherwise throw away a full detail row.
+    /// </summary>
+    Task<bool> ExistsVisibleAsync(int pitchId);
+
+    /// <summary>
     /// Returns pitch detail, images, schedule, and recent reviews in a single DB round-trip
     /// using QueryMultiple. Returns (null, empty, empty, empty) when the pitch is not found/active/approved.
     /// When <paramref name="currentUserId"/> is supplied, the detail row's IsFavorited reflects

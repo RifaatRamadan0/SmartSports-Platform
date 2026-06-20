@@ -59,6 +59,23 @@ public class PitchRepository : IPitchRepository
             new { PitchId = pitchId, Status = (int)PitchStatus.Approved });
     }
 
+    public async Task<bool> ExistsVisibleAsync(int pitchId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<bool>(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM   pitches
+                WHERE  id         = @PitchId
+                  AND  is_active  = TRUE
+                  AND  status     = @Status
+                  AND  deleted_at IS NULL
+            )
+            """,
+            new { PitchId = pitchId, Status = (int)PitchStatus.Approved });
+    }
+
     public async Task<IEnumerable<string>> GetImagesAsync(int pitchId)
     {
         using var connection = _connectionFactory.CreateConnection();

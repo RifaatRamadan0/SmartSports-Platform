@@ -20,10 +20,9 @@ public class FavoriteService : IFavoriteService
 
     public async Task<bool> ToggleAsync(int userId, int pitchId)
     {
-        // Only allow favoriting pitches a player could actually discover. GetDetailAsync
-        // returns null unless the pitch is active, approved, and not soft-deleted.
-        var pitch = await _pitchRepository.GetDetailAsync(pitchId);
-        if (pitch is null)
+        // Only allow favoriting pitches a player could actually discover. A lightweight
+        // EXISTS check is enough here — we just need the visibility gate, not the full row.
+        if (!await _pitchRepository.ExistsVisibleAsync(pitchId))
             throw new KeyNotFoundException($"Pitch with ID {pitchId} was not found.");
 
         return await _favoriteRepository.ToggleAsync(userId, pitchId);
