@@ -11,6 +11,7 @@ import ImageCarousel from '../../components/Pitch/ImageCarousel'
 import WeeklySchedule from '../../components/Pitch/WeeklySchedule'
 import ReviewCard from '../../components/Pitch/ReviewCard'
 import StarRating from '../../components/ui/StarRating'
+import FavoriteButton from '../../components/Pitch/FavoriteButton'
 
 // Loading skeleton
 
@@ -119,9 +120,12 @@ export default function PitchDetailPage() {
 
             {/* Title + badges */}
             <div className="mb-6">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
-                {pitch.name}
-              </h1>
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
+                  {pitch.name}
+                </h1>
+                <FavoriteButton pitchId={pitch.id} initialFavorited={pitch.isFavorited} size="lg" className="shrink-0" />
+              </div>
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 <span className="inline-flex items-center rounded-full border border-[var(--green-border)] bg-[var(--green)]/10
                                  px-2.5 py-0.5 text-[11px] font-semibold text-[var(--green)] tracking-wide">
@@ -324,6 +328,12 @@ function DetailNavbar() {
                     <button onClick={() => { setMenuOpen(false); navigate('/my-bookings') }}
                       className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
                       My Bookings
+                    </button>
+                  )}
+                  {isPlayer && (
+                    <button onClick={() => { setMenuOpen(false); navigate('/favorites') }}
+                      className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
+                      My Favorites
                     </button>
                   )}
                   {(isOwner || isAdmin) && (

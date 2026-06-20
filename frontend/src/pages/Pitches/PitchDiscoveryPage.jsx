@@ -9,6 +9,7 @@ import { listPitches } from '../../services/Pitch/pitchService'
 import { getSportTypes, getCities } from '../../services/Lookup/lookupService'
 import { parseApiError } from '../../utils/errorUtils'
 import PitchCover from '../../components/Pitch/PitchCover'
+import FavoriteButton from '../../components/Pitch/FavoriteButton'
 
 const SORT_OPTIONS = [
   { value: 'newest',     label: 'Newest first' },
@@ -331,6 +332,12 @@ function DiscoveryNavbar() {
                       My Bookings
                     </button>
                   )}
+                  {isPlayer && (
+                    <button onClick={() => { setMenuOpen(false); navigate('/favorites') }}
+                      className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
+                      My Favorites
+                    </button>
+                  )}
                   {(isOwner || isAdmin) && (
                     <button onClick={() => { setMenuOpen(false); navigate('/dashboard/pitches') }}
                       className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
@@ -496,18 +503,26 @@ function PitchCard({ pitch, onBook }) {
   const price  = Number(pitch.pricePerHour)
 
   return (
-    <motion.button
+    <motion.div
+      role="button"
+      tabIndex={0}
       onClick={onBook}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onBook() } }}
       variants={cardVariants}
       whileHover={cardHover}
       whileTap={cardTap}
-      className="group relative text-left rounded-3xl bg-[var(--surface)] border border-white/[0.06]
+      className="group relative cursor-pointer text-left rounded-3xl bg-[var(--surface)] border border-white/[0.06]
                  hover:border-[var(--green-border)] hover:bg-[var(--bg3)]
                  hover:shadow-[0_30px_60px_-30px_var(--green-glow)]
                  transition-colors duration-200 overflow-hidden flex flex-col"
     >
       {/* Cover image or sport SVG fallback */}
       <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} imageCount={pitch.imageCount} />
+
+      {/* Favorite heart (players only) */}
+      <div className="absolute top-3 left-3">
+        <FavoriteButton pitchId={pitch.id} initialFavorited={pitch.isFavorited} />
+      </div>
 
       {/* Sport badge */}
       <span className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest
@@ -551,7 +566,7 @@ function PitchCard({ pitch, onBook }) {
           </span>
         </div>
       </div>
-    </motion.button>
+    </motion.div>
   )
 }
 

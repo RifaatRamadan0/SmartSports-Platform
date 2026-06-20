@@ -19,9 +19,9 @@ public class PitchService : IPitchService
         _pitchRepository = pitchRepository;
     }
 
-    public async Task<PitchDetailResponse> GetDetailAsync(int pitchId)
+    public async Task<PitchDetailResponse> GetDetailAsync(int pitchId, int? currentUserId = null)
     {
-        var (detail, images, schedule, reviewRows) = await _pitchRepository.GetDetailWithDataAsync(pitchId);
+        var (detail, images, schedule, reviewRows) = await _pitchRepository.GetDetailWithDataAsync(pitchId, currentUserId);
 
         if (detail is null)
             throw new KeyNotFoundException($"Pitch with ID {pitchId} was not found.");
@@ -38,6 +38,7 @@ public class PitchService : IPitchService
             Rating                    = detail.Rating,
             MaxBookingDurationMinutes = detail.MaxBookingDurationMinutes,
             Capacity                  = detail.Capacity,
+            IsFavorited               = detail.IsFavorited,
             Images                    = images,
             Schedule                  = schedule.Select(s => new ScheduleDayResponse
             {
@@ -57,7 +58,7 @@ public class PitchService : IPitchService
         };
     }
 
-    public async Task<PagedResult<PitchListResponse>> ListAsync(PitchSearchQuery query)
+    public async Task<PagedResult<PitchListResponse>> ListAsync(PitchSearchQuery query, int? currentUserId = null)
     {
         // Clamp pagination bounds.
         if (query.Page     < 1)   query.Page     = 1;
@@ -78,7 +79,7 @@ public class PitchService : IPitchService
             PageSize: query.PageSize
         );
 
-        var (rows, total) = await _pitchRepository.ListAsync(filters);
+        var (rows, total) = await _pitchRepository.ListAsync(filters, currentUserId);
 
         var items = rows.Select(r => new PitchListResponse
         {
@@ -93,8 +94,9 @@ public class PitchService : IPitchService
             CityName                  = r.CityName,
             CoverImageUrl             = r.CoverImageUrl,
             ImageCount                = r.ImageCount,
-            IsActive = r.IsActive,
-            Status   = r.Status,
+            IsActive    = r.IsActive,
+            Status      = r.Status,
+            IsFavorited = r.IsFavorited,
         });
 
         return new PagedResult<PitchListResponse>

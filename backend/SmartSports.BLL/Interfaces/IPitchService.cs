@@ -8,13 +8,15 @@ public interface IPitchService
     /// <summary>
     /// Returns full public detail for an active, approved pitch including images, schedule, and recent reviews.
     /// Throws KeyNotFoundException when the pitch does not exist or is inactive/unapproved.
+    /// When <paramref name="currentUserId"/> is supplied, IsFavorited reflects that user's favorites.
     /// </summary>
-    Task<PitchDetailResponse> GetDetailAsync(int pitchId);
+    Task<PitchDetailResponse> GetDetailAsync(int pitchId, int? currentUserId = null);
 
     /// <summary>
     /// Returns a filtered, sorted, paginated list of active and approved pitches.
+    /// When <paramref name="currentUserId"/> is supplied, each item's IsFavorited reflects that user's favorites.
     /// </summary>
-    Task<PagedResult<PitchListResponse>> ListAsync(PitchSearchQuery query);
+    Task<PagedResult<PitchListResponse>> ListAsync(PitchSearchQuery query, int? currentUserId = null);
 
     /// <summary>
     /// Lists every pitch owned by the caller — including inactive and not-yet-approved

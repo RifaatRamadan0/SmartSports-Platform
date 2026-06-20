@@ -8,6 +8,7 @@ import { getRoleHomePath } from '../../utils/roleUtils'
 import { listPitches } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
 import PitchCover from '../../components/Pitch/PitchCover'
+import FavoriteButton from '../../components/Pitch/FavoriteButton'
 import {
   getMyPendingInvitations,
   acceptInvitation,
@@ -549,6 +550,13 @@ function Navbar() {
                   >
                     My Bookings
                   </motion.button>
+                  <motion.button
+                    whileHover={{ x: 3 }}
+                    onClick={() => { setMenuOpen(false); navigate('/favorites') }}
+                    className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
+                  >
+                    My Favorites
+                  </motion.button>
                 </>
               )}
               {isOwner && (
@@ -862,6 +870,11 @@ function PitchCard({ pitch, onClick, onDetail, canBook }) {
       <button onClick={handleDetail} className="block w-full text-left focus:outline-none">
         <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} imageCount={pitch.imageCount} className="h-40" />
       </button>
+
+      {/* Favorite heart (players only) */}
+      <div className="absolute top-3 left-3">
+        <FavoriteButton pitchId={pitch.id} initialFavorited={pitch.isFavorited} />
+      </div>
 
       <span className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest
                        bg-black/40 backdrop-blur text-white border border-white/10">

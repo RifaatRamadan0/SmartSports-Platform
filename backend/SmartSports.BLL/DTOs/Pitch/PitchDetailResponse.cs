@@ -13,6 +13,9 @@ public class PitchDetailResponse
     public int      MaxBookingDurationMinutes { get; init; }
     public int      Capacity                  { get; init; }
 
+    /// <summary>True when the authenticated player has favorited this pitch; false for guests.</summary>
+    public bool     IsFavorited               { get; init; }
+
     public IEnumerable<string>              Images        { get; init; } = [];
     public IEnumerable<ScheduleDayResponse> Schedule      { get; init; } = [];
     public IEnumerable<ReviewSummary>       RecentReviews { get; init; } = [];

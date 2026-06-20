@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Pitch;
 using SmartSports.BLL.Interfaces;
@@ -12,13 +13,16 @@ public class PitchesController : BaseApiController
 {
     private readonly IPitchService       _pitchService;
     private readonly IPitchImageService  _pitchImageService;
+    private readonly IFavoriteService    _favoriteService;
 
     public PitchesController(
         IPitchService      pitchService,
-        IPitchImageService pitchImageService)
+        IPitchImageService pitchImageService,
+        IFavoriteService   favoriteService)
     {
         _pitchService      = pitchService;
         _pitchImageService = pitchImageService;
+        _favoriteService   = favoriteService;
     }
 
     /// <summary>
@@ -31,7 +35,9 @@ public class PitchesController : BaseApiController
     [ProducesResponseType(typeof(PagedResult<PitchListResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List([FromQuery] PitchSearchQuery query)
     {
-        var result = await _pitchService.ListAsync(query);
+        // JWT bearer still populates the principal on [AllowAnonymous] endpoints, so an
+        // authenticated player gets correct isFavorited flags while guests get null → false.
+        var result = await _pitchService.ListAsync(query, GetUserId());
         return Ok(result);
     }
 
@@ -84,8 +90,29 @@ public class PitchesController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id)
     {
-        var detail = await _pitchService.GetDetailAsync(id);
+        var detail = await _pitchService.GetDetailAsync(id, GetUserId());
         return Ok(detail);
+    }
+
+    /// <summary>
+    /// POST /api/pitches/{id}/favorite
+    /// Toggles the favorite for the authenticated player and returns the new state.
+    /// 404 if the pitch does not exist or is not publicly visible.
+    /// </summary>
+    [HttpPost("{id:int}/favorite")]
+    [Authorize(Policy = "PlayerOnly")]
+    [EnableRateLimiting("favorites")]
+    [ProducesResponseType(typeof(FavoriteToggleResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ToggleFavorite(int id)
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var isFavorited = await _favoriteService.ToggleAsync(userId.Value, id);
+        return Ok(new FavoriteToggleResponse { IsFavorited = isFavorited });
     }
 
     /// <summary>

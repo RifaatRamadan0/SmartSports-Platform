@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SmartSports.API.Helpers;
 using SmartSports.BLL.DTOs.Auth;
+using SmartSports.BLL.DTOs.Booking;
+using SmartSports.BLL.DTOs.Pitch;
 using SmartSports.BLL.DTOs.User;
 using SmartSports.BLL.Interfaces;
 
@@ -12,8 +14,26 @@ namespace SmartSports.API.Controllers;
 [Route("api/users")]
 [Authorize]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-public class UsersController(IUserService userService, IAuthService authService) : BaseApiController
+public class UsersController(IUserService userService, IAuthService authService, IFavoriteService favoriteService) : BaseApiController
 {
+    /// <summary>
+    /// GET /api/users/me/favorites?page=&pageSize=
+    /// Returns the authenticated player's saved pitches (active, approved, non-deleted),
+    /// newest favorite first, with standard pitch summary fields.
+    /// </summary>
+    [HttpGet("me/favorites")]
+    [Authorize(Policy = "PlayerOnly")]
+    [ProducesResponseType(typeof(PagedResult<PitchListResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetMyFavorites([FromQuery] int page = 1, [FromQuery] int pageSize = 12)
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var result = await favoriteService.ListFavoritesAsync(userId.Value, page, pageSize);
+        return Ok(result);
+    }
+
     [HttpGet("me")]
     [ProducesResponseType(typeof(UserProfileResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMe()

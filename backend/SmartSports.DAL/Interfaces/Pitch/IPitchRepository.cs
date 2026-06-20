@@ -22,20 +22,31 @@ public interface IPitchRepository
     Task<PitchDetailRow?> GetDetailAsync(int pitchId);
 
     /// <summary>
+    /// Returns true when the pitch is publicly visible (active, approved, non-deleted).
+    /// A lightweight EXISTS check for callers that only need a visibility gate and
+    /// would otherwise throw away a full detail row.
+    /// </summary>
+    Task<bool> ExistsVisibleAsync(int pitchId);
+
+    /// <summary>
     /// Returns pitch detail, images, schedule, and recent reviews in a single DB round-trip
     /// using QueryMultiple. Returns (null, empty, empty, empty) when the pitch is not found/active/approved.
+    /// When <paramref name="currentUserId"/> is supplied, the detail row's IsFavorited reflects
+    /// whether that user has favorited the pitch; null callers always get IsFavorited = false.
     /// </summary>
     Task<(PitchDetailRow? Detail, IEnumerable<string> Images, IEnumerable<ScheduleRow> Schedule, IEnumerable<ReviewRow> Reviews)>
-        GetDetailWithDataAsync(int pitchId, int reviewCount = 5);
+        GetDetailWithDataAsync(int pitchId, int? currentUserId = null, int reviewCount = 5);
 
     Task<IEnumerable<string>>      GetImagesAsync(int pitchId);
     Task<IEnumerable<ScheduleRow>> GetScheduleAsync(int pitchId);
 
     /// <summary>
     /// Returns a paged, filtered, sorted list of active and approved pitches.
-    /// All filter fields in <paramref name="filters"/> are optional.
+    /// All filter fields in <paramref name="filters"/> are optional. When
+    /// <paramref name="currentUserId"/> is supplied, each row's IsFavorited reflects
+    /// that user's favorites; null callers always get IsFavorited = false.
     /// </summary>
-    Task<(IEnumerable<PitchListRow> Items, long TotalCount)> ListAsync(PitchFilterParams filters);
+    Task<(IEnumerable<PitchListRow> Items, long TotalCount)> ListAsync(PitchFilterParams filters, int? currentUserId = null);
 
     /// <summary>
     /// Returns a paged list of non-deleted pitches owned by the given user (includes
