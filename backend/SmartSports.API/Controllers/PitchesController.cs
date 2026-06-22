@@ -8,6 +8,7 @@ using SmartSports.BLL.Interfaces;
 namespace SmartSports.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/pitches")]
 public class PitchesController : BaseApiController
 {

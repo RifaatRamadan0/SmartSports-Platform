@@ -182,7 +182,7 @@ public class PitchRepository : IPitchRepository
         };
 
         if (!string.IsNullOrWhiteSpace(filters.Search))
-            conditions.Add("(LOWER(p.name) LIKE LOWER(@SearchPattern) ESCAPE '\' OR LOWER(p.address) LIKE LOWER(@SearchPattern) ESCAPE '\')");
+            conditions.Add("(LOWER(p.name) LIKE LOWER(@SearchPattern) ESCAPE '\\' OR LOWER(p.address) LIKE LOWER(@SearchPattern) ESCAPE '\\')");
 
         if (!string.IsNullOrWhiteSpace(filters.Sport))
             conditions.Add("LOWER(s.name) = LOWER(@Sport)");

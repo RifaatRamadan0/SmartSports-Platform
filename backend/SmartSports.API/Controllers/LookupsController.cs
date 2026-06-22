@@ -7,6 +7,7 @@ using SmartSports.BLL.Interfaces;
 namespace SmartSports.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/lookups")]
 public class LookupsController : ControllerBase
 {

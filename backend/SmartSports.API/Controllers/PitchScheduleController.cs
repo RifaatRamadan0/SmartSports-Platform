@@ -6,6 +6,7 @@ using SmartSports.BLL.Interfaces;
 namespace SmartSports.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/pitches/{pitchId:int}/schedule")]
 public class PitchScheduleController : BaseApiController
 {

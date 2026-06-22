@@ -237,6 +237,11 @@ public class InvitationService : IInvitationService
         var match = await _matchRepository.GetByIdAsync(invitation.MatchId)
             ?? throw new KeyNotFoundException($"Match {invitation.MatchId} no longer exists.");
 
+        if (match.BookingStatus != "confirmed")
+            throw new ConflictException("This match's booking is no longer active.");
+        if (match.BookingDate < DateOnly.FromDateTime(DateTime.Today))
+            throw new ConflictException("This match has already taken place.");
+
         // Fix #5: steps 3-5 (insert participant, capacity-guard accept, mark invitation) run
         // inside a single transaction — a failure in any step rolls back all three, eliminating
         // the window where a player could be accepted without the invitation being marked.
