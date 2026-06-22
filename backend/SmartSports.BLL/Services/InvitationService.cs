@@ -188,6 +188,7 @@ public class InvitationService : IInvitationService
             InvitedById   = currentUserId,
             InvitedUserId = invitee.Id,
             Token         = Guid.NewGuid().ToString("N"),
+            ExpiresAt     = match.BookingDate.ToDateTime(match.StartTime, DateTimeKind.Utc),
             Status        = "pending"
         });
 

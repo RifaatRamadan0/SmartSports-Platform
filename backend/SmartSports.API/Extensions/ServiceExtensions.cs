@@ -153,6 +153,26 @@ public static class ServiceExtensions
                         }
 
                         return Task.CompletedTask;
+                    },
+
+                    OnTokenValidated = async context =>
+                    {
+                        var sub = context.Principal?.FindFirst(
+                            System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                        if (!int.TryParse(sub, out var userId))
+                        {
+                            context.Fail("Invalid token subject.");
+                            return;
+                        }
+
+                        var repo = context.HttpContext.RequestServices
+                            .GetRequiredService<IUserRepository>();
+                        var user = await repo.GetByIdAsync(userId);
+
+                        // GetByIdAsync filters deleted_at IS NULL, so null covers soft-deleted too.
+                        if (user is null || user.IsBanned)
+                            context.Fail("Account is banned or deleted.");
                     }
                 };
             });
