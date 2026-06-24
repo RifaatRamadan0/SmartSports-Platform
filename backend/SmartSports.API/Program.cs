@@ -35,6 +35,15 @@ public class Program
                 $"Jwt:Secret decodes to {decodedSecret.Length} bytes; minimum is 32 bytes (256 bits) for HS256. " +
                 "Generate one with:  openssl rand -base64 48");
 
+        if (string.IsNullOrWhiteSpace(builder.Configuration["Twilio:AccountSid"]))
+            throw new InvalidOperationException("Twilio:AccountSid is not configured.");
+        if (string.IsNullOrWhiteSpace(builder.Configuration["Twilio:AuthToken"]))
+            throw new InvalidOperationException("Twilio:AuthToken is not configured.");
+        if (string.IsNullOrWhiteSpace(builder.Configuration["Twilio:VerifyServiceSid"]))
+            throw new InvalidOperationException("Twilio:VerifyServiceSid is not configured.");
+        if (string.IsNullOrWhiteSpace(builder.Configuration["ImageKit:PrivateKey"]))
+            throw new InvalidOperationException("ImageKit:PrivateKey is not configured.");
+
         builder.Services.AddResponseCaching();
         builder.Services.AddSwaggerConfiguration();
         builder.Services.AddCorsConfiguration(builder.Configuration);

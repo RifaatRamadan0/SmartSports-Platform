@@ -378,5 +378,6 @@ MigrationBackup/
 # CLAUDE Code
 .claude/
 CLAUDE.md
+audit_prompt.md
 
 **/.github/copilot*

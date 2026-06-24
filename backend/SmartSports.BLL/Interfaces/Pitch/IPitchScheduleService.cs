@@ -1,0 +1,22 @@
+using SmartSports.BLL.DTOs.Pitch;
+
+namespace SmartSports.BLL.Interfaces.Pitch;
+
+public interface IPitchScheduleService
+{
+    /// <summary>
+    /// Returns the full 7-day schedule for a pitch.
+    /// Public — no auth required.
+    /// Throws KeyNotFoundException if the pitch doesn't exist.
+    /// Returns an empty list if no schedule has been configured yet.
+    /// </summary>
+    Task<IEnumerable<PitchScheduleResponse>> GetScheduleAsync(int pitchId);
+
+    /// <summary>
+    /// Saves (inserts or updates) the full weekly schedule for a pitch.
+    /// Validates that the caller (ownerId) owns the given pitch before saving.
+    /// Throws KeyNotFoundException if the pitch doesn't exist.
+    /// Throws ForbiddenException if the caller doesn't own the pitch.
+    /// </summary>
+    Task UpsertScheduleAsync(int ownerId, int pitchId, UpsertScheduleRequest request);
+}
