@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { cardVariants, cardHover, cardTap, listContainerVariants } from '../../lib/motion'
@@ -15,7 +15,7 @@ function PitchCardSkeleton() {
       {Array.from({ length: 3 }).map((_, i) => (
         <motion.div
           key={i}
-          className="h-32 rounded-2xl bg-[#0f0f0f] border border-[#1a1a1a]"
+          className="h-32 rounded-2xl bg-[var(--surface)] border border-white/[0.06]"
           animate={{ opacity: [0.4, 1, 0.4] }}
           transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
         />
@@ -33,7 +33,7 @@ function StatusPill({ isActive, status }) {
   if (status === PITCH_STATUS.REJECTED) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold
-                       bg-red-500/10 text-red-400 border border-red-500/30">
+                       bg-[var(--red)]/10 text-[var(--red)] border border-red-500/30">
         Rejected
       </span>
     )
@@ -49,15 +49,15 @@ function StatusPill({ isActive, status }) {
   if (!isActive) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold
-                       bg-neutral-800 text-neutral-400 border border-neutral-700">
+                       bg-neutral-800 text-[var(--text2)] border border-neutral-700">
         Inactive
       </span>
     )
   }
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold
-                     bg-green-500/10 text-green-400 border border-green-500/30">
-      <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                     bg-[var(--green-muted)] text-[var(--green)] border border-[var(--green-border)]">
+      <span className="h-1.5 w-1.5 rounded-full bg-[var(--green)]" />
       Active
     </span>
   )
@@ -75,19 +75,19 @@ function DeletePitchDialog({ pitch, isDeleting, onConfirm, onClose }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d] p-6 shadow-2xl"
+        className="w-full max-w-md rounded-2xl border border-white/[0.07] bg-[var(--surface)] p-6 shadow-2xl"
       >
-        <p className="text-[10px] font-bold tracking-widest uppercase text-red-500">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--red)]">
           Delete Pitch
         </p>
         <h2 className="text-lg font-bold text-white mt-1">{pitch.name}</h2>
-        <p className="text-xs text-neutral-500 mt-1">{pitch.address}</p>
+        <p className="text-xs text-[var(--text2)] mt-1">{pitch.address}</p>
 
-        <p className="mt-4 text-sm text-neutral-400 leading-relaxed">
+        <p className="mt-4 text-sm text-[var(--text2)] leading-relaxed">
           This pitch will be permanently removed from public listings. This action cannot be undone.
         </p>
         <p className="mt-2 text-sm text-amber-400 leading-relaxed">
-          Any confirmed bookings will remain visible to the players who made them — they will not be automatically cancelled.
+          Any confirmed bookings will remain visible to the players who made them â€” they will not be automatically cancelled.
         </p>
 
         <div className="mt-5 flex items-center justify-end gap-2">
@@ -95,7 +95,7 @@ function DeletePitchDialog({ pitch, isDeleting, onConfirm, onClose }) {
             onClick={onClose}
             disabled={isDeleting}
             className="rounded-lg px-4 py-2 text-xs font-semibold border
-                       border-[#1f1f1f] text-neutral-400 hover:text-white hover:border-white/30
+                       border-white/[0.07] text-[var(--text2)] hover:text-white hover:border-white/30
                        transition-colors disabled:opacity-50"
           >
             Keep pitch
@@ -104,10 +104,10 @@ function DeletePitchDialog({ pitch, isDeleting, onConfirm, onClose }) {
             onClick={onConfirm}
             disabled={isDeleting}
             className="rounded-lg px-4 py-2 text-xs font-bold
-                       bg-red-500 text-white hover:bg-red-400 active:scale-95
+                       bg-[var(--red)] text-white hover:bg-[var(--red)] active:scale-95
                        transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {isDeleting ? 'Deleting…' : 'Delete pitch'}
+            {isDeleting ? 'Deletingâ€¦' : 'Delete pitch'}
           </button>
         </div>
       </div>
@@ -123,9 +123,9 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting, onDeleteRequest })
       variants={cardVariants}
       whileHover={cardHover}
       whileTap={cardTap}
-      className="flex overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d]
+      className="flex overflow-hidden rounded-2xl border border-white/[0.07] bg-[var(--surface)]
                     hover:border-white/10 transition-colors">
-      <div className="hidden sm:block w-[130px] h-full shrink-0 bg-[#0a0a0a]">
+      <div className="hidden sm:block w-[130px] h-full shrink-0 bg-[var(--bg2)]">
         <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} imageCount={pitch.imageCount} className="w-full h-full" />
       </div>
 
@@ -133,25 +133,25 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting, onDeleteRequest })
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="font-bold tracking-tight text-white truncate">{pitch.name}</h3>
-            <p className="text-xs text-neutral-500 mt-0.5 truncate">
-              {pitch.sportName} · {pitch.address}
+            <p className="text-xs text-[var(--text2)] mt-0.5 truncate">
+              {pitch.sportName} Â· {pitch.address}
             </p>
           </div>
-          <div className="font-bold text-green-400 whitespace-nowrap">
+          <div className="font-bold text-[var(--green)] whitespace-nowrap">
             ${pitch.pricePerHour}
-            <span className="text-xs text-neutral-500 font-normal">/hr</span>
+            <span className="text-xs text-[var(--text2)] font-normal">/hr</span>
           </div>
         </div>
 
         <div className="mt-3 flex items-center gap-2 flex-wrap">
           <StatusPill isActive={pitch.isActive} status={pitch.status} />
           {pitch.status === PITCH_STATUS.REJECTED && pitch.rejectionReason && (
-            <span className="text-[11px] text-red-400/80 italic truncate max-w-xs">
+            <span className="text-[11px] text-[var(--red)]/80 italic truncate max-w-xs">
               "{pitch.rejectionReason}"
             </span>
           )}
           {pitch.rating != null && (
-            <span className="text-xs text-neutral-400">⭐ {pitch.rating}</span>
+            <span className="text-xs text-[var(--text2)]">â­ {pitch.rating}</span>
           )}
         </div>
 
@@ -159,7 +159,7 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting, onDeleteRequest })
           <button
             onClick={() => onNavigate(`/dashboard/pitches/${pitch.id}/schedule`)}
             className="rounded-lg px-3 py-1.5 text-xs font-semibold
-                       bg-[#141414] border border-[#1f1f1f] text-neutral-300
+                       bg-[var(--bg3)] border border-white/[0.07] text-[var(--text2)]
                        hover:text-white hover:border-white/15 transition-colors"
           >
             Edit Schedule
@@ -167,7 +167,7 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting, onDeleteRequest })
           <button
             onClick={() => onNavigate(`/dashboard/pitches/${pitch.id}/edit`)}
             className="rounded-lg px-3 py-1.5 text-xs font-semibold
-                       bg-[#141414] border border-[#1f1f1f] text-neutral-300
+                       bg-[var(--bg3)] border border-white/[0.07] text-[var(--text2)]
                        hover:text-white hover:border-white/15 transition-colors"
           >
             Edit Details
@@ -176,8 +176,8 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting, onDeleteRequest })
             onClick={() => onDeleteRequest(pitch)}
             disabled={isDeleting}
             className="rounded-lg px-3 py-1.5 text-xs font-semibold
-                       bg-[#141414] border border-red-900/40 text-red-500
-                       hover:bg-red-500/10 hover:border-red-500/40
+                       bg-[var(--bg3)] border border-red-900/40 text-[var(--red)]
+                       hover:bg-[var(--red)]/10 hover:border-red-500/40
                        transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Delete
@@ -259,32 +259,32 @@ export default function OwnerPitchesPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#080808] px-6 py-10 text-white">
+    <div className="min-h-screen bg-[var(--bg)] px-6 py-10 text-white">
 
       {/* Header */}
       <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-green-500">
+          <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[var(--green)]">
             Pitch Management
           </p>
           <h1 className="text-3xl font-bold tracking-tight">My Pitches</h1>
-          <p className="text-sm text-neutral-500 mt-1">
-            Every pitch you own — including listings still pending admin approval.
+          <p className="text-sm text-[var(--text2)] mt-1">
+            Every pitch you own â€” including listings still pending admin approval.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate('/dashboard/owner')}
             className="rounded-xl px-4 py-2.5 text-sm font-semibold
-                       bg-[#0d0d0d] border border-[#1f1f1f] text-neutral-300
+                       bg-[var(--surface)] border border-white/[0.07] text-[var(--text2)]
                        hover:text-white hover:border-white/15 transition-colors"
           >
-            ← Dashboard
+            â† Dashboard
           </button>
           <button
             onClick={() => navigate('/dashboard/bookings')}
             className="rounded-xl px-4 py-2.5 text-sm font-semibold
-                       bg-[#0d0d0d] border border-[#1f1f1f] text-neutral-300
+                       bg-[var(--surface)] border border-white/[0.07] text-[var(--text2)]
                        hover:text-white hover:border-white/15 transition-colors"
           >
             View Bookings
@@ -292,7 +292,7 @@ export default function OwnerPitchesPage() {
           <button
             onClick={() => navigate('/dashboard/pitches/new')}
             className="rounded-xl px-4 py-2.5 text-sm font-semibold
-                       bg-green-500 text-black hover:bg-green-400 transition-colors"
+                       bg-[var(--green)] text-black hover:bg-[var(--green)] transition-colors"
           >
             + Add Pitch
           </button>
@@ -311,8 +311,8 @@ export default function OwnerPitchesPage() {
                 className={
                   'inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ' +
                   (isActive
-                    ? 'bg-green-500/15 border border-green-500/40 text-green-300'
-                    : 'bg-[#0d0d0d] border border-[#1f1f1f] text-neutral-400 hover:text-white hover:border-white/15')
+                    ? 'bg-[var(--green)]/15 border border-[var(--green-border)] text-[var(--green)]'
+                    : 'bg-[var(--surface)] border border-white/[0.07] text-[var(--text2)] hover:text-white hover:border-white/15')
                 }
               >
                 {t.label}
@@ -320,8 +320,8 @@ export default function OwnerPitchesPage() {
                   className={
                     'inline-flex items-center justify-center min-w-5 h-5 rounded-full px-1.5 text-[11px] font-bold ' +
                     (isActive
-                      ? 'bg-green-500/25 text-green-200'
-                      : 'bg-[#1a1a1a] text-neutral-400')
+                      ? 'bg-[var(--green)]/25 text-[var(--green)]'
+                      : 'bg-[var(--bg3)] text-[var(--text2)]')
                   }
                 >
                   {t.count}
@@ -336,12 +336,12 @@ export default function OwnerPitchesPage() {
       {isLoading && <PitchCardSkeleton />}
 
       {!isLoading && error && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-6 text-center">
+        <div className="rounded-2xl border border-red-500/30 bg-[var(--red)]/5 p-6 text-center">
           <p className="text-sm text-red-300">{error}</p>
           <button
             onClick={fetchPitches}
             className="mt-4 rounded-lg px-4 py-2 text-xs font-semibold
-                       bg-[#141414] border border-[#1f1f1f] text-white
+                       bg-[var(--bg3)] border border-white/[0.07] text-white
                        hover:border-white/15 transition-colors"
           >
             Retry
@@ -350,15 +350,15 @@ export default function OwnerPitchesPage() {
       )}
 
       {!isLoading && !error && pitches.length === 0 && (
-        <div className="rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d] p-10 text-center">
+        <div className="rounded-2xl border border-white/[0.07] bg-[var(--surface)] p-10 text-center">
           <p className="text-base font-semibold text-white">No pitches yet</p>
-          <p className="text-sm text-neutral-500 mt-1">
+          <p className="text-sm text-[var(--text2)] mt-1">
             Add your first pitch to start receiving bookings.
           </p>
           <button
             onClick={() => navigate('/dashboard/pitches/new')}
             className="mt-5 rounded-xl px-4 py-2.5 text-sm font-semibold
-                       bg-green-500 text-black hover:bg-green-400 transition-colors"
+                       bg-[var(--green)] text-black hover:bg-[var(--green)] transition-colors"
           >
             + Add Pitch
           </button>
@@ -366,14 +366,14 @@ export default function OwnerPitchesPage() {
       )}
 
       {!isLoading && !error && pitches.length > 0 && visiblePitches.length === 0 && (
-        <div className="rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d] p-8 text-center">
-          <p className="text-sm text-neutral-400">
+        <div className="rounded-2xl border border-white/[0.07] bg-[var(--surface)] p-8 text-center">
+          <p className="text-sm text-[var(--text2)]">
             No pitches match this filter.
           </p>
           <button
             onClick={() => setFilter('all')}
             className="mt-3 rounded-lg px-3 py-1.5 text-xs font-semibold
-                       bg-[#141414] border border-[#1f1f1f] text-neutral-300
+                       bg-[var(--bg3)] border border-white/[0.07] text-[var(--text2)]
                        hover:text-white hover:border-white/15 transition-colors"
           >
             Show all
@@ -414,3 +414,5 @@ export default function OwnerPitchesPage() {
     </div>
   )
 }
+
+

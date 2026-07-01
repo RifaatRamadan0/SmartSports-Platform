@@ -1,13 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { listMyPitches } from '../../services/Pitch/pitchService'
 import { getOwnerBookings } from '../../services/Booking/bookingService'
 import StatusBadge from '../../components/ui/StatusBadge'
 import { parseApiError } from '../../utils/errorUtils'
-import { getRoleHomePath } from '../../utils/roleUtils'
-import { useAuth } from '../../hooks/useAuth'
-import { ROLES } from '../../constants/roles'
 
 const fmtDate = d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 const fmtTime = t => t?.slice(0, 5) ?? ''
@@ -43,123 +39,6 @@ function ActionCard({ label, desc, onClick }) {
       <p className="text-[14px] font-bold text-white group-hover:text-[var(--green)] transition-colors">{label} →</p>
       <p className="text-[12px] text-[var(--text2)] mt-1">{desc}</p>
     </button>
-  )
-}
-
-// ── Navbar ────────────────────────────────────────────────────────────────────
-
-function Navbar() {
-  const navigate = useNavigate()
-  const { roles, logout } = useAuth()
-  const isPlayer = roles.includes(ROLES.PLAYER)
-  const [menuOpen, setMenuOpen] = useState(false)
-
-  const handleLogout = async () => {
-    setMenuOpen(false)
-    await logout()
-    navigate('/login', { replace: true })
-  }
-
-  return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-[var(--bg)]/80 border-b border-white/[0.06]">
-      <nav className="mx-auto max-w-[1280px] px-6 h-16 flex items-center justify-between">
-        <button
-          onClick={() => navigate(getRoleHomePath(roles))}
-          className="flex items-center gap-2 group"
-        >
-          <span className="w-2.5 h-2.5 rounded-full bg-[var(--green)] shadow-[0_0_12px_var(--green-glow)]" />
-          <span className="text-[15px] font-bold tracking-tight">SmartSports</span>
-        </button>
-
-        <div className="hidden md:flex items-center gap-1 text-[13px] text-[var(--text2)]">
-          <button
-            onClick={() => navigate('/dashboard/pitches')}
-            className="px-3 py-2 hover:text-white transition-colors"
-          >
-            My Pitches
-          </button>
-          <button
-            onClick={() => navigate('/dashboard/bookings')}
-            className="px-3 py-2 hover:text-white transition-colors"
-          >
-            Bookings
-          </button>
-          {isPlayer && (
-            <>
-              <button
-                onClick={() => navigate('/pitches')}
-                className="px-3 py-2 hover:text-white transition-colors"
-              >
-                Browse Pitches
-              </button>
-              <button
-                onClick={() => navigate('/my-bookings')}
-                className="px-3 py-2 hover:text-white transition-colors"
-              >
-                My Bookings
-              </button>
-            </>
-          )}
-          <button
-            onClick={() => navigate('/dashboard/pitches/new')}
-            className="ml-2 px-4 py-2 rounded-full bg-[var(--green-muted)] border border-[var(--green-border)]
-                       text-[var(--green)] text-[12px] font-bold hover:bg-[var(--green)] hover:text-[var(--primary-foreground)] transition-all"
-          >
-            + New Pitch
-          </button>
-        </div>
-
-        <div className="relative">
-          <button
-            onClick={() => setMenuOpen(o => !o)}
-            className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-[var(--bg2)] px-2 py-1.5 hover:border-[var(--green-border)] transition-colors"
-          >
-            <span className="w-7 h-7 rounded-full bg-[var(--green)] text-[var(--primary-foreground)] text-[12px] font-bold flex items-center justify-center">
-              P
-            </span>
-            <span className="hidden sm:inline text-[12px] font-semibold pr-1">Owner</span>
-            <span className="text-[10px] text-[var(--text3)] pr-1">▾</span>
-          </button>
-
-          {menuOpen && (
-            <div
-              role="menu"
-              className="absolute right-0 top-12 w-52 rounded-xl border border-white/[0.07] bg-[var(--surface)] shadow-2xl py-2 text-[13px]"
-              onMouseLeave={() => setMenuOpen(false)}
-            >
-              <motion.button whileHover={{ x: 3 }} onClick={() => { setMenuOpen(false); navigate('/dashboard/pitches') }}
-                className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
-                My Pitches
-              </motion.button>
-              <motion.button whileHover={{ x: 3 }} onClick={() => { setMenuOpen(false); navigate('/dashboard/bookings') }}
-                className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
-                Bookings
-              </motion.button>
-              {isPlayer && (
-                <>
-                  <motion.button whileHover={{ x: 3 }} onClick={() => { setMenuOpen(false); navigate('/pitches') }}
-                    className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
-                    Browse Pitches
-                  </motion.button>
-                  <motion.button whileHover={{ x: 3 }} onClick={() => { setMenuOpen(false); navigate('/my-bookings') }}
-                    className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
-                    My Bookings
-                  </motion.button>
-                </>
-              )}
-              <motion.button whileHover={{ x: 3 }} onClick={() => { setMenuOpen(false); navigate('/settings') }}
-                className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
-                Settings
-              </motion.button>
-              <motion.button whileHover={{ x: 3 }} onClick={handleLogout}
-                className="w-full text-left px-3 py-2 hover:bg-[var(--red-muted)] text-[var(--text2)] hover:text-[oklch(0.62_0.2_25)] transition-colors border-t border-white/[0.06] mt-1 pt-2">
-                Sign out
-              </motion.button>
-            </div>
-          )}
-        </div>
-      </nav>
-    </header>
   )
 }
 
@@ -220,7 +99,6 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
-      <Navbar />
 
       <main className="mx-auto max-w-[1280px] px-6 py-10">
 

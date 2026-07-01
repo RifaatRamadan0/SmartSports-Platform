@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Lock, Shield, ChevronLeft, Camera, Loader2, Eye, EyeOff } from 'lucide-react'
+import { User, Lock, Shield, Camera, Loader2, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { ROLES } from '../../constants/roles'
 import { getRoleHomePath } from '../../utils/roleUtils'
@@ -831,48 +831,6 @@ function AccountSection({ roles, showToast }) {
   )
 }
 
-// ── Navbar ────────────────────────────────────────────────────────────────────
-
-function Navbar() {
-  const navigate = useNavigate()
-  const { roles, logout } = useAuth()
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login', { replace: true })
-  }
-
-  return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-[var(--bg)]/80 border-b border-white/[0.06]">
-      <nav className="mx-auto max-w-[1280px] px-6 h-16 flex items-center justify-between">
-        <button
-          onClick={() => navigate(getRoleHomePath(roles))}
-          className="flex items-center gap-2"
-        >
-          <span className="w-2.5 h-2.5 rounded-full bg-[var(--green)] shadow-[0_0_12px_var(--green-glow)]" />
-          <span className="text-[15px] font-bold tracking-tight">SmartSports</span>
-        </button>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate(getRoleHomePath(roles))}
-            className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
-          >
-            <ChevronLeft size={14} />
-            Dashboard
-          </button>
-          <button
-            onClick={handleLogout}
-            className="text-[12px] font-semibold text-[var(--text2)] hover:text-red-400 px-3 py-2 transition-colors"
-          >
-            Sign out
-          </button>
-        </div>
-      </nav>
-    </header>
-  )
-}
-
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -897,7 +855,6 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
-      <Navbar />
 
       {/* Toast */}
       <AnimatePresence>

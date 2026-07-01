@@ -3,8 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import PageWrapper from '@/components/routing/PageWrapper'
 import { cardVariants, cardHover, cardTap, listContainerVariants } from '@/lib/motion'
-import { useAuth } from '../../hooks/useAuth'
-import { ROLES } from '../../constants/roles'
 import { listPitches } from '../../services/Pitch/pitchService'
 import { getSportTypes, getCities } from '../../services/Lookup/lookupService'
 import { parseApiError } from '../../utils/errorUtils'
@@ -133,7 +131,6 @@ export default function PitchDiscoveryPage() {
 
   return (
     <PageWrapper className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
-      <DiscoveryNavbar />
 
       {/* Page header */}
       <div className="mx-auto max-w-[1280px] px-6 pt-10 pb-4">
@@ -216,159 +213,6 @@ function handleBook(pitch, navigate) {
   navigate(`/pitches/${pitch.id}`)
 }
 
-// ─── Navbar ──────────────────────────────────────────────────────────────────
-
-function DiscoveryNavbar() {
-  const navigate          = useNavigate()
-  const { roles, logout } = useAuth()
-  const [menuOpen, setMenuOpen] = useState(false)
-
-  const isAuthenticated = roles.length > 0
-  const isPlayer        = roles.includes(ROLES.PLAYER)
-  const isOwner         = roles.includes(ROLES.PITCH_OWNER)
-  const isAdmin         = roles.includes(ROLES.ADMIN)
-
-  const handleLogout = async () => {
-    setMenuOpen(false)
-    await logout()
-    navigate('/login', { replace: true })
-  }
-
-  return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-[var(--bg)]/80 border-b border-white/[0.06]">
-      <nav className="mx-auto max-w-[1280px] px-6 h-16 flex items-center justify-between">
-
-        {/* Logo */}
-        <button onClick={() => navigate('/pitches')} className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[var(--green)] shadow-[0_0_12px_var(--green-glow)]" />
-          <span className="text-[15px] font-bold tracking-tight">SmartSports</span>
-        </button>
-
-        {/* Nav links */}
-        <ul className="hidden md:flex items-center gap-8 text-[13px] text-[var(--text2)]">
-          <li>
-            <button onClick={() => navigate('/pitches')} className="hover:text-white transition-colors text-[var(--green)] font-semibold">
-              Pitches
-            </button>
-          </li>
-          <li className="relative group">
-            <button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Leagues</button>
-            <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#1a1f1c] border border-[#2a3330] px-2 py-1 text-[11px] text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity z-50">
-              Coming soon
-            </span>
-          </li>
-          <li className="relative group">
-            <button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Coaching</button>
-            <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#1a1f1c] border border-[#2a3330] px-2 py-1 text-[11px] text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity z-50">
-              Coming soon
-            </span>
-          </li>
-        </ul>
-
-        {/* Auth area */}
-        <div className="flex items-center gap-2 relative">
-          {!isAuthenticated && (
-            <>
-              <button
-                onClick={() => navigate('/login')}
-                className="text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
-              >
-                Sign in
-              </button>
-              <button
-                onClick={() => navigate('/register')}
-                className="rounded-full bg-[var(--green)] px-4 py-2 text-[12px] font-bold text-[var(--primary-foreground)]
-                           shadow-[0_4px_12px_var(--green-glow)] hover:brightness-110 transition-all"
-              >
-                Register
-              </button>
-            </>
-          )}
-
-          {isAuthenticated && (
-            <>
-              {isPlayer && (
-                <button
-                  onClick={() => navigate('/my-bookings')}
-                  className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
-                >
-                  My Bookings
-                </button>
-              )}
-              {isOwner && (
-                <button
-                  onClick={() => navigate('/dashboard/bookings')}
-                  className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
-                >
-                  Owner Dashboard
-                </button>
-              )}
-
-              <button
-                onClick={() => setMenuOpen(o => !o)}
-                aria-expanded={menuOpen}
-                aria-label="User menu"
-                className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-[var(--bg2)] px-2 py-1.5 hover:border-[var(--green-border)] transition-colors"
-              >
-                <span className="w-7 h-7 rounded-full bg-[var(--green)] text-[var(--primary-foreground)] text-[12px] font-bold flex items-center justify-center">
-                  {(roles[0] || 'U')[0].toUpperCase()}
-                </span>
-                <span className="hidden sm:inline text-[12px] font-semibold pr-1">{roles[0] || 'User'}</span>
-                <span className="text-[10px] text-[var(--text3)] pr-1">▾</span>
-              </button>
-
-              {menuOpen && (
-                <div
-                  className="absolute right-0 top-12 w-52 rounded-xl border border-white/[0.07] bg-[var(--surface)] shadow-2xl py-2 text-[13px]"
-                  onMouseLeave={() => setMenuOpen(false)}
-                >
-                  <div className="px-3 py-2 border-b border-white/[0.06]">
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)]">Signed in as</p>
-                    <p className="text-white font-semibold mt-0.5">{roles.join(', ') || 'User'}</p>
-                  </div>
-                  {isPlayer && (
-                    <button onClick={() => { setMenuOpen(false); navigate('/my-bookings') }}
-                      className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
-                      My Bookings
-                    </button>
-                  )}
-                  {isPlayer && (
-                    <button onClick={() => { setMenuOpen(false); navigate('/favorites') }}
-                      className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
-                      My Favorites
-                    </button>
-                  )}
-                  {(isOwner || isAdmin) && (
-                    <button onClick={() => { setMenuOpen(false); navigate('/dashboard/pitches') }}
-                      className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
-                      Manage Pitches
-                    </button>
-                  )}
-                  {isOwner && (
-                    <button onClick={() => { setMenuOpen(false); navigate('/dashboard/bookings') }}
-                      className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
-                      Owner Dashboard
-                    </button>
-                  )}
-                  {isPlayer && (
-                    <button onClick={() => { setMenuOpen(false); navigate('/dashboard') }}
-                      className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors">
-                      Home
-                    </button>
-                  )}
-                  <button onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 hover:bg-[var(--red-muted)] text-[var(--text2)] hover:text-[oklch(0.62_0.2_25)] transition-colors border-t border-white/[0.06] mt-1 pt-2">
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </nav>
-    </header>
-  )
-}
 
 // ─── Filter bar ───────────────────────────────────────────────────────────────
 

@@ -6,6 +6,7 @@ import PrivateRoute from './components/routing/PrivateRoute'
 import RoleRoute from './components/routing/RoleRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 import RootRedirect from './components/routing/RootRedirect'
+import AppShell from './components/layout/AppShell'
 import { ROLES } from './constants/roles'
 
 const HomePage                = lazy(() => import('./pages/Home/HomePage'))
@@ -54,50 +55,53 @@ function AnimatedRoutes() {
           {/* Smart entry point */}
           <Route path="/" element={<RootRedirect />} />
 
-          {/* Public pitch discovery — no auth required */}
-          <Route path="/pitches" element={<PitchDiscoveryPage />} />
-          <Route path="/pitches/:id" element={<PitchDetailPage />} />
-
-          {/* Public match discovery — no auth required */}
-          <Route path="/matches/open" element={<FindGamePage />} />
-
           {/* Public invite-link preview — guests can read the match before deciding to sign in.
               Backend GET /api/join/{token} is [AllowAnonymous]; auth is enforced at click time
               inside JoinPage (handleJoin redirects to /login with from set). */}
           <Route path="/join/:token" element={<JoinPage />} />
 
-          {/* Protected: any authenticated user */}
-          <Route element={<PrivateRoute />}>
-            <Route path="/dashboard" element={<HomePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/bookings/:id" element={<BookingDetailPage />} />
-          </Route>
+          {/* ── All routes with shared navbar (AppShell) ── */}
+          <Route element={<AppShell />}>
+            {/* Public: no auth required */}
+            <Route path="/pitches" element={<PitchDiscoveryPage />} />
+            <Route path="/pitches/:id" element={<PitchDetailPage />} />
+            <Route path="/matches/open" element={<FindGamePage />} />
 
-          {/* Protected: PitchOwner only */}
-          <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER]} />}>
-            <Route path="/dashboard/owner" element={<OwnerDashboardPage />} />
-            <Route path="/dashboard/pitches" element={<OwnerPitchesPage />} />
-            <Route path="/dashboard/pitches/new" element={<OwnerPitchFormPage />} />
-            <Route path="/dashboard/pitches/:pitchId/edit" element={<OwnerPitchFormPage />} />
-            <Route path="/dashboard/pitches/:pitchId/schedule" element={<OwnerSchedulePage />} />
-            <Route path="/dashboard/bookings" element={<OwnerBookingsPage />} />
-          </Route>
+            {/* Protected: any authenticated user */}
+            <Route element={<PrivateRoute />}>
+              <Route path="/dashboard" element={<HomePage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/bookings/:id" element={<BookingDetailPage />} />
+            </Route>
 
-          {/* Protected: Admin only */}
-          <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]} />}>
-            <Route path="/admin/pitches" element={<AdminPitchApprovalsPage />} />
-            <Route path="/admin/users"   element={<AdminUsersPage />} />
-          </Route>
+            {/* Protected: PitchOwner only */}
+            <Route element={<RoleRoute allowedRoles={[ROLES.PITCH_OWNER]} />}>
+              <Route path="/dashboard/owner" element={<OwnerDashboardPage />} />
+              <Route path="/dashboard/pitches" element={<OwnerPitchesPage />} />
+              <Route path="/dashboard/pitches/new" element={<OwnerPitchFormPage />} />
+              <Route path="/dashboard/pitches/:pitchId/edit" element={<OwnerPitchFormPage />} />
+              <Route path="/dashboard/pitches/:pitchId/schedule" element={<OwnerSchedulePage />} />
+              <Route path="/dashboard/bookings" element={<OwnerBookingsPage />} />
+            </Route>
 
-          {/* Protected: Player only */}
-          <Route element={<RoleRoute allowedRoles={[ROLES.PLAYER]} />}>
-            <Route path="/my-bookings" element={<PlayerBookingsPage />} />
-            <Route path="/favorites" element={<FavoritesPage />} />
-            <Route path="/book/:pitchId" element={<BookingPage />} />
-            <Route path="/matches/:matchId" element={<MatchDetailPage />} />
-          </Route>
+            {/* Protected: Admin only */}
+            <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]} />}>
+              <Route path="/admin/pitches" element={<AdminPitchApprovalsPage />} />
+              <Route path="/admin/users"   element={<AdminUsersPage />} />
+            </Route>
 
-          <Route path="*" element={<NotFoundPage />} />
+            {/* Protected: Player only */}
+            <Route element={<RoleRoute allowedRoles={[ROLES.PLAYER]} />}>
+              <Route path="/my-bookings" element={<PlayerBookingsPage />} />
+              <Route path="/favorites" element={<FavoritesPage />} />
+              <Route path="/book/:pitchId" element={<BookingPage />} />
+              <Route path="/matches/:matchId" element={<MatchDetailPage />} />
+            </Route>
+
+            {/* Error pages with chrome */}
+            <Route path="/forbidden" element={<ForbiddenPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
         </Routes>
       </AnimatePresence>
     </Suspense>
