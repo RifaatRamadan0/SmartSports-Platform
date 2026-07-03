@@ -1,20 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { cardVariants, cardHover, cardTap, listContainerVariants } from '../../lib/motion'
 import { useAuth } from '../../hooks/useAuth'
 import { ROLES } from '../../constants/roles'
-import { getRoleHomePath } from '../../utils/roleUtils'
 import { listPitches } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
 import PitchCover from '../../components/Pitch/PitchCover'
 import FavoriteButton from '../../components/Pitch/FavoriteButton'
-import {
-  getMyPendingInvitations,
-  acceptInvitation,
-  declineInvitation,
-} from '../../services/Invitation/invitationService'
-import { getPendingJoinRequests, respondToJoinRequest } from '../../services/Match/matchService'
+import Footer from '../../components/layout/Footer'
+import { GridSkeleton } from '../../components/ui/Skeleton'
 
 const SPORT_FILTERS = ['All', 'Football', 'Futsal', 'Basketball', 'Tennis']
 
@@ -70,7 +65,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
-      <Navbar />
       <Hero onBrowse={scrollToPitches} />
       <SearchBar />
       <PitchesSection
@@ -89,522 +83,6 @@ export default function HomePage() {
       <HowItWorksSection />
       <Footer />
     </div>
-  )
-}
-
-// ── Inbox helpers (SPDBTCP-83) ────────────────────────────────────────────────
-
-function timeUntil(dateStr) {
-  if (!dateStr) return null
-  const ms = new Date(dateStr) - Date.now()
-  if (ms <= 0) return null
-  const h = Math.floor(ms / 3_600_000)
-  return h < 24 ? `${h}h` : `${Math.floor(h / 24)}d`
-}
-
-function fmtDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
-}
-
-function fmtTime(timeStr) {
-  const [h, m] = timeStr.split(':')
-  const d = new Date(); d.setHours(+h, +m)
-  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-}
-
-function matchFmt(maxPlayers) {
-  const half = Math.floor(maxPlayers / 2)
-  return `${half}v${half}`
-}
-
-function initials2(name) {
-  if (!name) return '??'
-  const parts = name.trim().split(/\s+/)
-  const a = parts[0]?.[0] ?? ''
-  const b = parts[1]?.[0] ?? parts[0]?.[1] ?? ''
-  return (a + b).toUpperCase()
-}
-
-function StatCell({ label, value, accent }) {
-  return (
-    <div className="rounded-xl bg-[var(--bg3)] border border-white/[0.05] px-3 py-2">
-      <p className="text-[9px] font-bold tracking-[1.5px] uppercase text-[var(--text3)] mb-0.5">{label}</p>
-      <p className={`font-display text-[14px] font-bold ${accent ? 'text-[var(--green)]' : 'text-white'}`}>{value}</p>
-    </div>
-  )
-}
-
-function InvitationCard({ inv, onAccept, onDecline, busy }) {
-  const expiry = timeUntil(inv.expiresAt)
-  return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[var(--surface)] overflow-hidden">
-      <div className="border-l-[3px] border-[var(--green)] p-4">
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-full bg-[var(--green)] text-[#061008] font-display text-[12px] font-bold flex items-center justify-center shrink-0">
-              {initials2(inv.inviterDisplayName)}
-            </span>
-            <div>
-              <p className="text-[10px] text-[var(--text3)] leading-none">Invited by</p>
-              <p className="text-[13px] font-semibold text-white leading-tight mt-1">@{inv.inviterDisplayName}</p>
-            </div>
-          </div>
-          {expiry && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[oklch(0.72_0.18_55/0.18)] border border-[oklch(0.72_0.18_55/0.32)] text-[oklch(0.82_0.14_65)] text-[11px] font-bold shrink-0">
-              ⚡ {expiry}
-            </span>
-          )}
-        </div>
-        <p className="font-display text-[18px] font-bold text-white leading-tight mb-1">{inv.pitchName}</p>
-        <p className="text-[12px] text-[var(--text2)] mb-4">
-          📅 {fmtDate(inv.bookingDate)} · {fmtTime(inv.startTime)} · {inv.sportName} · {matchFmt(inv.maxPlayers)}
-        </p>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          <StatCell label="Per Player" value={`$${Number(inv.pricePerPlayer).toFixed(0)}`} accent />
-          <StatCell label="Spots Left" value={inv.spotsLeft} />
-          <StatCell label="Format"     value={matchFmt(inv.maxPlayers)} />
-          <StatCell label="Sport"      value={inv.sportName} />
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => onAccept(inv)} disabled={busy}
-            className="flex-1 py-2.5 rounded-xl font-display text-[13px] font-bold bg-[var(--green)] text-[#061008] hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            Accept &amp; Join
-          </button>
-          <button
-            onClick={() => onDecline(inv)} disabled={busy}
-            className="px-4 py-2.5 rounded-xl text-[13px] font-semibold bg-[oklch(0.62_0.2_25/0.12)] border border-[oklch(0.62_0.2_25/0.30)] text-[oklch(0.62_0.2_25)] hover:opacity-80 transition-opacity disabled:opacity-50"
-          >
-            Decline
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function JoinRequestCard({ req, onAccept, onReject, busy }) {
-  return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[var(--surface)] overflow-hidden">
-      <div className="border-l-[3px] border-[oklch(0.72_0.10_240)] p-4">
-        <div className="flex items-center gap-2.5 mb-3">
-          <span className="w-9 h-9 rounded-full bg-[oklch(0.6_0.12_240/0.16)] border border-[oklch(0.6_0.12_240/0.30)] text-[oklch(0.72_0.10_240)] font-display text-[12px] font-bold flex items-center justify-center shrink-0">
-            {initials2(req.requesterName)}
-          </span>
-          <div>
-            <p className="text-[10px] text-[var(--text3)] leading-none">Join request from</p>
-            <p className="text-[13px] font-semibold text-white leading-tight mt-1">@{req.requesterName}</p>
-          </div>
-        </div>
-        <p className="font-display text-[18px] font-bold text-white leading-tight mb-1">{req.pitchName}</p>
-        <p className="text-[12px] text-[var(--text2)] mb-4">
-          📅 {fmtDate(req.bookingDate)} · {fmtTime(req.startTime)} · {req.sportName} · {matchFmt(req.maxPlayers)}
-        </p>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          <StatCell label="Per Player" value={`$${Number(req.pricePerPlayer).toFixed(0)}`} accent />
-          <StatCell label="Spots Left" value={req.spotsLeft} />
-          <StatCell label="Format"     value={matchFmt(req.maxPlayers)} />
-          <StatCell label="Sport"      value={req.sportName} />
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => onAccept(req)} disabled={busy}
-            className="flex-1 py-2.5 rounded-xl font-display text-[13px] font-bold bg-[var(--green)] text-[#061008] hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            Accept
-          </button>
-          <button
-            onClick={() => onReject(req)} disabled={busy}
-            className="px-4 py-2.5 rounded-xl text-[13px] font-semibold bg-[oklch(0.62_0.2_25/0.12)] border border-[oklch(0.62_0.2_25/0.30)] text-[oklch(0.62_0.2_25)] hover:opacity-80 transition-opacity disabled:opacity-50"
-          >
-            Reject
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Navbar
-
-function Navbar() {
-  const navigate = useNavigate()
-  const { roles, logout } = useAuth()
-  const [menuOpen,     setMenuOpen]     = useState(false)
-  const [inboxOpen,    setInboxOpen]    = useState(false)
-  const [activeTab,    setActiveTab]    = useState('invitations')   // 'invitations' | 'joinRequests'
-  const [invitations,  setInvitations]  = useState([])
-  const [joinRequests, setJoinRequests] = useState([])
-  const [inboxLoading, setInboxLoading] = useState(false)
-  const [busyId,       setBusyId]       = useState(null)
-  const inboxRef = useRef(null)
-
-  const isPlayer = roles.includes(ROLES.PLAYER)
-  const isOwner  = roles.includes(ROLES.PITCH_OWNER)
-  const isAdmin  = roles.includes(ROLES.ADMIN)
-  const totalCount = invitations.length + joinRequests.length
-
-  const handleLogout = async () => {
-    setMenuOpen(false)
-    await logout()
-    navigate('/login', { replace: true })
-  }
-
-  const openInbox = async () => {
-    if (inboxOpen) { setInboxOpen(false); return }
-    setMenuOpen(false)
-    setInboxOpen(true)
-    setInboxLoading(true)
-    try {
-      const [invs, reqs] = await Promise.all([
-        getMyPendingInvitations().catch(() => []),
-        getPendingJoinRequests().catch(() => []),
-      ])
-      setInvitations(invs)
-      setJoinRequests(reqs)
-    } finally {
-      setInboxLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (!inboxOpen) return
-    const handler = (e) => {
-      if (inboxRef.current && !inboxRef.current.contains(e.target)) setInboxOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [inboxOpen])
-
-  // Optimistic UI: drop the row first, restore it on API error.
-  const handleAcceptInv = async (inv) => {
-    setInvitations(prev => prev.filter(i => i.id !== inv.id))
-    setBusyId(`inv-${inv.id}`)
-    try { await acceptInvitation(inv.id) }
-    catch { setInvitations(prev => [inv, ...prev]) }
-    finally { setBusyId(null) }
-  }
-  const handleDeclineInv = async (inv) => {
-    setInvitations(prev => prev.filter(i => i.id !== inv.id))
-    setBusyId(`inv-${inv.id}`)
-    try { await declineInvitation(inv.id) }
-    catch { setInvitations(prev => [inv, ...prev]) }
-    finally { setBusyId(null) }
-  }
-  const handleAcceptJoin = async (req) => {
-    setJoinRequests(prev => prev.filter(r => r.participantId !== req.participantId))
-    setBusyId(`req-${req.participantId}`)
-    try { await respondToJoinRequest(req.matchId, req.requesterUserId, 'accept') }
-    catch { setJoinRequests(prev => [req, ...prev]) }
-    finally { setBusyId(null) }
-  }
-  const handleRejectJoin = async (req) => {
-    setJoinRequests(prev => prev.filter(r => r.participantId !== req.participantId))
-    setBusyId(`req-${req.participantId}`)
-    try { await respondToJoinRequest(req.matchId, req.requesterUserId, 'reject') }
-    catch { setJoinRequests(prev => [req, ...prev]) }
-    finally { setBusyId(null) }
-  }
-
-  return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-[var(--bg)]/80 border-b border-white/[0.06]">
-      <nav className="mx-auto max-w-[1280px] px-6 h-16 flex items-center justify-between">
-        <button
-          onClick={() => navigate(getRoleHomePath(roles))}
-          className="flex items-center gap-2 group"
-        >
-          <span className="w-2.5 h-2.5 rounded-full bg-[var(--green)] shadow-[0_0_12px_var(--green-glow)]" />
-          <span className="text-[15px] font-bold tracking-tight">SmartSports</span>
-        </button>
-
-        <ul className="hidden md:flex items-center gap-8 text-[13px] text-[var(--text2)]">
-          <li><a href="#pitches" className="hover:text-white transition-colors">Pitches</a></li>
-          <li><button onClick={() => navigate('/matches/open')} type="button" className="hover:text-white transition-colors">Find Games</button></li>
-          <li className="relative group">
-            <button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Leagues</button>
-            <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#1a1f1c] border border-[#2a3330] px-2 py-1 text-[11px] text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity z-50">
-              Coming soon
-            </span>
-          </li>
-          <li className="relative group">
-            <button type="button" className="hover:text-white transition-colors opacity-50 cursor-not-allowed" disabled>Coaching</button>
-            <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#1a1f1c] border border-[#2a3330] px-2 py-1 text-[11px] text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity z-50">
-              Coming soon
-            </span>
-          </li>
-        </ul>
-
-        <div className="flex items-center gap-2 relative" ref={inboxRef}>
-          {isPlayer && (
-            <>
-              <button
-                onClick={() => navigate('/matches/open')}
-                className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
-              >
-                Find Games
-              </button>
-              <button
-                onClick={() => navigate('/my-bookings')}
-                className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
-              >
-                My Bookings
-              </button>
-            </>
-          )}
-          {isOwner && (
-            <>
-              <button
-                onClick={() => navigate('/dashboard/pitches')}
-                className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
-              >
-                My Pitches
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/bookings')}
-                className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
-              >
-                Owner Dashboard
-              </button>
-            </>
-          )}
-          {isAdmin && (
-            <button
-              onClick={() => navigate('/admin/pitches')}
-              className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
-            >
-              Pitch Approvals
-            </button>
-          )}
-
-          {/* ── Inbox icon button (SPDBTCP-83) ── */}
-          {isPlayer && (
-            <button
-              onClick={openInbox}
-              aria-label="Inbox"
-              aria-expanded={inboxOpen}
-              className={`relative w-9 h-9 rounded-xl border flex items-center justify-center transition-colors
-                ${inboxOpen
-                  ? 'border-[var(--green-border)] bg-[var(--green-muted)] text-white'
-                  : 'border-white/[0.07] bg-[var(--bg2)] hover:border-white/[0.14] text-[var(--text2)]'}`}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="2"/>
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-              </svg>
-              {totalCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-[oklch(0.62_0.2_25)] text-white font-display text-[10px] font-bold flex items-center justify-center px-1 leading-none">
-                  {totalCount}
-                </span>
-              )}
-            </button>
-          )}
-
-          {/* ── Inbox dropdown ── */}
-          <AnimatePresence>
-            {inboxOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 8, scale: 0.97 }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
-                className="absolute right-0 top-12 w-[440px] max-h-[80vh] overflow-hidden flex flex-col
-                           rounded-2xl border border-white/[0.07] bg-[var(--bg2)] shadow-[0_16px_40px_rgba(0,0,0,0.5)] z-50"
-              >
-                {/* Header */}
-                <div className="px-5 pt-5 pb-3 flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="font-display text-[20px] font-bold text-white tracking-tight">Inbox</h2>
-                      {totalCount > 0 && (
-                        <span className="min-w-[22px] h-[22px] rounded-full bg-[oklch(0.62_0.2_25)] text-white font-display text-[11px] font-bold flex items-center justify-center px-1.5">
-                          {totalCount}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[12px] text-[var(--text3)] mt-1">
-                      {totalCount === 0
-                        ? 'No pending items'
-                        : `${invitations.length} pending ${invitations.length === 1 ? 'invitation' : 'invitations'} · respond before they expire`}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setInboxOpen(false)}
-                    aria-label="Close inbox"
-                    className="w-9 h-9 rounded-full bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-[var(--text2)] hover:text-white transition-colors text-[16px]"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {/* Tabs */}
-                <div className="flex border-b border-white/[0.06] px-5">
-                  {[
-                    { id: 'invitations',  label: 'Invitations',   count: invitations.length },
-                    { id: 'joinRequests', label: 'Join Requests', count: joinRequests.length },
-                  ].map(t => {
-                    const isActive = activeTab === t.id
-                    return (
-                      <button
-                        key={t.id}
-                        onClick={() => setActiveTab(t.id)}
-                        className={`px-5 py-3 text-[14px] font-semibold cursor-pointer border-b-2 transition-colors whitespace-nowrap flex items-center
-                          ${isActive
-                            ? 'text-white border-[var(--green)]'
-                            : 'text-[var(--text3)] border-transparent hover:text-[var(--text2)]'}`}
-                      >
-                        {t.label}
-                        {t.count > 0 && (
-                          <span className={`ml-2 min-w-[18px] h-[18px] rounded-[9px] px-1.5 font-display text-[10px] font-bold flex items-center justify-center
-                            ${isActive
-                              ? 'bg-[var(--green-muted)] text-[var(--green)]'
-                              : 'bg-[oklch(0.72_0.18_55/0.20)] text-[oklch(0.78_0.16_60)]'}`}>
-                            {t.count}
-                          </span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                {/* Body */}
-                <div className="p-4 space-y-3 overflow-y-auto">
-                  {inboxLoading && (
-                    <p className="text-center text-[13px] text-[var(--text3)] py-8">Loading…</p>
-                  )}
-
-                  {!inboxLoading && activeTab === 'invitations' && (
-                    invitations.length === 0
-                      ? <p className="text-center text-[13px] text-[var(--text3)] py-10">No pending invitations.</p>
-                      : invitations.map(inv => (
-                          <InvitationCard
-                            key={`inv-${inv.id}`}
-                            inv={inv}
-                            onAccept={handleAcceptInv}
-                            onDecline={handleDeclineInv}
-                            busy={busyId === `inv-${inv.id}`}
-                          />
-                        ))
-                  )}
-
-                  {!inboxLoading && activeTab === 'joinRequests' && (
-                    joinRequests.length === 0
-                      ? <p className="text-center text-[13px] text-[var(--text3)] py-10">No pending join requests.</p>
-                      : joinRequests.map(req => (
-                          <JoinRequestCard
-                            key={`req-${req.participantId}`}
-                            req={req}
-                            onAccept={handleAcceptJoin}
-                            onReject={handleRejectJoin}
-                            busy={busyId === `req-${req.participantId}`}
-                          />
-                        ))
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <button
-            onClick={() => { setMenuOpen(o => !o); setInboxOpen(false) }}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            aria-controls="user-menu"
-            aria-label="User menu"
-            className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-[var(--bg2)] px-2 py-1.5 hover:border-[var(--green-border)] transition-colors"
-          >
-            <span className="w-7 h-7 rounded-full bg-[var(--green)] text-[var(--primary-foreground)] text-[12px] font-bold flex items-center justify-center">
-              {(roles[0] || 'U')[0].toUpperCase()}
-            </span>
-            <span className="hidden sm:inline text-[12px] font-semibold pr-1">
-              {roles[0] || 'User'}
-            </span>
-            <span className="text-[10px] text-[var(--text3)] pr-1">▾</span>
-          </button>
-
-          {menuOpen && (
-            <div
-              id="user-menu"
-              role="menu"
-              className="absolute right-0 top-12 w-52 rounded-xl border border-white/[0.07] bg-[var(--surface)] shadow-2xl py-2 text-[13px]"
-              onMouseLeave={() => setMenuOpen(false)}
-            >
-              <div className="px-3 py-2 border-b border-white/[0.06]">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)]">Signed in as</p>
-                <p className="text-white font-semibold mt-0.5">{roles.join(', ') || 'User'}</p>
-              </div>
-              {isPlayer && (
-                <>
-                  <motion.button
-                    whileHover={{ x: 3 }}
-                    onClick={() => { setMenuOpen(false); navigate('/matches/open') }}
-                    className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
-                  >
-                    Find Games
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ x: 3 }}
-                    onClick={() => { setMenuOpen(false); navigate('/my-bookings') }}
-                    className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
-                  >
-                    My Bookings
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ x: 3 }}
-                    onClick={() => { setMenuOpen(false); navigate('/favorites') }}
-                    className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
-                  >
-                    My Favorites
-                  </motion.button>
-                </>
-              )}
-              {isOwner && (
-                <>
-                  <motion.button
-                    whileHover={{ x: 3 }}
-                    onClick={() => { setMenuOpen(false); navigate('/dashboard/pitches') }}
-                    className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
-                  >
-                    My Pitches
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ x: 3 }}
-                    onClick={() => { setMenuOpen(false); navigate('/dashboard/bookings') }}
-                    className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
-                  >
-                    Owner Dashboard
-                  </motion.button>
-                </>
-              )}
-              {isAdmin && (
-                <motion.button
-                  whileHover={{ x: 3 }}
-                  onClick={() => { setMenuOpen(false); navigate('/admin/pitches') }}
-                  className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
-                >
-                  Pitch Approvals
-                </motion.button>
-              )}
-              <motion.button
-                whileHover={{ x: 3 }}
-                onClick={() => { setMenuOpen(false); navigate('/settings') }}
-                className="w-full text-left px-3 py-2 hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white transition-colors"
-              >
-                Settings
-              </motion.button>
-              <motion.button
-                whileHover={{ x: 3 }}
-                onClick={handleLogout}
-                className="w-full text-left px-3 py-2 hover:bg-[var(--red-muted)] text-[var(--text2)] hover:text-[oklch(0.62_0.2_25)] transition-colors border-t border-white/[0.06] mt-1 pt-2"
-              >
-                Sign out
-              </motion.button>
-            </div>
-          )}
-        </div>
-      </nav>
-    </header>
   )
 }
 
@@ -697,46 +175,79 @@ function Stat({ label, value }) {
   )
 }
 
-// Search bar (visual placeholder; real filtering happens on the pitches grid)
+const SPORT_OPTIONS = ['All', 'Football', 'Futsal', 'Basketball', 'Tennis']
 
 function SearchBar() {
+  const navigate = useNavigate()
+  const [query, setQuery] = useState('')
+  const [sport, setSport] = useState('')
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    const params = new URLSearchParams()
+    if (query.trim()) params.set('search', query.trim())
+    if (sport && sport !== 'All') params.set('sport', sport)
+    navigate(`/pitches${params.toString() ? `?${params}` : ''}`)
+  }
+
   return (
     <section className="relative -mt-8 px-6 pb-12">
-      <div className="mx-auto max-w-[1080px] rounded-2xl border border-white/[0.07] bg-[var(--surface)] p-2 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+      <form
+        onSubmit={handleSubmit}
+        className="mx-auto max-w-[1080px] rounded-2xl border border-white/[0.07] bg-[var(--surface)] p-2 shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-1 items-stretch">
-          <SearchField className="sm:col-span-5" label="Pitch or location" placeholder="e.g. Arena North or Camden" />
-          <SearchField className="sm:col-span-3" label="Sport" placeholder="Any sport" />
-          <SearchField className="sm:col-span-2" label="Date" placeholder="Today" />
-          <a
-            href="#pitches"
+          {/* Text search */}
+          <div className="sm:col-span-5 px-4 py-3 rounded-xl hover:bg-[var(--bg3)] transition-colors">
+            <label htmlFor="hero-search" className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)]">
+              Pitch or location
+            </label>
+            <input
+              id="hero-search"
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="e.g. Arena North or Camden"
+              className="mt-1 w-full bg-transparent border-0 outline-none text-sm text-white placeholder:text-[var(--text3)]"
+            />
+          </div>
+
+          {/* Sport select */}
+          <div className="sm:col-span-3 px-4 py-3 rounded-xl hover:bg-[var(--bg3)] transition-colors">
+            <label htmlFor="hero-sport" className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)]">
+              Sport
+            </label>
+            <select
+              id="hero-sport"
+              value={sport}
+              onChange={e => setSport(e.target.value)}
+              className="mt-1 w-full bg-transparent border-0 outline-none text-sm text-white appearance-none cursor-pointer"
+            >
+              {SPORT_OPTIONS.map(s => (
+                <option key={s} value={s === 'All' ? '' : s} className="bg-[var(--bg2)] text-white">
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date — display only; no backend support yet */}
+          <div className="sm:col-span-2 px-4 py-3 rounded-xl opacity-40 cursor-not-allowed" title="Date filter coming soon">
+            <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)]">Date</span>
+            <p className="mt-1 text-sm text-[var(--text3)]">Coming soon</p>
+          </div>
+
+          <button
+            type="submit"
             className="sm:col-span-2 m-1 rounded-xl bg-[var(--green)] text-[var(--primary-foreground)] font-bold text-sm
-                       hover:brightness-110 active:scale-[0.98] transition-all min-h-[56px] flex items-center justify-center"
+                       hover:brightness-110 active:scale-[0.98] transition-all min-h-[56px] flex items-center justify-center
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           >
             Search
-          </a>
+          </button>
         </div>
-      </div>
+      </form>
     </section>
-  )
-}
-
-function SearchField({ className = '', label, placeholder }) {
-  const id = `search-field-${label.toLowerCase().replace(/\s+/g, '-')}`
-  return (
-    <div className={`px-4 py-3 rounded-xl hover:bg-[var(--bg3)] transition-colors ${className}`}>
-      <label
-        htmlFor={id}
-        className="text-[10px] font-bold tracking-widest uppercase text-(--text3)"
-      >
-        {label}
-      </label>
-      <input
-        id={id}
-        type="text"
-        placeholder={placeholder}
-        className="mt-1 w-full bg-transparent border-0 outline-none text-sm text-white placeholder:text-[var(--text3)]"
-      />
-    </div>
   )
 }
 
@@ -783,7 +294,7 @@ function PitchesSection({
           </div>
         </div>
 
-        {isLoading && <PitchesSkeleton />}
+        {isLoading && <GridSkeleton />}
 
         {!isLoading && error && (
           <div className="rounded-2xl border border-red-800/60 bg-[#1a0f0f] px-5 py-4 flex items-center gap-3 text-sm text-red-400">
@@ -833,21 +344,6 @@ function PitchesSection({
   )
 }
 
-function PitchesSkeleton() {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <motion.div
-          key={i}
-          className="h-[300px] rounded-3xl border border-white/[0.06] bg-[var(--surface)]"
-          animate={{ opacity: [0.4, 1, 0.4] }}
-          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
-        />
-      ))}
-    </div>
-  )
-}
-
 function PitchCard({ pitch, onClick, onDetail, canBook }) {
   const rating  = pitch.rating != null ? Number(pitch.rating) : null
   const price   = Number(pitch.pricePerHour)
@@ -867,7 +363,7 @@ function PitchCard({ pitch, onClick, onDetail, canBook }) {
                  hover:shadow-[0_30px_60px_-30px_var(--green-glow)]
                  transition-colors duration-200 overflow-hidden flex flex-col"
     >
-      <button onClick={handleDetail} className="block w-full text-left focus:outline-none">
+      <button onClick={handleDetail} className="block w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 focus-visible:ring-inset">
         <PitchCover imageUrl={pitch.coverImageUrl} sport={pitch.sportName} imageCount={pitch.imageCount} className="h-40" />
       </button>
 
@@ -887,7 +383,8 @@ function PitchCard({ pitch, onClick, onDetail, canBook }) {
             <button
               onClick={handleDetail}
               className="text-[17px] font-bold text-white truncate block w-full text-left
-                         hover:text-[var(--green)] transition-colors focus:outline-none"
+                         hover:text-[var(--green)] transition-colors focus:outline-none
+                         focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 focus-visible:rounded"
             >
               {pitch.name}
             </button>
@@ -915,7 +412,8 @@ function PitchCard({ pitch, onClick, onDetail, canBook }) {
           <button
             onClick={onClick}
             className="rounded-full bg-[var(--green)] text-[var(--primary-foreground)]
-                       px-4 py-2 text-xs font-bold hover:brightness-110 transition-all"
+                       px-4 py-2 text-xs font-bold hover:brightness-110 transition-all
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
           >
             {canBook ? 'Book Now →' : 'View Details →'}
           </button>
@@ -962,28 +460,5 @@ function HowItWorksSection() {
         </div>
       </div>
     </section>
-  )
-}
-
-// Footer
-
-function Footer() {
-  return (
-    <footer className="border-t border-white/[0.06] bg-[var(--bg)]">
-      <div className="mx-auto max-w-[1280px] px-6 py-10 flex flex-wrap items-center justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--green)]" />
-            <span className="text-sm font-bold tracking-tight text-white">SmartSports</span>
-          </div>
-          <p className="text-xs text-[var(--text2)] mt-2 max-w-[220px] leading-relaxed">
-            The easiest way to book sports facilities in your city.
-          </p>
-        </div>
-        <p className="text-[12px] text-[var(--text3)]">
-          © {new Date().getFullYear()} SmartSports Ltd. · Built for the city.
-        </p>
-      </div>
-    </footer>
   )
 }

@@ -32,9 +32,9 @@ export default function GalleryModal({ images, onClose, title, initialIndex = 0 
         className="flex items-center justify-between px-5 sm:px-8 py-4 text-white"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="w-9 h-9 rounded-lg bg-green-500/20 border border-green-500/40
+          <span className="w-9 h-9 rounded-lg bg-[var(--green)]/20 border border-[var(--green)]/40
                            flex items-center justify-center shrink-0">
-            <svg viewBox="0 0 24 24" className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg viewBox="0 0 24 24" className="w-4 h-4 text-[var(--green)]" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="6" width="18" height="14" rx="2" />
               <circle cx="12" cy="13" r="3.5" />
               <path d="M8 6 L9.5 4 H14.5 L16 6" strokeLinecap="round" strokeLinejoin="round" />
@@ -43,7 +43,7 @@ export default function GalleryModal({ images, onClose, title, initialIndex = 0 
           {title && <h2 className="font-semibold truncate">{title}</h2>}
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-neutral-300 tabular-nums">
+          <span className="text-sm font-medium text-[var(--text2)] tabular-nums">
             {idx + 1} / {count}
           </span>
           <button
@@ -105,7 +105,7 @@ export default function GalleryModal({ images, onClose, title, initialIndex = 0 
               aria-label={`Show image ${i + 1}`}
               className={`shrink-0 w-20 h-14 sm:w-24 sm:h-16 rounded-md overflow-hidden transition-all
                           ${i === idx
-                            ? 'ring-2 ring-green-400 opacity-100'
+                            ? 'ring-2 ring-[var(--green)] opacity-100'
                             : 'ring-1 ring-white/10 opacity-60 hover:opacity-100'}`}
             >
               <img src={url} alt="" className="w-full h-full object-cover" />

@@ -13,6 +13,7 @@ import { useAuth } from '../../hooks/useAuth'
 import Toast from '../../components/ui/Toast'
 import { ROLES } from '../../constants/roles'
 import FieldLines from '../../components/Match/FieldLines'
+import { CardSkeleton } from '../../components/ui/Skeleton'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -25,7 +26,7 @@ function formatMatchDateTime(bookingDate, startTime, endTime) {
 // Sport-specific dark gradient background for card head (matches design reference)
 const SPORT_HEAD_BG = {
   Football:   '#0f2016',
-  Futsal:     '#0c1521',
+  Futsal:     '#0c1a18',
   Basketball: '#1a0e0c',
   Tennis:     '#0c1420',
 }
@@ -33,7 +34,7 @@ const SPORT_HEAD_BG = {
 // Sport tag pill colour tokens
 const SPORT_TAG_CLASS = {
   Football:   'bg-primary/10 text-primary border-primary/20',
-  Futsal:     'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  Futsal:     'bg-teal-500/10 text-teal-400 border-teal-500/20',
   Basketball: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   Tennis:     'bg-purple-500/10 text-purple-400 border-purple-500/20',
 }
@@ -65,8 +66,8 @@ function StatsBanner({ statsResult }) {
             ) : (
               <>
                 <span
-                  className="font-extrabold text-primary leading-none mb-0.5"
-                  style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, letterSpacing: '-0.8px' }}
+                  className="font-display font-extrabold text-primary leading-none mb-0.5"
+                  style={{ fontSize: 26, letterSpacing: '-0.8px' }}
                 >
                   {value ?? fallback ?? '—'}
                 </span>
@@ -103,7 +104,7 @@ function FilterPill({ label, count, active, onClick }) {
         <span
           className={cn(
             'inline-flex items-center justify-center min-w-[17px] h-[17px] rounded-[9px] px-1 text-[10px] font-bold transition-all',
-            active ? 'bg-primary text-[#061008]' : 'bg-white/7 text-muted-foreground',
+            active ? 'bg-primary text-[var(--primary-foreground)]' : 'bg-white/7 text-muted-foreground',
           )}
         >
           {count}
@@ -154,95 +155,6 @@ function FilterBar({ statsResult, filters, setFilter, clearAllFilters, totalCoun
   )
 }
 
-// ── nav bar ───────────────────────────────────────────────────────────────────
-
-function FindGameNavbar() {
-  const navigate = useNavigate()
-  const { roles, logout } = useAuth()
-  const isPlayer = roles.includes(ROLES.PLAYER)
-  const isOwner  = roles.includes(ROLES.PITCH_OWNER)
-  const isAdmin  = roles.includes(ROLES.ADMIN)
-  const isAuthed = roles.length > 0
-  const [menuOpen, setMenuOpen] = useState(false)
-
-  const homePath = isOwner ? '/dashboard/pitches' : isAdmin ? '/admin/pitches' : isPlayer ? '/dashboard' : '/'
-
-  const handleLogout = async () => {
-    setMenuOpen(false)
-    await logout()
-    navigate('/login', { replace: true })
-  }
-
-  return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border">
-      <nav className="mx-auto max-w-324 px-12 h-16 flex items-center justify-between">
-        <button
-          onClick={() => navigate(homePath)}
-          className="flex items-center gap-2 group"
-        >
-          <span className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_12px_var(--green-glow)]" />
-          <span className="text-[15px] font-bold tracking-tight text-foreground">SmartSports</span>
-        </button>
-
-        <ul className="hidden md:flex items-center gap-8 text-[13px] text-muted-foreground">
-          <li><button onClick={() => navigate('/pitches')} className="hover:text-foreground transition-colors">Pitches</button></li>
-          <li><span className="text-primary font-semibold">Find Games</span></li>
-        </ul>
-
-        <div className="flex items-center gap-2 relative">
-          {!isAuthed ? (
-            <>
-              <button onClick={() => navigate('/login')} className="text-[12px] font-semibold text-muted-foreground hover:text-foreground px-3 py-2 transition-colors">
-                Sign In
-              </button>
-              <button onClick={() => navigate('/register')} className="text-[12px] font-bold bg-primary text-[#061008] px-4 py-2 rounded-full hover:opacity-90 transition-opacity">
-                Sign Up
-              </button>
-            </>
-          ) : (
-            <>
-              {isPlayer && (
-                <button onClick={() => navigate('/my-bookings')} className="hidden sm:inline-flex text-[12px] font-semibold text-muted-foreground hover:text-foreground px-3 py-2 transition-colors">
-                  My Bookings
-                </button>
-              )}
-              <button
-                onClick={() => setMenuOpen(o => !o)}
-                className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1.5 hover:border-primary/40 transition-colors"
-              >
-                <span className="w-7 h-7 rounded-full bg-primary text-[#061008] text-[12px] font-bold flex items-center justify-center">
-                  {(roles[0] || 'U')[0].toUpperCase()}
-                </span>
-                <span className="hidden sm:inline text-[12px] font-semibold pr-1 text-foreground">{roles[0] || 'User'}</span>
-                <span className="text-[10px] text-muted-foreground pr-1">▾</span>
-              </button>
-              {menuOpen && (
-                <div
-                  className="absolute right-0 top-12 w-48 rounded-xl border border-border bg-card shadow-2xl py-2 text-[13px]"
-                  onMouseLeave={() => setMenuOpen(false)}
-                >
-                  <button onClick={() => { setMenuOpen(false); navigate(homePath) }} className="w-full text-left px-3 py-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                    Home
-                  </button>
-                  {isPlayer && (
-                    <button onClick={() => { setMenuOpen(false); navigate('/my-bookings') }} className="w-full text-left px-3 py-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                      My Bookings
-                    </button>
-                  )}
-                  <div className="border-t border-border my-1" />
-                  <button onClick={handleLogout} className="w-full text-left px-3 py-2 hover:bg-muted text-red-400 hover:text-red-300 transition-colors">
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </nav>
-    </header>
-  )
-}
-
 // ── match card ────────────────────────────────────────────────────────────────
 
 function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRedirect, actionLoading, actionVerb, statusLoading }) {
@@ -290,8 +202,8 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
 
           {/* pitch name */}
           <p
-            className="text-[19px] font-bold leading-snug mb-1.5 line-clamp-1 text-foreground"
-            style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-0.4px' }}
+            className="font-display text-[19px] font-bold leading-snug mb-1.5 line-clamp-1 text-foreground"
+            style={{ letterSpacing: '-0.4px' }}
           >
             {match.pitchName}
           </p>
@@ -310,7 +222,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
           <span className="text-muted-foreground">{match.acceptedCount} / {match.maxPlayers} players joined</span>
           {isFull
             ? <span className="text-muted-foreground font-medium">No spots left</span>
-            : <span className="text-primary font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} open</span>
+            : <span className="font-display text-primary font-semibold">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} open</span>
           }
         </div>
         <div className="h-[6px] bg-muted rounded-full overflow-hidden mb-3.5">
@@ -330,7 +242,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
         {/* Left — Location */}
         <div className="flex-1 flex flex-col justify-center">
           <span className="text-[9px] font-semibold tracking-[0.7px] uppercase text-muted-foreground mb-1">Location</span>
-          <span className="text-[14px] font-bold text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+          <span className="font-display text-[14px] font-bold text-foreground">
             {match.cityName}
           </span>
         </div>
@@ -342,8 +254,8 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
           title={`≈ $${match.pricePerPlayer} / player if the match fills (${match.maxPlayers} players)`}
         >
           <span
-            className="text-primary font-extrabold leading-[1.05]"
-            style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 30, letterSpacing: '-1.5px' }}
+            className="font-display text-primary font-extrabold leading-[1.05]"
+            style={{ fontSize: 30, letterSpacing: '-1.5px' }}
           >
             <sup className="text-[15px] align-super" style={{ color: 'oklch(0.68 0.22 145 / 0.7)', letterSpacing: 0 }}>$</sup>
             {match.totalPrice}
@@ -363,8 +275,8 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
         {/* organizer */}
         <div className="flex items-center gap-2 min-w-0">
           <div
-            className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shrink-0 font-extrabold text-[#061008]"
-            style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 9 }}
+            className="font-display w-7 h-7 rounded-full bg-primary flex items-center justify-center shrink-0 font-extrabold text-[var(--primary-foreground)]"
+            style={{ fontSize: 9 }}
           >
             {initials}
           </div>
@@ -391,7 +303,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
               <button
                 onClick={() => onLeave(match.matchId)}
                 disabled={actionLoading}
-                className="text-[11px] text-red-400 font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
+                className="text-[11px] text-[var(--red)] font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
               >
                 {actionLoading ? `${actionVerb}...` : 'Withdraw'}
               </button>
@@ -400,8 +312,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
             <>
               <button
                 disabled
-                className="rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap bg-primary/20 border border-primary/30 text-primary cursor-not-allowed"
-                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                className="font-display rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap bg-primary/20 border border-primary/30 text-primary cursor-not-allowed"
               >
                 Joined ✓
               </button>
@@ -411,7 +322,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
                   <button
                     onClick={() => { setConfirmLeave(false); onLeave(match.matchId) }}
                     disabled={actionLoading}
-                    className="text-[11px] text-red-400 font-semibold hover:opacity-[0.72] transition-opacity disabled:opacity-40"
+                    className="text-[11px] text-[var(--red)] font-semibold hover:opacity-[0.72] transition-opacity disabled:opacity-40"
                   >
                     Yes
                   </button>
@@ -426,7 +337,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
                 <button
                   onClick={() => setConfirmLeave(true)}
                   disabled={actionLoading}
-                  className="text-[11px] text-red-400 font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
+                  className="text-[11px] text-[var(--red)] font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
                 >
                   Leave
                 </button>
@@ -437,8 +348,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
           ) : onLoginRedirect ? (
             <button
               onClick={onLoginRedirect}
-              className="rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap bg-primary text-[#061008] hover:opacity-[0.88] active:scale-[0.97] transition-all"
-              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+              className="font-display rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap bg-primary text-[var(--primary-foreground)] hover:opacity-[0.88] active:scale-[0.97] transition-all"
             >
               Log in to join
             </button>
@@ -450,9 +360,8 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
                 'rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap transition-all',
                 isFull || !onJoin
                   ? 'bg-muted border border-border text-muted-foreground cursor-not-allowed'
-                  : 'bg-primary text-[#061008] hover:opacity-[0.88] active:scale-[0.97]',
+                  : 'bg-primary text-[var(--primary-foreground)] hover:opacity-[0.88] active:scale-[0.97]',
               )}
-              style={(!isFull && onJoin) ? { fontFamily: "'Space Grotesk', sans-serif" } : {}}
             >
               {actionLoading ? `${actionVerb}...` : 'Join Game'}
             </button>
@@ -463,56 +372,14 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
   )
 }
 
-// ── skeleton card ─────────────────────────────────────────────────────────────
-
-function SkeletonCard({ delay = 0 }) {
-  const s = `${delay}s`
-  return (
-    <div className="bg-card border border-border rounded-[20px] overflow-hidden animate-pulse" style={{ animationDelay: s }}>
-      {/* head */}
-      <div className="p-5 pb-[18px] space-y-3 bg-muted/20">
-        <div className="flex justify-between">
-          <div className="h-5 w-16 rounded-full bg-muted" style={{ animationDelay: s }} />
-          <div className="h-5 w-14 rounded-full bg-muted" style={{ animationDelay: `${delay + 0.05}s` }} />
-        </div>
-        <div className="h-5 w-[62%] rounded bg-muted" style={{ animationDelay: `${delay + 0.1}s` }} />
-        <div className="h-3.5 w-[48%] rounded bg-muted" style={{ animationDelay: `${delay + 0.15}s` }} />
-      </div>
-      {/* fill section */}
-      <div className="px-5 pt-3.5 pb-3.5 border-t border-border space-y-2">
-        <div className="flex justify-between">
-          <div className="h-3 w-[55%] rounded bg-muted" />
-          <div className="h-3 w-[30%] rounded bg-muted" />
-        </div>
-        <div className="h-[6px] rounded-full bg-muted" />
-      </div>
-      {/* body */}
-      <div className="px-5 py-3.5 grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <div className="h-3 w-[55%] rounded bg-muted" style={{ animationDelay: `${delay + 0.1}s` }} />
-          <div className="h-4 w-[40%] rounded bg-muted" style={{ animationDelay: `${delay + 0.15}s` }} />
-        </div>
-        <div className="space-y-1.5">
-          <div className="h-3 w-[55%] rounded bg-muted" style={{ animationDelay: `${delay + 0.1}s` }} />
-          <div className="h-4 w-[40%] rounded bg-muted" style={{ animationDelay: `${delay + 0.15}s` }} />
-        </div>
-      </div>
-      {/* footer */}
-      <div className="px-5 pb-5 pt-3.5 border-t border-border flex gap-3">
-        <div className="h-9 flex-1 rounded-xl bg-muted" style={{ animationDelay: `${delay + 0.2}s` }} />
-        <div className="h-9 flex-1 rounded-xl bg-muted" style={{ animationDelay: `${delay + 0.2}s` }} />
-      </div>
-    </div>
-  )
-}
 
 // ── error / empty ─────────────────────────────────────────────────────────────
 
 function ErrorBanner({ message, onRetry }) {
   return (
-    <div className="mt-8 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4 flex items-center justify-between gap-4">
-      <p className="text-sm text-red-400">{message}</p>
-      <button onClick={onRetry} className="shrink-0 text-sm font-medium text-red-400 underline underline-offset-2">
+    <div className="mt-8 rounded-xl border border-[var(--red)]/30 bg-[var(--red)]/10 px-5 py-4 flex items-center justify-between gap-4">
+      <p className="text-sm text-[var(--red)]">{message}</p>
+      <button onClick={onRetry} className="shrink-0 text-sm font-medium text-[var(--red)] underline underline-offset-2">
         Retry
       </button>
     </div>
@@ -574,7 +441,7 @@ function Pagination({ page, totalPages, hasPrev, hasNext, onPrev, onNext, setPag
             className={cn(
               btnBase,
               p === page
-                ? 'bg-primary text-[#061008] border-primary font-bold'
+                ? 'bg-primary text-[var(--primary-foreground)] border-primary font-bold'
                 : 'border-border bg-card text-muted-foreground hover:border-white/14 hover:text-foreground',
             )}
           >
@@ -603,14 +470,13 @@ function MyGamesHeader({ count }) {
   return (
     <div className="flex items-baseline justify-between mb-4">
       <h2
-        className="text-[24px] font-extrabold text-foreground flex items-center gap-2.5"
-        style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-0.5px' }}
+        className="font-display text-[24px] font-extrabold text-foreground flex items-center gap-2.5"
+        style={{ letterSpacing: '-0.5px' }}
       >
         My Games
         {count != null && (
           <span
-            className="inline-flex items-center justify-center min-w-[26px] h-[26px] rounded-full bg-primary text-[#061008] text-[12px] font-bold px-2 shadow-[0_0_18px_var(--green-glow)]"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            className="font-display inline-flex items-center justify-center min-w-[26px] h-[26px] rounded-full bg-primary text-[var(--primary-foreground)] text-[12px] font-bold px-2 shadow-[0_0_18px_var(--green-glow)]"
           >
             {count}
           </span>
@@ -631,7 +497,7 @@ function MyGamesSection({ myMatches, error, onRetry, userId, onLeave, actionLoad
       <section className="mb-10">
         <MyGamesHeader count={null} />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} delay={i * 0.1} />)}
+          {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} delay={i * 0.1} />)}
         </div>
       </section>
     )
@@ -863,15 +729,14 @@ export default function FindGamePage() {
 
   return (
     <>
-    <FindGameNavbar />
     <PageWrapper className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-324 pt-12 pb-20 px-12">
 
         {/* Page header */}
         <div className="mb-9">
           <h1
-            className="text-[40px] font-extrabold leading-none mb-2 text-foreground"
-            style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-1px' }}
+            className="font-display text-[40px] font-extrabold leading-none mb-2 text-foreground"
+            style={{ letterSpacing: '-1px' }}
           >
             Find Games
           </h1>
@@ -904,8 +769,8 @@ export default function FindGamePage() {
         {/* Other Open Games heading + count pill */}
         <div className="flex items-baseline justify-between mb-4">
           <h2
-            className="text-[24px] font-extrabold text-foreground flex items-center gap-2.5"
-            style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-0.5px' }}
+            className="font-display text-[24px] font-extrabold text-foreground flex items-center gap-2.5"
+            style={{ letterSpacing: '-0.5px' }}
           >
             Other Open Games
             {otherOpenCount != null && (
@@ -931,7 +796,7 @@ export default function FindGamePage() {
           {isLoading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {Array.from({ length: 6 }).map((_, i) => (
-                <SkeletonCard key={i} delay={i * 0.1} />
+                <CardSkeleton key={i} delay={i * 0.1} />
               ))}
             </div>
           )}

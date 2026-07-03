@@ -3,20 +3,34 @@ import { AuthContext } from './AuthContext'
 import api, { setAccessToken } from '../services/api'
 import { refreshSession } from '../services/authInterceptor'
 
-function parseUserId(accessToken) {
+// Decodes the JWT payload (no verification — server already verified it).
+// Returns {} on any malformed token so callers can destructure safely.
+function parseJwtClaims(accessToken) {
   try {
     const payload = accessToken.split('.')[1]
     const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
-    return parseInt(JSON.parse(json).sub, 10) || null
+    return JSON.parse(json)
   } catch {
-    return null
+    return {}
   }
+}
+
+// Backend issues the username as the JWT `unique_name` claim (see AuthService).
+function parseUsername(accessToken) {
+  const claims = parseJwtClaims(accessToken)
+  return claims.unique_name ?? claims.name ?? null
+}
+
+function parseUserId(accessToken) {
+  const claims = parseJwtClaims(accessToken)
+  return parseInt(claims.sub, 10) || null
 }
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null)
   const [roles, setRoles] = useState([])
   const [userId, setUserId] = useState(null)
+  const [username, setUsername] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // on mount: restore session from httpOnly cookie
@@ -29,6 +43,7 @@ export function AuthProvider({ children }) {
         setToken(data.accessToken)
         setRoles(data.roles ?? [])
         setUserId(parseUserId(data.accessToken))
+        setUsername(parseUsername(data.accessToken))
       } catch {
         setAccessToken(null)
       } finally {
@@ -44,6 +59,7 @@ export function AuthProvider({ children }) {
     setToken(response.accessToken)
     setRoles(response.roles ?? [])
     setUserId(parseUserId(response.accessToken))
+    setUsername(parseUsername(response.accessToken))
   }
 
   // clear everything, server revoke token and cookie
@@ -57,11 +73,12 @@ export function AuthProvider({ children }) {
       setToken(null)
       setRoles([])
       setUserId(null)
+      setUsername(null)
     }
   }
 
   return (
-    <AuthContext.Provider value={{ token, roles, userId, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ token, roles, userId, username, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   )

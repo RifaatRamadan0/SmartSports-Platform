@@ -111,11 +111,11 @@ export default function PitchImageGallery({ pitchId }) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold tracking-tight text-white">Photos</h2>
-          <p className="text-xs text-neutral-500 mt-1">
+          <p className="text-xs text-[var(--text3)] mt-1">
             Add up to {MAX_IMAGES} images. One can be marked as the cover shown on listings.
           </p>
         </div>
-        <span className="text-xs text-neutral-500 font-mono">
+        <span className="text-xs text-[var(--text3)] font-mono">
           {images.length} / {MAX_IMAGES}
         </span>
       </div>
@@ -128,15 +128,15 @@ export default function PitchImageGallery({ pitchId }) {
       )}
 
       {/* Add controls */}
-      <div className="rounded-2xl border border-[#1a1a1a] bg-[#0d0d0d] p-4 space-y-3">
+      <div className="rounded-2xl border border-[var(--bg3)] bg-[var(--surface)] p-4 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handlePickFile}
             disabled={atLimit || isBusy || !uploadReady}
             className="rounded-xl px-4 py-2 text-xs font-semibold
-                       bg-green-500 text-black hover:bg-green-400
-                       disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                       bg-[var(--green)] text-black hover:brightness-110
+                       disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {isBusy ? 'Uploading…' : 'Upload image'}
           </button>
@@ -150,13 +150,13 @@ export default function PitchImageGallery({ pitchId }) {
         </div>
 
         {atLimit && (
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-[var(--text3)]">
             Limit reached ({MAX_IMAGES} / {MAX_IMAGES}). Delete an image to add another.
           </p>
         )}
 
         {actionError && (
-          <p className="text-xs text-red-300 rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2">
+          <p className="text-xs text-[var(--red)] rounded-lg border border-[var(--red)]/30 bg-[var(--red)]/5 px-3 py-2">
             {actionError}
           </p>
         )}
@@ -166,33 +166,33 @@ export default function PitchImageGallery({ pitchId }) {
       {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="aspect-[4/3] rounded-xl border border-[#1a1a1a] bg-[#0f0f0f] animate-pulse" />
+            <div key={i} className="aspect-[4/3] rounded-xl border border-[var(--bg3)] bg-[var(--surface)] animate-pulse" />
           ))}
         </div>
       ) : loadError ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-center">
-          <p className="text-xs text-red-300">{loadError}</p>
+        <div className="rounded-xl border border-[var(--red)]/30 bg-[var(--red)]/5 p-4 text-center">
+          <p className="text-xs text-[var(--red)]">{loadError}</p>
           <button
             type="button"
             onClick={reload}
             className="mt-2 rounded-lg px-3 py-1.5 text-xs font-semibold
-                       bg-[#141414] border border-[#1f1f1f] text-white hover:border-white/15 transition-colors"
+                       bg-[var(--bg3)] border border-white/[0.07] text-white hover:border-white/15 transition-colors"
           >
             Retry
           </button>
         </div>
       ) : images.length === 0 ? (
-        <div className="rounded-xl border border-[#1a1a1a] bg-[#0d0d0d] py-10 text-center">
-          <p className="text-xs text-neutral-500">No images yet.</p>
+        <div className="rounded-xl border border-[var(--bg3)] bg-[var(--surface)] py-10 text-center">
+          <p className="text-xs text-[var(--text3)]">No images yet.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {images.map(img => (
             <div
               key={img.id}
-              className="relative group rounded-xl overflow-hidden border border-[#1a1a1a] bg-[#0d0d0d]"
+              className="relative group rounded-xl overflow-hidden border border-[var(--bg3)] bg-[var(--surface)]"
             >
-              <div className="aspect-[4/3] bg-[#080808]">
+              <div className="aspect-[4/3] bg-[var(--bg)]">
                 <img
                   src={img.imageUrl}
                   alt=""
@@ -203,7 +203,7 @@ export default function PitchImageGallery({ pitchId }) {
 
               {img.isCover && (
                 <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider
-                                 bg-green-500 text-black">
+                                 bg-[var(--green)] text-black">
                   COVER
                 </span>
               )}
@@ -216,7 +216,7 @@ export default function PitchImageGallery({ pitchId }) {
                     onClick={() => handleSetCover(img.id)}
                     disabled={isBusy}
                     className="flex-1 rounded-lg px-2 py-1 text-[11px] font-semibold
-                               bg-[#141414]/90 border border-white/10 text-white hover:border-white/25
+                               bg-[var(--bg3)]/90 border border-white/10 text-white hover:border-white/25
                                disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Set as cover
@@ -230,7 +230,7 @@ export default function PitchImageGallery({ pitchId }) {
                       type="button"
                       onClick={() => handleDelete(img.id)}
                       disabled={isBusy}
-                      className="rounded-lg px-2 py-1 text-[11px] font-semibold bg-red-500 text-white hover:bg-red-400 disabled:opacity-50 transition-colors"
+                      className="rounded-lg px-2 py-1 text-[11px] font-semibold bg-[var(--red)] text-white hover:brightness-110 disabled:opacity-50 transition-all"
                     >
                       Delete
                     </button>
@@ -238,7 +238,7 @@ export default function PitchImageGallery({ pitchId }) {
                       type="button"
                       onClick={() => setConfirmId(null)}
                       disabled={isBusy}
-                      className="rounded-lg px-2 py-1 text-[11px] font-semibold bg-[#141414]/90 border border-white/10 text-white hover:border-white/25 transition-colors"
+                      className="rounded-lg px-2 py-1 text-[11px] font-semibold bg-[var(--bg3)]/90 border border-white/10 text-white hover:border-white/25 transition-colors"
                     >
                       Cancel
                     </button>
@@ -250,7 +250,7 @@ export default function PitchImageGallery({ pitchId }) {
                     disabled={isBusy}
                     aria-label="Delete image"
                     className="rounded-lg px-2 py-1 text-[11px] font-semibold
-                               bg-[#141414]/90 border border-white/10 text-white hover:border-red-500/60 hover:text-red-300
+                               bg-[var(--bg3)]/90 border border-white/10 text-white hover:border-[var(--red)]/60 hover:text-[var(--red)]
                                disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     🗑

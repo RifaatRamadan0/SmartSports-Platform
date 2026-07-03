@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+﻿import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getAvailableSlots } from '../../services/Availability/availabilityService'
@@ -6,7 +6,6 @@ import { createBooking } from '../../services/Booking/bookingService'
 import { getPitchById } from '../../services/Pitch/pitchService'
 import { getMyProfile } from '../../services/User/userService'
 import { parseApiError } from '../../utils/errorUtils'
-import Toast from '../../components/ui/Toast'
 import { springTransition, stepVariants, confirmCardVariants, buttonHover, buttonTap } from '../../lib/motion'
 import PitchCover from '../../components/Pitch/PitchCover'
 import GalleryModal from '../../components/Pitch/GalleryModal'
@@ -129,7 +128,6 @@ export default function BookingPage() {
   const [selectedSlot,  setSelectedSlot]  = useState(null)
   const [showAllSlots,  setShowAllSlots]  = useState(false)
   const [isSubmitting,  setIsSubmitting]  = useState(false)
-  const [toast,         setToast]         = useState(null)
   const [confirmed,     setConfirmed]     = useState(false)
   const [confirmedDetails, setConfirmedDetails] = useState(null)
   // SPDBTCP-247 — open matches show in the public games list and accept walk-on joiners;
@@ -257,12 +255,12 @@ export default function BookingPage() {
 
   if (fetchError && !resolvedName && resolvedPrice == null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#080c0a] p-8">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg)] p-8">
         <div className="text-center space-y-3">
-          <p className="text-red-400 text-sm">Could not load pitch details.</p>
+          <p className="text-[var(--red)] text-sm">Could not load pitch details.</p>
           <button
             onClick={() => navigate(-1)}
-            className="text-xs text-neutral-500 underline hover:text-white"
+            className="text-xs text-[var(--text2)] underline hover:text-white"
           >
             Go back
           </button>
@@ -272,13 +270,13 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#080c0a] p-4 sm:p-8"
+    <div className="min-h-screen flex items-center justify-center bg-[var(--bg)] p-4 sm:p-8"
       style={{
         backgroundImage:
           'radial-gradient(ellipse 70% 50% at 50% -5%, rgba(34, 197, 94, 0.18), transparent)',
       }}
     >
-      <div className="w-full max-w-5xl rounded-3xl border border-[#1a1f1c] bg-[#0a0d0b] shadow-2xl overflow-hidden">
+      <div className="w-full max-w-5xl rounded-3xl border border-white/[0.07] bg-[var(--surface)] shadow-2xl overflow-hidden">
       <AnimatePresence mode="wait">
       {confirmed && confirmedDetails ? (
         <SuccessScreen
@@ -303,19 +301,19 @@ export default function BookingPage() {
         )}
 
         {/* Header */}
-        <div className="flex items-start justify-between px-6 sm:px-8 py-5 border-b border-[#1a1f1c]">
+        <div className="flex items-start justify-between px-6 sm:px-8 py-5 border-b border-white/[0.07]">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
               Select Date &amp; Time
             </h1>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-[var(--text2)] mt-1">
               {resolvedName || `Pitch #${pitchId}`}
               {sport ? ` · ${sport}` : ''}
             </p>
           </div>
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full border border-[#1f2622] bg-[#0f1411] text-neutral-400
+            className="w-9 h-9 rounded-full border border-white/[0.07] bg-[var(--surface)] text-[var(--text2)]
                        hover:text-white hover:border-neutral-600 transition-colors flex items-center justify-center"
             aria-label="Close"
           >
@@ -324,7 +322,7 @@ export default function BookingPage() {
         </div>
 
         {/* Pitch info */}
-        <div className="flex items-center gap-5 px-6 sm:px-8 py-5 border-b border-[#1a1f1c]">
+        <div className="flex items-center gap-5 px-6 sm:px-8 py-5 border-b border-white/[0.07]">
           <PitchCover
             imageUrl={pitch?.images?.[0]}
             sport={sport ?? pitch?.sportTypeName}
@@ -333,16 +331,16 @@ export default function BookingPage() {
           <div className="flex-1 min-w-0">
             <h2 className="text-lg sm:text-xl font-bold text-white">
               {resolvedName || 'Pitch'}
-              {format ? <span className="text-neutral-400 font-medium"> — {format}</span> : null}
+              {format ? <span className="text-[var(--text2)] font-medium"> — {format}</span> : null}
             </h2>
-            <p className="text-xs text-neutral-400 mt-1">
+            <p className="text-xs text-[var(--text2)] mt-1">
               {[sport, surface, format].filter(Boolean).join(' · ')}
               {typeof rating === 'number' && (
                 <>
                   {' '}· <span className="text-yellow-400">★</span>{' '}
-                  <span className="text-neutral-300">{rating.toFixed(1)}</span>
+                  <span className="text-[var(--text2)]">{rating.toFixed(1)}</span>
                   {typeof ratingCount === 'number' && (
-                    <span className="text-neutral-500"> ({ratingCount})</span>
+                    <span className="text-[var(--text2)]"> ({ratingCount})</span>
                   )}
                 </>
               )}
@@ -352,7 +350,7 @@ export default function BookingPage() {
                 {amenities.map((a) => (
                   <span
                     key={a}
-                    className="px-3 py-1 rounded-full border border-[#1f2622] bg-[#0f1411] text-xs text-neutral-300"
+                    className="px-3 py-1 rounded-full border border-white/[0.07] bg-[var(--surface)] text-xs text-[var(--text2)]"
                   >
                     {a}
                   </span>
@@ -363,12 +361,12 @@ export default function BookingPage() {
           {typeof resolvedPrice === 'number' && (
             <div className="text-right shrink-0">
               <p className="text-3xl font-bold leading-none">
-                <span className="text-neutral-500 text-lg align-top">{currency}</span>
-                <span className="text-green-400">
+                <span className="text-[var(--text2)] text-lg align-top">{currency}</span>
+                <span className="text-[var(--green)]">
                   {Number.isInteger(resolvedPrice) ? resolvedPrice : resolvedPrice.toFixed(2)}
                 </span>
               </p>
-              <p className="text-xs text-neutral-500 mt-1">/hr</p>
+              <p className="text-xs text-[var(--text2)] mt-1">/hr</p>
             </div>
           )}
         </div>
@@ -404,18 +402,18 @@ export default function BookingPage() {
                         flex-1 min-w-0 flex flex-col items-center justify-center
                         h-16 rounded-xl border transition-all duration-150
                         ${isSelected
-                          ? 'bg-green-500 border-green-500 text-black'
-                          : 'bg-[#0f1411] border-[#1f2622] text-neutral-300 hover:border-green-700'
+                          ? 'bg-[var(--green)] border-[var(--green)] text-black'
+                          : 'bg-[var(--surface)] border-white/[0.07] text-[var(--text2)] hover:border-[var(--green)]'
                         }
                       `}
                     >
-                      <span className={`text-[9px] font-bold tracking-widest ${isSelected ? 'text-black/70' : 'text-neutral-500'}`}>
+                      <span className={`text-[9px] font-bold tracking-widest ${isSelected ? 'text-black/70' : 'text-[var(--text2)]'}`}>
                         {DAY_NAMES[date.getDay()]}
                       </span>
                       <span className={`text-base font-bold leading-tight ${isSelected ? 'text-black' : 'text-white'}`}>
                         {date.getDate()}
                       </span>
-                      <span className={`mt-0.5 w-1 h-1 rounded-full ${isSelected ? 'bg-black/40' : 'bg-green-500'}`} />
+                      <span className={`mt-0.5 w-1 h-1 rounded-full ${isSelected ? 'bg-black/40' : 'bg-[var(--green)]'}`} />
                     </button>
                   )
                 })}
@@ -432,7 +430,7 @@ export default function BookingPage() {
             <div className="mt-8">
               <SectionLabel>Duration</SectionLabel>
               {availableDurations.length === 0 ? (
-                <p className="text-xs text-neutral-600">No durations available for this date.</p>
+                <p className="text-xs text-[var(--text3)]">No durations available for this date.</p>
               ) : (
                 <div className="flex gap-3">
                   {availableDurations.map(({ minutes, label }) => {
@@ -450,14 +448,14 @@ export default function BookingPage() {
                           flex-1 py-3 rounded-xl border transition-all duration-150
                           flex flex-col items-center justify-center
                           ${isSelected
-                            ? 'border-green-500 bg-[#0f1a12] text-green-400'
-                            : 'border-[#1f2622] bg-[#0f1411] text-neutral-300 hover:border-green-700'
+                            ? 'border-[var(--green)] bg-[var(--bg3)] text-[var(--green)]'
+                            : 'border-white/[0.07] bg-[var(--surface)] text-[var(--text2)] hover:border-[var(--green)]'
                           }
                         `}
                       >
                         <span className="text-sm font-bold">{label}</span>
                         {optionPrice !== null && (
-                          <span className={`text-[11px] mt-0.5 ${isSelected ? 'text-green-300' : 'text-neutral-500'}`}>
+                          <span className={`text-[11px] mt-0.5 ${isSelected ? 'text-[var(--green)]' : 'text-[var(--text2)]'}`}>
                             {formatPrice(optionPrice, currency)}
                           </span>
                         )}
@@ -478,7 +476,7 @@ export default function BookingPage() {
             {isLoading && <SlotSkeleton />}
 
             {!isLoading && error && (
-              <div className="flex items-center gap-3 rounded-xl border border-red-800 bg-[#1a0f0f] px-4 py-3 text-sm text-red-400">
+              <div className="flex items-center gap-3 rounded-xl border border-[var(--red-border)] bg-[var(--bg3)] px-4 py-3 text-sm text-[var(--red)]">
                 <span>✕</span>
                 <span className="flex-1">{error}</span>
                 <button
@@ -491,13 +489,13 @@ export default function BookingPage() {
             )}
 
             {!isLoading && !error && futureSlots.length === 0 && (
-              <div className="rounded-xl border border-[#1f2622] bg-[#0f1411] py-10 text-center">
-                <p className="text-sm text-neutral-500">
+              <div className="rounded-xl border border-white/[0.07] bg-[var(--surface)] py-10 text-center">
+                <p className="text-sm text-[var(--text2)]">
                   {slots.length === 0
                     ? 'Pitch is closed on this day'
                     : 'No more slots available today'}
                 </p>
-                <p className="text-xs text-neutral-600 mt-1">Try another date</p>
+                <p className="text-xs text-[var(--text3)] mt-1">Try another date</p>
               </div>
             )}
 
@@ -516,22 +514,22 @@ export default function BookingPage() {
                           flex flex-col items-center justify-center
                           py-3 rounded-xl border text-sm font-bold transition-all duration-150
                           ${isSelected
-                            ? 'bg-green-500 border-green-500 text-black scale-[1.02]'
+                            ? 'bg-[var(--green)] border-[var(--green)] text-black scale-[1.02]'
                             : bookable
-                              ? 'bg-[#0f1411] border-[#1f2622] text-white hover:border-green-500'
-                              : 'bg-[#0d0f0e] border-[#161a18] text-neutral-700 cursor-not-allowed'
+                              ? 'bg-[var(--surface)] border-white/[0.07] text-white hover:border-[var(--green)]'
+                              : 'bg-[var(--bg2)] border-white/[0.06] text-[var(--text3)] cursor-not-allowed'
                           }
                         `}
                       >
-                        <span className={`text-base ${isSelected ? 'text-black' : bookable ? 'text-white' : 'text-neutral-700'}`}>
+                        <span className={`text-base ${isSelected ? 'text-black' : bookable ? 'text-white' : 'text-[var(--text3)]'}`}>
                           {formatTime(slot.startTime)}
                         </span>
                         <span className={`text-[10px] font-semibold mt-0.5 ${
                           isSelected
                             ? 'text-black/70'
                             : bookable
-                              ? 'text-neutral-500'
-                              : 'text-neutral-700'
+                              ? 'text-[var(--text2)]'
+                              : 'text-[var(--text3)]'
                         }`}>
                           {slot.isAvailable ? formatDurationShort(duration) : 'Booked'}
                         </span>
@@ -543,8 +541,8 @@ export default function BookingPage() {
                     <button
                       onClick={() => setShowAllSlots(true)}
                       className="flex flex-col items-center justify-center py-3 rounded-xl
-                                 border border-dashed border-[#2a4a30] bg-[#0a150c]
-                                 text-green-400 hover:border-green-500 hover:bg-[#0f1a12]
+                                 border border-dashed border-[var(--green-border)] bg-[var(--green-muted)]
+                                 text-[var(--green)] hover:border-[var(--green)] hover:bg-[var(--bg3)]
                                  transition-all duration-150"
                       aria-label={`Show ${hiddenCount} more time slots`}
                     >
@@ -559,7 +557,7 @@ export default function BookingPage() {
                 {showAllSlots && hiddenCount > 0 && (
                   <button
                     onClick={() => setShowAllSlots(false)}
-                    className="mt-3 text-xs text-neutral-500 hover:text-green-400 transition-colors"
+                    className="mt-3 text-xs text-[var(--text2)] hover:text-[var(--green)] transition-colors"
                   >
                     Show fewer
                   </button>
@@ -576,8 +574,8 @@ export default function BookingPage() {
               className={`
                 w-11 h-11 rounded-xl flex items-center justify-center shrink-0
                 ${isOpen
-                  ? 'bg-green-500/10 border border-green-500/40 text-green-400'
-                  : 'bg-blue-500/10 border border-blue-500/40 text-blue-400'
+                  ? 'bg-[var(--green)]/10 border border-[var(--green)]/40 text-[var(--green)]'
+                  : 'bg-[var(--green)]/10 border border-[var(--green)]/40 text-[var(--green)]'
                 }
               `}
               animate={{ scale: [1, 1.18, 1] }}
@@ -591,7 +589,7 @@ export default function BookingPage() {
               <AnimatePresence mode="wait" initial={false}>
                 <motion.p
                   key={isOpen ? 'open-desc' : 'private-desc'}
-                  className="text-xs text-neutral-400 mt-0.5"
+                  className="text-xs text-[var(--text2)] mt-0.5"
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
@@ -603,18 +601,18 @@ export default function BookingPage() {
                 </motion.p>
               </AnimatePresence>
             </div>
-            <div className="relative flex rounded-full bg-[#0f1411] border border-[#1f2622] p-1 shrink-0">
+            <div className="relative flex rounded-full bg-[var(--surface)] border border-white/[0.07] p-1 shrink-0">
               {isOpen && (
                 <motion.div
                   layoutId="visibility-pill"
-                  className="absolute inset-y-1 left-1 w-[calc(50%-2px)] rounded-full bg-green-500"
+                  className="absolute inset-y-1 left-1 w-[calc(50%-2px)] rounded-full bg-[var(--green)]"
                   transition={springTransition}
                 />
               )}
               {!isOpen && (
                 <motion.div
                   layoutId="visibility-pill"
-                  className="absolute inset-y-1 right-1 w-[calc(50%-2px)] rounded-full bg-blue-500"
+                  className="absolute inset-y-1 right-1 w-[calc(50%-2px)] rounded-full bg-[var(--green)]"
                   transition={springTransition}
                 />
               )}
@@ -625,7 +623,7 @@ export default function BookingPage() {
                 disabled={isSubmitting}
                 className={`
                   relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-colors
-                  ${isOpen ? 'text-black' : 'text-neutral-400 hover:text-white'}
+                  ${isOpen ? 'text-black' : 'text-[var(--text2)] hover:text-white'}
                   disabled:cursor-not-allowed
                 `}
               >
@@ -639,7 +637,7 @@ export default function BookingPage() {
                 disabled={isSubmitting}
                 className={`
                   relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-colors
-                  ${!isOpen ? 'text-white' : 'text-neutral-400 hover:text-white'}
+                  ${!isOpen ? 'text-white' : 'text-[var(--text2)] hover:text-white'}
                   disabled:cursor-not-allowed
                 `}
               >
@@ -652,7 +650,7 @@ export default function BookingPage() {
 
         {/* Footer summary + CTA */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
-                        px-6 sm:px-8 py-5 border-t border-[#1a1f1c] bg-[#080b09]">
+                        px-6 sm:px-8 py-5 border-t border-white/[0.07] bg-[var(--bg)]">
           <div className="flex gap-8 text-sm">
             <SummaryCell
               label="Date"
@@ -668,11 +666,11 @@ export default function BookingPage() {
               accent={totalPrice !== null}
             />
             <div>
-              <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text2)]">
                 Visibility
               </p>
               <p className={`mt-1 text-sm font-bold flex items-center gap-1.5 ${
-                isOpen ? 'text-green-400' : 'text-blue-400'
+                isOpen ? 'text-[var(--green)]' : 'text-[var(--green)]'
               }`}>
                 {isOpen ? <GlobeIcon className="w-3.5 h-3.5" /> : <LockIcon className="w-3.5 h-3.5" />}
                 {isOpen ? 'Open' : 'Private'}
@@ -689,7 +687,7 @@ export default function BookingPage() {
               rounded-xl px-6 py-3 text-sm font-bold tracking-wide
               ${selectedSlot && !isSubmitting
                 ? 'shimmer-btn text-black'
-                : 'bg-[#0f1a12] text-neutral-600 border border-[#1f3d26] cursor-not-allowed'
+                : 'bg-[var(--bg3)] text-[var(--text3)] border border-[#1f3d26] cursor-not-allowed'
               }
             `}
           >
@@ -697,13 +695,6 @@ export default function BookingPage() {
           </motion.button>
         </div>
 
-        {toast && (
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
-        )}
         </motion.div>
       )}
       </AnimatePresence>
@@ -725,7 +716,7 @@ export default function BookingPage() {
 
 function SectionLabel({ children }) {
   return (
-    <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-neutral-500 mb-3">
+    <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--text2)] mb-3">
       {children}
     </p>
   )
@@ -734,10 +725,10 @@ function SectionLabel({ children }) {
 function SummaryCell({ label, value, accent = false }) {
   return (
     <div>
-      <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500">
+      <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text2)]">
         {label}
       </p>
-      <p className={`mt-1 text-sm font-bold ${accent ? 'text-green-400' : 'text-white'}`}>
+      <p className={`mt-1 text-sm font-bold ${accent ? 'text-[var(--green)]' : 'text-white'}`}>
         {value}
       </p>
     </div>
@@ -754,8 +745,8 @@ function ArrowButton({ direction, onClick, disabled }) {
         w-8 h-16 rounded-xl border flex items-center justify-center text-sm
         transition-colors shrink-0
         ${disabled
-          ? 'border-[#161a18] text-neutral-700 cursor-not-allowed'
-          : 'border-[#1f2622] text-neutral-400 hover:text-white hover:border-green-700'
+          ? 'border-white/[0.06] text-[var(--text3)] cursor-not-allowed'
+          : 'border-white/[0.07] text-[var(--text2)] hover:text-white hover:border-[var(--green)]'
         }
       `}
     >
@@ -775,7 +766,7 @@ function GalleryStrip({ images, onOpen }) {
           type="button"
           onClick={() => onOpen(i)}
           className={`relative w-12 h-12 rounded-lg overflow-hidden shrink-0
-                      ${i === 0 ? 'ring-2 ring-green-500' : 'ring-1 ring-white/10 hover:ring-white/30'}`}
+                      ${i === 0 ? 'ring-2 ring-[var(--green)]' : 'ring-1 ring-white/10 hover:ring-white/30'}`}
         >
           <img src={url} alt="" className="w-full h-full object-cover" />
         </button>
@@ -785,7 +776,7 @@ function GalleryStrip({ images, onOpen }) {
           type="button"
           onClick={() => onOpen(3)}
           className="w-12 h-12 rounded-lg border-2 border-dashed border-white/15
-                     text-[10px] text-neutral-400 hover:text-white hover:border-white/30
+                     text-[10px] text-[var(--text2)] hover:text-white hover:border-white/30
                      flex flex-col items-center justify-center gap-0.5 shrink-0"
         >
           <span>⤢</span>
@@ -849,7 +840,7 @@ function SuccessScreen({ details, onViewBookings }) {
         className="flex flex-col items-center text-center"
       >
         <h2 className="text-2xl font-bold text-white mb-1">Booking Confirmed!</h2>
-        <p className="text-neutral-400 mb-6 text-sm">Your pitch is booked. See you there!</p>
+        <p className="text-[var(--text2)] mb-6 text-sm">Your pitch is booked. See you there!</p>
 
         <div className="rounded-2xl border border-[var(--green-border)] bg-[var(--bg2)] p-6 mb-6 w-full max-w-xs text-left space-y-3">
           {details.pitchName && <DetailRow label="Pitch" value={details.pitchName} />}
@@ -874,7 +865,7 @@ function SuccessScreen({ details, onViewBookings }) {
 function DetailRow({ label, value, accent = false }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-[10px] font-bold tracking-widest uppercase text-neutral-500">{label}</span>
+      <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--text2)]">{label}</span>
       <span className={`text-sm font-bold ${accent ? 'text-[var(--green)]' : 'text-white'}`}>{value}</span>
     </div>
   )
@@ -907,7 +898,7 @@ function SlotSkeleton() {
       {Array.from({ length: 8 }).map((_, i) => (
         <motion.div
           key={i}
-          className="h-14.5 rounded-xl bg-[#0f1411] border border-[#161a18]"
+          className="h-14.5 rounded-xl bg-[var(--surface)] border border-white/[0.06]"
           animate={{ opacity: [0.4, 1, 0.4] }}
           transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
         />
@@ -915,3 +906,5 @@ function SlotSkeleton() {
     </div>
   )
 }
+
+

@@ -15,14 +15,14 @@ import FieldLines from '@/components/Match/FieldLines'
 
 const SPORT_HEAD_BG = {
   Football:   '#0f2016',
-  Futsal:     '#0c1521',
+  Futsal:     '#0c1a18',
   Basketball: '#1a0e0c',
   Tennis:     '#0c1420',
 }
 
 const SPORT_TAG_CLASS = {
   Football:   'bg-primary/10 text-primary border-primary/20',
-  Futsal:     'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  Futsal:     'bg-teal-500/10 text-teal-400 border-teal-500/20',
   Basketball: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   Tennis:     'bg-purple-500/10 text-purple-400 border-purple-500/20',
 }
@@ -120,7 +120,7 @@ function FillBar({ current, max }) {
         <span className="text-muted-foreground">{current} / {max} players joined</span>
         {spotsLeft === 0
           ? <span className="text-muted-foreground font-medium">No spots left</span>
-          : <span className="text-primary font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+          : <span className="font-display text-primary font-semibold">
               {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} open
             </span>
         }
@@ -182,8 +182,8 @@ function JoinSuccess({ organizerName, isInstant, onGoHome }) {
         transition={{ duration: 0.3, delay: 0.75 }}
       >
         <p
-          className="text-[22px] font-extrabold text-foreground mb-2"
-          style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-0.5px' }}
+          className="font-display text-[22px] font-extrabold text-foreground mb-2"
+          style={{ letterSpacing: '-0.5px' }}
         >
           {isInstant ? "You're in!" : 'Request sent!'}
         </p>
@@ -198,9 +198,8 @@ function JoinSuccess({ organizerName, isInstant, onGoHome }) {
           whileHover={buttonHover}
           whileTap={buttonTap}
           onClick={onGoHome}
-          className="rounded-full bg-primary text-[#061008] text-[13px] font-bold px-6 py-2.5
+          className="font-display rounded-full bg-primary text-[var(--primary-foreground)] text-[13px] font-bold px-6 py-2.5
                      hover:opacity-[0.88] transition-opacity"
-          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
         >
           Go to dashboard
         </motion.button>
@@ -350,8 +349,8 @@ export default function JoinPage() {
             {preview.isExpired ? 'Link expired' : preview.spotsLeft === 0 ? 'Match full' : "You're invited"}
           </p>
           <h1
-            className="text-[32px] font-extrabold leading-none text-foreground"
-            style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-1px' }}
+            className="font-display text-[32px] font-extrabold leading-none text-foreground"
+            style={{ letterSpacing: '-1px' }}
           >
             {preview.isExpired ? 'This link has expired' : preview.spotsLeft === 0 ? 'This match is full' : 'Join the game'}
           </h1>
@@ -379,7 +378,7 @@ export default function JoinPage() {
                       {preview.sportName}
                     </span>
                     {preview.isExpired ? (
-                      <span className="rounded-full border border-red-500/40 bg-red-500/15 text-red-400 text-[11px] font-semibold px-2.5 py-1">
+                      <span className="rounded-full border border-[var(--red)]/40 bg-[var(--red)]/15 text-[var(--red)] text-[11px] font-semibold px-2.5 py-1">
                         Expired
                       </span>
                     ) : isFull ? (
@@ -394,8 +393,8 @@ export default function JoinPage() {
                     ) : null}
                   </div>
                   <p
-                    className="text-[20px] font-bold leading-snug mb-1.5 text-foreground"
-                    style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-0.4px' }}
+                    className="font-display text-[20px] font-bold leading-snug mb-1.5 text-foreground"
+                    style={{ letterSpacing: '-0.4px' }}
                   >
                     {preview.pitchName}
                   </p>
@@ -425,8 +424,8 @@ export default function JoinPage() {
               <div className="px-6 pt-4 pb-5 border-t border-border flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <div
-                    className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 font-extrabold text-[#061008]"
-                    style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10 }}
+                    className="font-display w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 font-extrabold text-[var(--primary-foreground)]"
+                    style={{ fontSize: 10 }}
                   >
                     {initials}
                   </div>
@@ -443,9 +442,8 @@ export default function JoinPage() {
                       whileTap={buttonTap}
                       onClick={handleJoin}
                       disabled={isJoining}
-                      className="rounded-full bg-primary text-[#061008] text-[13px] font-bold px-5 py-2.5
+                      className="font-display rounded-full bg-primary text-[var(--primary-foreground)] text-[13px] font-bold px-5 py-2.5
                                  hover:opacity-[0.88] transition-opacity disabled:opacity-50"
-                      style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                     >
                       {isJoining ? 'Sending…' : joinLabel}
                     </motion.button>
@@ -493,7 +491,7 @@ export default function JoinPage() {
                   >
                     <span
                       className="w-4 h-4 rounded-full bg-primary flex items-center justify-center
-                                 text-[#061008] font-bold shrink-0"
+                                 text-[var(--primary-foreground)] font-bold shrink-0"
                       style={{ fontSize: 7 }}
                     >
                       {p.username[0].toUpperCase()}
