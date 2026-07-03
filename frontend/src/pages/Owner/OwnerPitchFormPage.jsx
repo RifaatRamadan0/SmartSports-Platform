@@ -10,6 +10,7 @@ import {
 import { listCities, listSportTypes } from '../../services/Lookup/lookupService'
 import { parseApiError } from '../../utils/errorUtils'
 import PitchImageGallery from './PitchImageGallery'
+import { ListSkeleton } from '../../components/ui/Skeleton'
 
 const DURATION_OPTIONS = []
 for (let m = 60; m <= 480; m += 30) DURATION_OPTIONS.push(m)
@@ -87,18 +88,18 @@ function buildPayload(form, mode) {
 // Small UI helpers
 
 const inputClass =
-  'w-full rounded-xl px-3.5 py-2.5 text-sm bg-[#0d0d0d] border border-[#1f1f1f] text-white ' +
-  'placeholder:text-neutral-600 focus:outline-none focus:border-green-500/60 transition-colors'
+  'w-full rounded-xl px-3.5 py-2.5 text-sm bg-[var(--surface)] border border-[var(--bg3)] text-white ' +
+  'placeholder:text-[var(--text3)] focus:outline-none focus:border-[var(--green)]/60 transition-colors'
 
 function Field({ label, htmlFor, error, hint, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={htmlFor} className="text-xs font-semibold text-neutral-300">
+      <label htmlFor={htmlFor} className="text-xs font-semibold text-[var(--text2)]">
         {label}
       </label>
       {children}
-      {error && <p className="text-xs text-red-400">{error}</p>}
-      {!error && hint && <p className="text-xs text-neutral-500">{hint}</p>}
+      {error && <p className="text-xs text-[var(--red)]">{error}</p>}
+      {!error && hint && <p className="text-xs text-[var(--text3)]">{hint}</p>}
     </div>
   )
 }
@@ -227,14 +228,10 @@ export default function OwnerPitchFormPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#080808] px-6 py-10 text-white">
+      <div className="min-h-screen bg-[var(--bg)] px-6 py-10 text-white">
         <div className="max-w-3xl">
-          <div className="h-8 w-48 rounded bg-[#0f0f0f] border border-[#1a1a1a] animate-pulse mb-6" />
-          <div className="space-y-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-12 rounded-xl bg-[#0f0f0f] border border-[#1a1a1a] animate-pulse" />
-            ))}
-          </div>
+          <div className="h-8 w-48 rounded bg-[var(--surface)] border border-[var(--bg3)] animate-pulse mb-6" />
+          <ListSkeleton count={6} height="h-12" gap="gap-4" />
         </div>
       </div>
     )
@@ -242,13 +239,13 @@ export default function OwnerPitchFormPage() {
 
   if (loadError) {
     return (
-      <div className="min-h-screen bg-[#080808] px-6 py-10 text-white">
-        <div className="max-w-3xl rounded-2xl border border-red-500/30 bg-red-500/5 p-6 text-center">
-          <p className="text-sm text-red-300">{loadError}</p>
+      <div className="min-h-screen bg-[var(--bg)] px-6 py-10 text-white">
+        <div className="max-w-3xl rounded-2xl border border-[var(--red)]/30 bg-[var(--red)]/5 p-6 text-center">
+          <p className="text-sm text-[var(--red)]">{loadError}</p>
           <button
             onClick={loadInitial}
             className="mt-4 rounded-lg px-4 py-2 text-xs font-semibold
-                       bg-[#141414] border border-[#1f1f1f] text-white
+                       bg-[var(--bg3)] border border-white/[0.07] text-white
                        hover:border-white/15 transition-colors"
           >
             Retry
@@ -259,23 +256,23 @@ export default function OwnerPitchFormPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080808] px-6 py-10 text-white">
+    <div className="min-h-screen bg-[var(--bg)] px-6 py-10 text-white">
       <div className="max-w-3xl">
 
         {/* Header */}
         <button
           onClick={() => safeNavigate('/dashboard/pitches')}
-          className="text-xs text-neutral-500 hover:text-white transition-colors mb-3"
+          className="text-xs text-[var(--text3)] hover:text-white transition-colors mb-3"
         >
           ← Back to My Pitches
         </button>
-        <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-green-500">
+        <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[var(--green)]">
           Pitch Management
         </p>
         <h1 className="text-3xl font-bold tracking-tight">
           {isEdit ? 'Edit Pitch' : 'Add New Pitch'}
         </h1>
-        <p className="text-sm text-neutral-500 mt-1 mb-8">
+        <p className="text-sm text-[var(--text3)] mt-1 mb-8">
           {isEdit
             ? 'Update your pitch details. Changes go live immediately for approved listings.'
             : 'New listings are reviewed by an admin before appearing in public search results.'}
@@ -447,25 +444,25 @@ export default function OwnerPitchFormPage() {
                   type="checkbox"
                   checked={form.isActive}
                   onChange={e => setField('isActive', e.target.checked)}
-                  className="h-4 w-4 accent-green-500"
+                  className="h-4 w-4 accent-[var(--green)]"
                 />
-                <span className="text-sm text-neutral-300">Active — visible to players</span>
+                <span className="text-sm text-[var(--text2)]">Active — visible to players</span>
               </label>
             </Field>
           )}
 
           {submitError && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">
+            <div className="rounded-xl border border-[var(--red)]/30 bg-[var(--red)]/5 p-3 text-sm text-[var(--red)]">
               {submitError}
             </div>
           )}
 
           {isEdit ? (
-            <div className="pt-4 border-t border-[#1a1a1a]">
+            <div className="pt-4 border-t border-[var(--bg3)]">
               <PitchImageGallery pitchId={pitchId} />
             </div>
           ) : (
-            <p className="text-xs text-neutral-500 rounded-xl border border-[#1a1a1a] bg-[#0d0d0d] px-3 py-2">
+            <p className="text-xs text-[var(--text3)] rounded-xl border border-[var(--bg3)] bg-[var(--surface)] px-3 py-2">
               Save the pitch first to add images.
             </p>
           )}
@@ -488,7 +485,7 @@ export default function OwnerPitchFormPage() {
               onClick={() => safeNavigate('/dashboard/pitches')}
               disabled={isSubmitting}
               className="rounded-xl px-5 py-2.5 text-sm font-semibold
-                         bg-[#141414] border border-[#1f1f1f] text-neutral-300
+                         bg-[var(--bg3)] border border-white/[0.07] text-[var(--text2)]
                          hover:text-white hover:border-white/15
                          disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >

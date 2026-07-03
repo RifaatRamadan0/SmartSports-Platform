@@ -75,18 +75,18 @@ function DateStrip({ dates, selectedDate, onSelect }) {
               min-w-[52px] h-[64px] rounded-xl border
               transition-all duration-200 flex-shrink-0
               ${isSelected
-                ? 'bg-green-500 border-green-500 text-black'
-                : 'bg-[#0f0f0f] border-[#1f1f1f] text-neutral-400 hover:border-green-700 hover:text-white'
+                ? 'bg-[var(--green)] border-[var(--green)] text-black'
+                : 'bg-[var(--surface)] border-[var(--bg3)] text-[var(--text2)] hover:border-[var(--green-dim)] hover:text-white'
               }
             `}
           >
-            <span className={`text-[9px] font-bold tracking-widest uppercase ${isSelected ? 'text-black' : 'text-neutral-600'}`}>
+            <span className={`text-[9px] font-bold tracking-widest uppercase ${isSelected ? 'text-black' : 'text-[var(--text3)]'}`}>
               {isToday ? 'Today' : DAY_NAMES[date.getDay()]}
             </span>
             <span className={`text-lg font-bold leading-none ${isSelected ? 'text-black' : 'text-white'}`}>
               {date.getDate()}
             </span>
-            <span className={`text-[9px] font-semibold ${isSelected ? 'text-black' : 'text-neutral-600'}`}>
+            <span className={`text-[9px] font-semibold ${isSelected ? 'text-black' : 'text-[var(--text3)]'}`}>
               {MONTH_NAMES[date.getMonth()]}
             </span>
           </button>
@@ -113,18 +113,18 @@ function SlotGrid({ slots, selectedSlot, onSlotClick, disabled }) {
               rounded-xl py-3 px-2 border text-xs font-semibold
               transition-all duration-200
               ${isSelected
-                ? 'bg-green-500 border-green-500 text-black scale-105'
+                ? 'bg-[var(--green)] border-[var(--green)] text-black scale-105'
                 : isAvailable
-                  ? 'bg-[#0f1a12] border-[#1f3d26] text-white hover:border-green-500 hover:bg-[#162a1a] cursor-pointer'
-                  : 'bg-[#0d0d0d] border-[#1a1a1a] text-neutral-700 cursor-not-allowed'
+                  ? 'bg-[var(--green-muted)] border-[var(--green-muted)] text-white hover:border-[var(--green)] hover:bg-[var(--bg3)] cursor-pointer'
+                  : 'bg-[var(--surface)] border-[var(--bg3)] text-[var(--text3)] cursor-not-allowed'
               }
             `}
           >
-            <span className={`text-sm font-bold ${isSelected ? 'text-black' : isAvailable ? 'text-white' : 'text-neutral-700'}`}>
+            <span className={`text-sm font-bold ${isSelected ? 'text-black' : isAvailable ? 'text-white' : 'text-[var(--text3)]'}`}>
               {formatTime(slot.startTime)}
             </span>
             {!isAvailable && (
-              <span className="text-[8px] font-bold tracking-widest uppercase text-neutral-700 mt-0.5">
+              <span className="text-[8px] font-bold tracking-widest uppercase text-[var(--text3)] mt-0.5">
                 Taken
               </span>
             )}
@@ -165,11 +165,11 @@ function DurationSelector({ slot, onConfirm }) {
   };
 
   return (
-    <div className="mt-4 rounded-2xl border border-[#1f3d26] bg-[#0a150c] p-4">
+    <div className="mt-4 rounded-2xl border border-[var(--green-muted)] bg-[var(--bg2)] p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div>
-          <p className="text-[10px] font-bold tracking-widest uppercase text-green-500">
+          <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--green)]">
             Selected Slot
           </p>
           <p className="text-white font-bold text-lg">
@@ -177,17 +177,17 @@ function DurationSelector({ slot, onConfirm }) {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500">
+          <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)]">
             Max Duration
           </p>
-          <p className="text-neutral-300 font-semibold text-sm">
+          <p className="text-[var(--text2)] font-semibold text-sm">
             {formatDuration(slot.maxConsecutiveSlots * SLOT_DURATION_MINUTES)}
           </p>
         </div>
       </div>
 
       {/* Duration options */}
-      <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-2">
+      <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)] mb-2">
         Select Duration
       </p>
       <div className="flex gap-2 flex-wrap">
@@ -199,8 +199,8 @@ function DurationSelector({ slot, onConfirm }) {
               px-4 py-2 rounded-xl text-sm font-bold border
               transition-all duration-200
               ${selected === minutes
-                ? 'bg-green-500 border-green-500 text-black'
-                : 'bg-transparent border-[#2a4a30] text-neutral-300 hover:border-green-500 hover:text-white'
+                ? 'bg-[var(--green)] border-[var(--green)] text-black'
+                : 'bg-transparent border-[var(--green-border)] text-[var(--text2)] hover:border-[var(--green)] hover:text-white'
               }
             `}
           >
@@ -217,8 +217,8 @@ function DurationSelector({ slot, onConfirm }) {
           mt-4 w-full rounded-xl py-3 text-sm font-bold
           tracking-wide transition-all duration-200
           ${selected
-            ? 'bg-green-500 text-black hover:bg-green-400 active:scale-95'
-            : 'bg-[#0f1a12] text-neutral-600 cursor-not-allowed border border-[#1f3d26]'
+            ? 'bg-[var(--green)] text-black hover:brightness-110 active:scale-95'
+            : 'bg-[var(--green-muted)] text-[var(--text3)] cursor-not-allowed border border-[var(--green-muted)]'
           }
         `}
       >
@@ -234,7 +234,7 @@ function SlotSkeleton() {
       {Array.from({ length: 16 }).map((_, i) => (
         <div
           key={i}
-          className="h-16 rounded-xl bg-[#0f0f0f] border border-[#1a1a1a] animate-pulse"
+          className="h-16 rounded-xl bg-[var(--surface)] border border-[var(--bg3)] animate-pulse"
         />
       ))}
     </div>
@@ -310,7 +310,7 @@ function SlotPicker({ pitchId, onSlotSelected, disabled = false }) {
 
       {/* Date strip */}
       <div>
-        <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-3">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)] mb-3">
           Select Date
         </p>
         <DateStrip
@@ -323,11 +323,11 @@ function SlotPicker({ pitchId, onSlotSelected, disabled = false }) {
       {/* Slot grid */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500">
+          <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)]">
             Available Slots
           </p>
           {!isLoading && !error && slots.length > 0 && (
-            <p className="text-[10px] text-neutral-600">
+            <p className="text-[10px] text-[var(--text3)]">
               {slots.filter(s => s.isAvailable).length} available
             </p>
           )}
@@ -338,12 +338,12 @@ function SlotPicker({ pitchId, onSlotSelected, disabled = false }) {
 
         {/* Error */}
         {!isLoading && error && (
-          <div className="flex items-center gap-3 rounded-xl border border-red-800 bg-[#1a0f0f] px-4 py-3 text-sm text-red-400">
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--red)] bg-[var(--red-muted)] px-4 py-3 text-sm text-[var(--red)]">
             <span>✕</span>
             <span>{error}</span>
             <button
               onClick={fetchSlots}
-              className="ml-auto text-xs underline underline-offset-2 hover:text-red-300"
+              className="ml-auto text-xs underline underline-offset-2 hover:text-[var(--red)]"
             >
               Retry
             </button>
@@ -352,12 +352,12 @@ function SlotPicker({ pitchId, onSlotSelected, disabled = false }) {
 
         {/* Empty — pitch closed */}
         {!isLoading && !error && slots.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-[#1a1a1a] bg-[#0d0d0d] py-10 gap-2">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-[var(--bg3)] bg-[var(--surface)] py-10 gap-2">
             <span className="text-2xl">🏟️</span>
-            <p className="text-sm font-semibold text-neutral-500">
+            <p className="text-sm font-semibold text-[var(--text3)]">
               Pitch is closed on this day
             </p>
-            <p className="text-xs text-neutral-700">
+            <p className="text-xs text-[var(--text3)]">
               Try selecting a different date
             </p>
           </div>

@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider } from './context/AuthProvider'
+import { ToastProvider } from './context/ToastContext'
 import PrivateRoute from './components/routing/PrivateRoute'
 import RoleRoute from './components/routing/RoleRoute'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -50,7 +51,6 @@ function AnimatedRoutes() {
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/confirm-email" element={<ConfirmEmailPage />} />
           <Route path="/pending-approval" element={<PendingApprovalPage />} />
-          <Route path="/forbidden" element={<ForbiddenPage />} />
 
           {/* Smart entry point */}
           <Route path="/" element={<RootRedirect />} />
@@ -112,9 +112,11 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <BrowserRouter>
-          <AnimatedRoutes />
-        </BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter>
+            <AnimatedRoutes />
+          </BrowserRouter>
+        </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>
   )

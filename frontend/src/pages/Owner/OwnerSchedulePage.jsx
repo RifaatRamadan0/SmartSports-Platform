@@ -4,6 +4,8 @@ import { getSchedule, upsertSchedule } from '../../services/Schedule/scheduleSer
 import ScheduleGrid from '../../components/Schedule/ScheduleGrid';
 import { parseApiError } from '../../utils/errorUtils';
 import { validateSchedule } from '../../utils/scheduleValidation';
+import { useToast } from '../../context/ToastContext';
+import { GridSkeleton } from '../../components/ui/Skeleton';
 
 const buildDefaultSchedule = () =>
   Array.from({ length: 7 }, (_, i) => ({
@@ -38,50 +40,6 @@ const toApiPayload = (schedule) =>
     isActive: day.isActive,
   }));
 
-function Toast({ message, type, onClose }) {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 3500);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  return (
-    <div
-      className={`
-        fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4
-        rounded-xl shadow-2xl border text-sm font-medium
-        animate-[slideUp_0.3s_ease-out]
-        ${type === 'success'
-          ? 'bg-[#0f1a12] border-green-600 text-green-400'
-          : 'bg-[#1a0f0f] border-red-600 text-red-400'
-        }
-      `}
-    >
-      <span>{type === 'success' ? '✓' : '✕'}</span>
-      <span>{message}</span>
-      <button
-        onClick={onClose}
-        aria-label="Close"
-        className="ml-2 opacity-50 hover:opacity-100 transition-opacity"
-      >
-        ×
-      </button>
-    </div>
-  );
-}
-
-function ScheduleSkeleton() {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-      {Array.from({ length: 7 }).map((_, i) => (
-        <div
-          key={i}
-          className="h-52 rounded-2xl bg-[#0f0f0f] border border-[#1a1a1a] animate-pulse"
-        />
-      ))}
-    </div>
-  );
-}
-
 function OwnerSchedulePage() {
   const { pitchId } = useParams();
   const navigate = useNavigate();
@@ -91,7 +49,7 @@ function OwnerSchedulePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [toast, setToast] = useState(null);
+  const toast = useToast();
 
   useEffect(() => () => clearTimeout(navTimerRef.current), []);
 
@@ -114,13 +72,11 @@ function OwnerSchedulePage() {
     fetchSchedule();
   }, [fetchSchedule]);
 
-  const closeToast = useCallback(() => setToast(null), []);
-
   const handleSave = async () => {
     // ── Client-side validation before touching the API ──
     const errors = validateSchedule(schedule);
     if (errors.length > 0) {
-      setToast({ message: errors.join(' • '), type: 'error' });
+      toast.error(errors.join(' • '));
       return;
     }
 
@@ -128,38 +84,38 @@ function OwnerSchedulePage() {
       clearTimeout(navTimerRef.current);
       setIsSaving(true);
       await upsertSchedule(pitchId, toApiPayload(schedule));
-      setToast({ message: 'Schedule saved successfully.', type: 'success' });
+      toast.success('Schedule saved successfully.');
       navTimerRef.current = setTimeout(() => navigate('/dashboard/pitches'), 1500);
     } catch (err) {
       // ── Centralized error parsing instead of inline logic ──
-      setToast({ message: parseApiError(err, 'Failed to save schedule. Please try again.'), type: 'error' });
+      toast.error(parseApiError(err, 'Failed to save schedule. Please try again.'));
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#080808] px-6 py-10 text-white">
+    <div className="min-h-screen bg-[var(--bg)] px-6 py-10 text-white">
 
       <div className="mb-10 flex flex-col gap-1">
-        <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-green-500">
+        <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[var(--green)]">
           Pitch Management
         </p>
         <h1 className="text-3xl font-bold tracking-tight text-white">
           Weekly Schedule
         </h1>
-        <p className="text-sm text-neutral-500 mt-1">
+        <p className="text-sm text-[var(--text3)] mt-1">
           Set opening hours and toggle availability for each day.
         </p>
       </div>
 
       {error && !isLoading && (
-        <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-800 bg-[#1a0f0f] px-5 py-4 text-sm text-red-400">
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-[var(--red)] bg-[var(--red-muted)] px-5 py-4 text-sm text-[var(--red)]">
           <span>✕</span>
           <span>{error}</span>
           <button
             onClick={fetchSchedule}
-            className="ml-auto text-xs underline underline-offset-2 hover:text-red-300"
+            className="ml-auto text-xs underline underline-offset-2 hover:text-[var(--red)]"
           >
             Retry
           </button>
@@ -167,7 +123,7 @@ function OwnerSchedulePage() {
       )}
 
       {isLoading ? (
-        <ScheduleSkeleton />
+        <GridSkeleton count={7} cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7" height="h-52" gap="gap-3" />
       ) : !error ? (
         <ScheduleGrid
           schedule={schedule}
@@ -185,14 +141,14 @@ function OwnerSchedulePage() {
               flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-semibold
               tracking-wide transition-all duration-200
               ${isSaving
-                ? 'bg-green-900 text-green-600 cursor-not-allowed'
-                : 'bg-green-500 text-black hover:bg-green-400 active:scale-95'
+                ? 'bg-[var(--green-muted)] text-[var(--green-dim)] cursor-not-allowed'
+                : 'bg-[var(--green)] text-black hover:brightness-110 active:scale-95'
               }
             `}
           >
             {isSaving ? (
               <>
-                <span className="h-4 w-4 rounded-full border-2 border-green-600 border-t-transparent animate-spin" />
+                <span className="h-4 w-4 rounded-full border-2 border-[var(--green-dim)] border-t-transparent animate-spin" />
                 Saving...
               </>
             ) : (
@@ -200,14 +156,6 @@ function OwnerSchedulePage() {
             )}
           </button>
         </div>
-      )}
-
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={closeToast}
-        />
       )}
     </div>
   );

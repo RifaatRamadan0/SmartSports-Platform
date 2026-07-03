@@ -1,7 +1,10 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import PageWrapper from '../../components/routing/PageWrapper'
 import { listAdminUsers, banUser, unbanUser, deleteUser } from '../../services/Admin/adminUserService'
 import { parseApiError } from '../../utils/errorUtils'
+import { useToast } from '../../context/ToastContext'
+import EmptyState from '../../components/ui/EmptyState'
 
 const PAGE_SIZE = 20
 
@@ -18,32 +21,7 @@ const BAN_OPTIONS = [
   { value: 'true',  label: 'Banned'     },
 ]
 
-// â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-function Toast({ message, type, onClose }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 3500)
-    return () => clearTimeout(t)
-  }, [onClose])
-
-  return (
-    <div className={`
-      fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4
-      rounded-xl shadow-2xl border text-sm font-medium
-      ${type === 'success'
-        ? 'bg-[var(--bg3)] border-var(--green)00 text-[var(--green)]'
-        : 'bg-[var(--bg3)] border-red-600 text-[var(--red)]'
-      }
-    `}>
-      <span>{type === 'success' ? 'âœ“' : 'âœ•'}</span>
-      <span>{message}</span>
-      <button onClick={onClose} aria-label="Close"
-        className="ml-2 opacity-50 hover:opacity-100 transition-opacity">Ã—</button>
-    </div>
-  )
-}
-
-// â”€â”€ Skeletons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Skeletons ─────────────────────────────────────────────────────────────────
 
 function TableSkeleton() {
   return (
@@ -55,11 +33,11 @@ function TableSkeleton() {
   )
 }
 
-// â”€â”€ Badges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Badges ────────────────────────────────────────────────────────────────────
 
 function RoleBadge({ role }) {
   const cls = {
-    Player:     'bg-var(--green)/10 border-var(--green)/30 text-var(--green)',
+    Player:     'bg-[var(--green)]/10 border-[var(--green)]/30 text-[var(--green)]',
     PitchOwner: 'bg-[var(--green-muted)] border-[var(--green-border)] text-[var(--green)]',
     Admin:      'bg-purple-500/10 border-purple-500/30 text-purple-400',
   }[role] ?? 'bg-neutral-500/10 border-neutral-500/30 text-[var(--text2)]'
@@ -71,7 +49,7 @@ function RoleBadge({ role }) {
   )
 }
 
-// â”€â”€ Confirm modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Confirm modal ─────────────────────────────────────────────────────────────
 
 const CONFIRM_COPY = {
   ban: {
@@ -127,7 +105,7 @@ function ConfirmModal({ user, action, onConfirm, onCancel, loading }) {
                 : 'bg-[var(--green)]/15 border border-[var(--green)]/40 text-[var(--green)] hover:bg-[var(--green)]/25'
               }`}
           >
-            {loading ? 'Processingâ€¦' : copy.confirm}
+            {loading ? 'Processing…' : copy.confirm}
           </button>
         </div>
       </div>
@@ -135,7 +113,7 @@ function ConfirmModal({ user, action, onConfirm, onCancel, loading }) {
   )
 }
 
-// â”€â”€ User row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── User row ──────────────────────────────────────────────────────────────────
 
 function UserRow({ user, onAction, isProcessing }) {
   const initials = user.username ? user.username.slice(0, 2).toUpperCase() : '??'
@@ -230,7 +208,7 @@ function UserRow({ user, onAction, isProcessing }) {
   )
 }
 
-// â”€â”€ Pagination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Pagination ────────────────────────────────────────────────────────────────
 
 function Pagination({ page, totalPages, onPrev, onNext }) {
   if (totalPages <= 1) return null
@@ -240,7 +218,7 @@ function Pagination({ page, totalPages, onPrev, onNext }) {
         className="rounded-lg px-4 py-2 text-xs font-semibold bg-[var(--surface)] border border-white/[0.07]
                    text-[var(--text2)] hover:text-white hover:border-white/15 transition-colors
                    disabled:opacity-30 disabled:cursor-not-allowed">
-        â† Prev
+        ← Prev
       </button>
       <span className="text-xs text-[var(--text2)]">
         Page <span className="text-white font-semibold">{page}</span> of{' '}
@@ -250,28 +228,26 @@ function Pagination({ page, totalPages, onPrev, onNext }) {
         className="rounded-lg px-4 py-2 text-xs font-semibold bg-[var(--surface)] border border-white/[0.07]
                    text-[var(--text2)] hover:text-white hover:border-white/15 transition-colors
                    disabled:opacity-30 disabled:cursor-not-allowed">
-        Next â†’
+        Next →
       </button>
     </div>
   )
 }
 
-// â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminUsersPage() {
   const [users,       setUsers]       = useState([])
   const [isLoading,   setIsLoading]   = useState(true)
+  const { success, error: errorToast } = useToast()
   const [error,       setError]       = useState(null)
   const [page,        setPage]        = useState(1)
   const [totalPages,  setTotalPages]  = useState(1)
   const [totalCount,  setTotalCount]  = useState(0)
   const [roleFilter,  setRoleFilter]  = useState('')
   const [banFilter,   setBanFilter]   = useState('')
-  const [toast,       setToast]       = useState(null)
   const [confirm,     setConfirm]     = useState(null)
   const [processing,  setProcessing]  = useState(false)
-
-  const closeToast = useCallback(() => setToast(null), [])
 
   const fetchUsers = useCallback(async (targetPage, role, banned) => {
     setIsLoading(true)
@@ -309,18 +285,18 @@ export default function AdminUsersPage() {
     try {
       if (confirm.action === 'ban') {
         await banUser(confirm.user.id)
-        setToast({ message: `${confirm.user.username} has been banned.`, type: 'success' })
+        success(`${confirm.user.username} has been banned.`)
       } else if (confirm.action === 'delete') {
         await deleteUser(confirm.user.id)
-        setToast({ message: `${confirm.user.username} has been deleted.`, type: 'success' })
+        success(`${confirm.user.username} has been deleted.`)
       } else {
         await unbanUser(confirm.user.id)
-        setToast({ message: `${confirm.user.username} has been unbanned.`, type: 'success' })
+        success(`${confirm.user.username} has been unbanned.`)
       }
       setConfirm(null)
       await fetchUsers(page, roleFilter, banFilter)
     } catch (err) {
-      setToast({ message: parseApiError(err, 'Action failed.'), type: 'error' })
+      errorToast(parseApiError(err, 'Action failed.'))
     } finally {
       setProcessing(false)
     }
@@ -330,7 +306,7 @@ export default function AdminUsersPage() {
                      text-[var(--text2)] focus:outline-none focus:border-white/20 transition-colors`
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] px-6 py-10 text-white">
+    <PageWrapper className="min-h-screen bg-[var(--bg)] px-6 py-10 text-white">
 
       {/* Header */}
       <div className="mb-8">
@@ -398,10 +374,7 @@ export default function AdminUsersPage() {
       )}
 
       {!isLoading && !error && users.length === 0 && (
-        <div className="rounded-2xl border border-white/[0.07] bg-[var(--surface)] p-12 text-center">
-          <p className="text-base font-semibold text-white">No users found</p>
-          <p className="text-sm text-[var(--text2)] mt-1">Try adjusting the filters.</p>
-        </div>
+        <EmptyState icon="🔍" title="No users found" message="Try adjusting the filters." />
       )}
 
       {!isLoading && !error && users.length > 0 && (
@@ -434,9 +407,7 @@ export default function AdminUsersPage() {
           loading={processing}
         />
       )}
-
-      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
-    </div>
+    </PageWrapper>
   )
 }
 

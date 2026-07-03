@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, Lock, Shield, Camera, Loader2, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { useToast } from '../../context/ToastContext'
 import { ROLES } from '../../constants/roles'
-import { getRoleHomePath } from '../../utils/roleUtils'
 import { requestPitchOwnerRole, addPlayerRoleInstantly, getMyRoleRequests } from '../../services/Settings/settingsService'
 import { getMyProfile, updateMyProfile, changeMyPassword, sendPhoneVerification, verifyPhone, deleteMyAccount } from '../../services/User/userService'
 import { parseApiError } from '../../utils/errorUtils'
@@ -12,6 +12,7 @@ import { refreshSession } from '../../services/authInterceptor'
 import { tweenTransition } from '../../lib/motion'
 import { cn } from '../../lib/utils'
 import { uploadToImageKit, isImageKitConfigured } from '../../services/imagekit'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -76,7 +77,7 @@ function SaveButton({ loading, label = 'Save changes' }) {
 
 function RoleBadge({ role }) {
   const map = {
-    Player:     'bg-blue-500/10 border-blue-500/30 text-blue-400',
+    Player:     'bg-[var(--green-muted)] border-[var(--green-border)] text-[var(--green)]',
     PitchOwner: 'bg-[var(--green-muted)] border-[var(--green-border)] text-[var(--green)]',
     Admin:      'bg-purple-500/10 border-purple-500/30 text-purple-400',
   }
@@ -89,9 +90,9 @@ function RoleBadge({ role }) {
 
 function RequestStatusBadge({ status }) {
   const map = {
-    0: { label: 'Pending',  cls: 'bg-[#1a140a] border-amber-600/50 text-amber-400' },
-    1: { label: 'Approved', cls: 'bg-[#0f1a12] border-green-600/50 text-green-400' },
-    2: { label: 'Rejected', cls: 'bg-[#1a0f0f] border-red-600/50 text-red-400'    },
+    0: { label: 'Pending',  cls: 'bg-amber-500/10 border-amber-500/30 text-amber-400' },
+    1: { label: 'Approved', cls: 'bg-[var(--green-muted)] border-[var(--green-dim)]/50 text-[var(--green)]' },
+    2: { label: 'Rejected', cls: 'bg-[var(--red-muted)] border-[var(--red)]/50 text-[var(--red)]'    },
   }
   const { label, cls } = map[status] ?? map[0]
   return (
@@ -178,7 +179,8 @@ function AvatarUpload({ src, username, onUploaded, onError }) {
 
 // ── Section: Profile ──────────────────────────────────────────────────────────
 
-function ProfileSection({ profile, profileLoading, showToast, onProfileUpdated }) {
+function ProfileSection({ profile, profileLoading, onProfileUpdated }) {
+  const { success, error } = useToast()
   const [form,   setForm]   = useState({
     username: '', phoneNumber: '', profilePicture: '', skillLevel: '', preferredPosition: '',
   })
@@ -210,13 +212,13 @@ function ProfileSection({ profile, profileLoading, showToast, onProfileUpdated }
         preferredPosition: form.preferredPosition || null,
       })
       onProfileUpdated(updated)
-      showToast(
+      success(
         phoneChanged
           ? 'Profile updated. Please re-verify your phone in Security settings.'
           : 'Profile updated.'
       )
     } catch (err) {
-      showToast(parseApiError(err, 'Could not update profile.'), 'error')
+      error(parseApiError(err, 'Could not update profile.'))
     } finally {
       setSaving(false)
     }
@@ -240,7 +242,7 @@ function ProfileSection({ profile, profileLoading, showToast, onProfileUpdated }
           src={form.profilePicture}
           username={form.username}
           onUploaded={url => setForm(f => ({ ...f, profilePicture: url }))}
-          onError={msg => showToast(msg, 'error')}
+          onError={msg => error(msg)}
         />
         <div>
           <p className="text-[15px] font-semibold text-white">{profile?.username}</p>
@@ -307,7 +309,8 @@ function ProfileSection({ profile, profileLoading, showToast, onProfileUpdated }
 
 // ── Section: Security ─────────────────────────────────────────────────────────
 
-function SecuritySection({ profile, showToast, onPhoneVerified }) {
+function SecuritySection({ profile, onPhoneVerified }) {
+  const { success, error } = useToast()
   const { login } = useAuth()
   const [form,        setForm]        = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
   const [saving,      setSaving]      = useState(false)
@@ -326,7 +329,7 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
   const handleSubmit = async e => {
     e.preventDefault()
     if (form.newPassword !== form.confirmPassword) {
-      showToast('New passwords do not match.', 'error')
+      error('New passwords do not match.')
       return
     }
     setSaving(true)
@@ -339,9 +342,9 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
       setShowCurrent(false)
       setShowNew(false)
       setShowConfirm(false)
-      showToast('Password changed. Other devices have been signed out.')
+      success('Password changed. Other devices have been signed out.')
     } catch (err) {
-      showToast(parseApiError(err, 'Could not change password.'), 'error')
+      error(parseApiError(err, 'Could not change password.'))
     } finally {
       setSaving(false)
     }
@@ -353,9 +356,9 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
       await sendPhoneVerification()
       setOtpSent(true)
       setOtpCode('')
-      showToast('Verification code sent to your phone.')
+      success('Verification code sent to your phone.')
     } catch (err) {
-      showToast(parseApiError(err, 'Could not send verification code.'), 'error')
+      error(parseApiError(err, 'Could not send verification code.'))
     } finally {
       setOtpSending(false)
     }
@@ -369,9 +372,9 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
       onPhoneVerified()
       setOtpSent(false)
       setOtpCode('')
-      showToast('Phone number verified.')
+      success('Phone number verified.')
     } catch (err) {
-      showToast(parseApiError(err, 'Verification failed.'), 'error')
+      error(parseApiError(err, 'Verification failed.'))
     } finally {
       setOtpVerifying(false)
     }
@@ -391,8 +394,8 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
               <span className={cn(
                 'text-[11px] font-bold px-2.5 py-1 rounded-full border',
                 profile.isEmailVerified
-                  ? 'bg-[#0f1a12] border-green-600/50 text-green-400'
-                  : 'bg-[#1a0f0f] border-red-600/50 text-red-400'
+                  ? 'bg-[var(--green-muted)] border-[var(--green-dim)]/50 text-[var(--green)]'
+                  : 'bg-[var(--red-muted)] border-[var(--red)]/50 text-[var(--red)]'
               )}>
                 {profile.isEmailVerified ? 'Verified' : 'Not verified'}
               </span>
@@ -402,8 +405,8 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
               <span className={cn(
                 'text-[11px] font-bold px-2.5 py-1 rounded-full border',
                 profile.isPhoneVerified
-                  ? 'bg-[#0f1a12] border-green-600/50 text-green-400'
-                  : 'bg-[#1a0f0f] border-red-600/50 text-red-400'
+                  ? 'bg-[var(--green-muted)] border-[var(--green-dim)]/50 text-[var(--green)]'
+                  : 'bg-[var(--red-muted)] border-[var(--red)]/50 text-[var(--red)]'
               )}>
                 {profile.isPhoneVerified ? 'Verified' : 'Not verified'}
               </span>
@@ -414,7 +417,7 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
 
       {/* Phone re-verification — only shown when phone is unverified */}
       {profile && !profile.isPhoneVerified && (
-        <div className="rounded-2xl border border-amber-600/30 bg-[#1a140a] p-5">
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5">
           <p className="text-[11px] font-bold tracking-widest uppercase text-amber-500 mb-1">
             Phone Verification Required
           </p>
@@ -548,7 +551,8 @@ function SecuritySection({ profile, showToast, onPhoneVerified }) {
 
 // ── Section: Account ──────────────────────────────────────────────────────────
 
-function AccountSection({ roles, showToast }) {
+function AccountSection({ roles }) {
+  const { success, error } = useToast()
   const navigate = useNavigate()
   const { login, logout } = useAuth()
 
@@ -565,15 +569,14 @@ function AccountSection({ roles, showToast }) {
   const [deletePassword, setDeletePassword] = useState('')
   const [deleting,      setDeleting]      = useState(false)
 
-  const handleDeleteAccount = async e => {
-    e.preventDefault()
+  const handleDeleteAccount = async () => {
     setDeleting(true)
     try {
       await deleteMyAccount(deletePassword)
       await logout()
       navigate('/login', { replace: true })
     } catch (err) {
-      showToast(parseApiError(err, 'Could not delete your account.'), 'error')
+      error(parseApiError(err, 'Could not delete your account.'))
       setDeleting(false)
     }
   }
@@ -584,11 +587,11 @@ function AccountSection({ roles, showToast }) {
       const data = await getMyRoleRequests()
       setRequests(data ?? [])
     } catch {
-      showToast('Could not load role requests.', 'error')
+      error('Could not load role requests.')
     } finally {
       setIsLoadingReqs(false)
     }
-  }, [showToast])
+  }, [error])
 
   useEffect(() => {
     fetchRequests()
@@ -605,10 +608,10 @@ function AccountSection({ roles, showToast }) {
     setActionLoading(true)
     try {
       await requestPitchOwnerRole()
-      showToast('Request submitted. An admin will review it shortly.')
+      success('Request submitted. An admin will review it shortly.')
       await fetchRequests()
     } catch (err) {
-      showToast(parseApiError(err, 'Could not submit request.'), 'error')
+      error(parseApiError(err, 'Could not submit request.'))
     } finally {
       setActionLoading(false)
     }
@@ -622,7 +625,7 @@ function AccountSection({ roles, showToast }) {
       login(data)
       navigate('/dashboard')
     } catch (err) {
-      showToast(parseApiError(err, 'Could not add Player role.'), 'error')
+      error(parseApiError(err, 'Could not add Player role.'))
     } finally {
       setActionLoading(false)
     }
@@ -739,7 +742,7 @@ function AccountSection({ roles, showToast }) {
                     </p>
                     <p className="text-[11px] text-[var(--text3)] mt-0.5">{fmtDate(r.createdAt)}</p>
                     {r.status === 2 && r.rejectionReason && (
-                      <p className="text-[11px] text-red-400 mt-1">Reason: {r.rejectionReason}</p>
+                      <p className="text-[11px] text-[var(--red)] mt-1">Reason: {r.rejectionReason}</p>
                     )}
                   </div>
                   <RequestStatusBadge status={r.status} />
@@ -752,8 +755,8 @@ function AccountSection({ roles, showToast }) {
 
       {/* Danger zone — self-service account deletion (not available to admins) */}
       {!isAdmin && (
-        <div className="rounded-2xl border border-red-600/30 bg-[#1a0f0f] p-5">
-          <p className="text-[11px] font-bold tracking-widest uppercase text-red-500 mb-1">
+        <div className="rounded-2xl border border-[var(--red)]/30 bg-[var(--red-muted)] p-5">
+          <p className="text-[11px] font-bold tracking-widest uppercase text-[var(--red)] mb-1">
             Danger Zone
           </p>
           <div className="flex items-start justify-between gap-4">
@@ -766,7 +769,7 @@ function AccountSection({ roles, showToast }) {
             <button
               onClick={() => { setDeletePassword(''); setShowDelete(true) }}
               className="shrink-0 px-4 py-2 rounded-full text-[12px] font-bold transition-all
-                         bg-red-500/15 border border-red-500/40 text-red-400 hover:bg-red-500/25"
+                         bg-[var(--red)]/15 border border-[var(--red)]/40 text-[var(--red)] hover:bg-[var(--red)]/25"
             >
               Delete account
             </button>
@@ -775,58 +778,31 @@ function AccountSection({ roles, showToast }) {
       )}
 
       {/* Delete confirmation modal */}
-      <AnimatePresence>
-        {showDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={tweenTransition}
-              className="w-full max-w-sm rounded-2xl border border-red-600/30 bg-[var(--surface)] p-6"
-            >
-              <p className="text-base font-bold text-white mb-1">Delete your account?</p>
-              <p className="text-[13px] text-[var(--text2)] mb-5">
-                This permanently removes your account and personal data, takes down any
-                pitches you own, and logs you out. Enter your password to confirm.
-              </p>
-              <form onSubmit={handleDeleteAccount} className="flex flex-col gap-4">
-                <label className="flex flex-col gap-1.5">
-                  <FieldLabel>Current Password</FieldLabel>
-                  <TextInput
-                    type="password"
-                    value={deletePassword}
-                    onChange={e => setDeletePassword(e.target.value)}
-                    required
-                    autoFocus
-                  />
-                </label>
-                <div className="flex gap-3 justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setShowDelete(false)}
-                    disabled={deleting}
-                    className="px-4 py-2 rounded-full text-[12px] font-semibold bg-[var(--bg)]
-                               border border-white/[0.08] text-[var(--text2)] hover:text-white
-                               transition-colors disabled:opacity-40"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={deleting}
-                    className="px-4 py-2 rounded-full text-[12px] font-bold transition-all
-                               bg-red-500/20 border border-red-500/50 text-red-400
-                               hover:bg-red-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {deleting ? 'Deleting…' : 'Delete account'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <ConfirmDialog
+        isOpen={showDelete}
+        title="Delete your account?"
+        message="This permanently removes your account and personal data, takes down any pitches you own, and logs you out. Enter your password to confirm."
+        confirmLabel="Delete account"
+        cancelLabel="Cancel"
+        onConfirm={handleDeleteAccount}
+        onCancel={() => {
+          setShowDelete(false)
+          setDeletePassword('')
+        }}
+        isSubmitting={deleting}
+        variant="danger"
+      >
+        <label className="flex flex-col gap-1.5">
+          <FieldLabel>Current Password</FieldLabel>
+          <TextInput
+            type="password"
+            value={deletePassword}
+            onChange={e => setDeletePassword(e.target.value)}
+            required
+            autoFocus
+          />
+        </label>
+      </ConfirmDialog>
     </div>
   )
 }
@@ -837,48 +813,19 @@ export default function SettingsPage() {
   const { roles } = useAuth()
 
   const [activeSection, setActiveSection] = useState('profile')
+  const { error: errorToast } = useToast()
   const [profile,       setProfile]       = useState(null)
   const [profileLoading, setProfileLoading] = useState(true)
-  const [toast, setToast] = useState(null)
-
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 3500)
-  }, [])
 
   useEffect(() => {
     getMyProfile()
       .then(setProfile)
-      .catch(() => showToast('Could not load your profile.', 'error'))
+      .catch(() => errorToast('Could not load your profile.'))
       .finally(() => setProfileLoading(false))
-  }, [showToast])
+  }, [errorToast])
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
-
-      {/* Toast */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 16 }}
-            transition={tweenTransition}
-            className={cn(
-              'fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4',
-              'rounded-xl shadow-2xl border text-sm font-medium',
-              toast.type === 'success'
-                ? 'bg-[#0f1a12] border-green-600 text-green-400'
-                : 'bg-[#1a0f0f] border-red-600 text-red-400'
-            )}
-          >
-            <span>{toast.type === 'success' ? '✓' : '✕'}</span>
-            <span>{toast.message}</span>
-            <button onClick={() => setToast(null)} aria-label="Close" className="ml-2 opacity-50 hover:opacity-100">×</button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <main className="mx-auto max-w-[1100px] px-6 py-10">
         {/* Page header */}
         <div className="mb-8">
@@ -936,7 +883,6 @@ export default function SettingsPage() {
                   <ProfileSection
                     profile={profile}
                     profileLoading={profileLoading}
-                    showToast={showToast}
                     onProfileUpdated={setProfile}
                   />
                 </SectionPane>
@@ -945,14 +891,13 @@ export default function SettingsPage() {
                 <SectionPane key="security">
                   <SecuritySection
                     profile={profile}
-                    showToast={showToast}
                     onPhoneVerified={() => setProfile(p => p ? { ...p, isPhoneVerified: true } : p)}
                   />
                 </SectionPane>
               )}
               {activeSection === 'account' && (
                 <SectionPane key="account">
-                  <AccountSection roles={roles} showToast={showToast} />
+                  <AccountSection roles={roles} />
                 </SectionPane>
               )}
             </AnimatePresence>

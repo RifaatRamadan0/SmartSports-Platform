@@ -7,6 +7,8 @@ import { updateMatchVisibility } from '../../services/Match/matchService'
 import { generateInviteLink } from '../../services/Invitation/invitationService'
 import { parseApiError } from '../../utils/errorUtils'
 import { getUserIdFromToken } from '../../utils/jwtUtils'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import { useToast } from '../../context/ToastContext'
 
 import { CANCEL_BUFFER_MS } from '../../constants'
 
@@ -40,9 +42,9 @@ function isCancellable(booking) {
 }
 
 const STATUS_STYLES = {
-  confirmed: 'bg-green-500/10 border-green-500/30 text-green-400',
+  confirmed: 'bg-[var(--green)]/10 border-[var(--green)]/30 text-[var(--green)]',
   pending:   'bg-amber-500/10 border-amber-500/30 text-amber-400',
-  cancelled: 'bg-red-500/10  border-red-500/30  text-red-400',
+  cancelled: 'bg-[var(--red)]/10  border-[var(--red)]/30  text-[var(--red)]',
 }
 
 function StatusBadge({ status }) {
@@ -53,77 +55,28 @@ function StatusBadge({ status }) {
   )
 }
 
-// ── Cancel dialog ─────────────────────────────────────────────────────────────
-
-function CancelDialog({ isSubmitting, onConfirm, onClose }) {
-  const [reason, setReason] = useState('')
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#0f0f0f] p-6"
-        onClick={e => e.stopPropagation()}
-      >
-        <h2 className="text-lg font-bold text-white mb-1">Cancel booking?</h2>
-        <p className="text-[13px] text-neutral-400 mb-5">
-          This action cannot be undone. The slot will become available again.
-        </p>
-        <textarea
-          value={reason}
-          onChange={e => setReason(e.target.value)}
-          placeholder="Reason for cancellation (optional)"
-          rows={3}
-          className="w-full rounded-xl border border-[#2a2a2a] bg-[#080808] px-4 py-3
-                     text-[13px] text-white placeholder-neutral-600 resize-none
-                     focus:outline-none focus:border-red-500/50 mb-4"
-        />
-        <div className="flex gap-3 justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-[13px] font-semibold
-                       border border-[#2a2a2a] text-neutral-300 hover:text-white transition-colors"
-          >
-            Keep booking
-          </button>
-          <button
-            onClick={() => onConfirm(reason.trim() || null)}
-            disabled={isSubmitting}
-            className="px-4 py-2 rounded-xl text-[13px] font-semibold
-                       bg-red-500/20 border border-red-500/40 text-red-400
-                       hover:bg-red-500/30 transition-colors disabled:opacity-50"
-          >
-            {isSubmitting ? 'Cancelling…' : 'Yes, cancel'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── Match visibility card (SPDBTCP-248) ───────────────────────────────────────
 
 function MatchVisibilityCard({ match, canToggle, isFlipping, onToggle, onShareLink }) {
   const isOpen = !!match.isOpenToJoin
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-[#0d0d0d] px-5 py-4 mb-4">
+    <div className="rounded-2xl border border-white/[0.06] bg-[var(--surface)] px-5 py-4 mb-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">
+          <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)] mb-1">
             Match visibility
           </p>
           <div className="flex items-center gap-2 mb-1">
             <span className={`px-2.5 py-1 rounded-full border text-[11px] font-bold tracking-widest uppercase ${
               isOpen
-                ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                ? 'bg-[var(--green)]/10 border-[var(--green)]/30 text-[var(--green)]'
                 : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
             }`}>
               {isOpen ? 'Open to join' : 'Private'}
             </span>
-            <span className="text-[11px] text-neutral-500">· Max {match.maxPlayers} players</span>
+            <span className="text-[11px] text-[var(--text3)]">· Max {match.maxPlayers} players</span>
           </div>
-          <p className="text-[12px] text-neutral-500">
+          <p className="text-[12px] text-[var(--text3)]">
             {isOpen
               ? 'Listed publicly. Other players can find and join this match.'
               : 'Hidden from the public list. Only invited players can join.'}
@@ -138,7 +91,7 @@ function MatchVisibilityCard({ match, canToggle, isFlipping, onToggle, onShareLi
                        border disabled:opacity-50
                        ${isOpen
                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20'
-                         : 'bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20'
+                         : 'bg-[var(--green)]/10 border-[var(--green)]/30 text-[var(--green)] hover:bg-[var(--green)]/20'
                        }`}
           >
             {isFlipping ? 'Saving…' : (isOpen ? 'Make private' : 'Open to others')}
@@ -151,7 +104,7 @@ function MatchVisibilityCard({ match, canToggle, isFlipping, onToggle, onShareLi
             type="button"
             onClick={onShareLink}
             className="w-full py-2 rounded-xl text-[12px] font-bold
-                       border border-white/[0.08] bg-[#141414] text-neutral-300
+                       border border-white/[0.08] bg-[var(--bg3)] text-[var(--text2)]
                        hover:text-white hover:border-white/[0.15] transition-colors"
           >
             ⎘ Share invite link
@@ -167,7 +120,7 @@ function MatchVisibilityCard({ match, canToggle, isFlipping, onToggle, onShareLi
 function DetailRow({ label, value, valueClass = 'text-white' }) {
   return (
     <div className="flex items-start justify-between gap-4 py-3.5 border-b border-white/[0.05] last:border-0">
-      <span className="text-[12px] font-medium text-neutral-500 shrink-0">{label}</span>
+      <span className="text-[12px] font-medium text-[var(--text3)] shrink-0">{label}</span>
       <span className={`text-[13px] font-semibold text-right ${valueClass}`}>{value}</span>
     </div>
   )
@@ -187,13 +140,12 @@ export default function BookingDetailPage() {
   const [isLoading,    setIsLoading]    = useState(true)
   const [error,        setError]        = useState(null)   // { type: '403'|'404'|'error', message }
   const [showDialog,   setShowDialog]   = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
   const [isCancelling, setIsCancelling] = useState(false)
-  const [toast,        setToast]        = useState(null)
 
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 3500)
-  }
+  const toast = useToast()
+
+  const closeDialog = () => { setShowDialog(false); setCancelReason('') }
 
   const fetchBooking = useCallback(async () => {
     setIsLoading(true)
@@ -219,14 +171,14 @@ export default function BookingDetailPage() {
     try {
       ;({ shareUrl } = await generateInviteLink(booking.match.id))
     } catch {
-      showToast('Could not generate invite link.', 'error')
+      toast.error('Could not generate invite link.')
       return
     }
     try {
       await navigator.clipboard.writeText(shareUrl)
-      showToast('Invite link copied to clipboard!')
+      toast.success('Invite link copied to clipboard!')
     } catch {
-      showToast('Could not copy — please copy the URL manually.', 'error')
+      toast.error('Could not copy — please copy the URL manually.')
     }
   }
 
@@ -239,29 +191,29 @@ export default function BookingDetailPage() {
     try {
       const updated = await updateMatchVisibility(booking.match.id, next)
       setBooking(b => ({ ...b, match: updated }))
-      showToast(next ? 'Match is now open to others.' : 'Match is now private.')
+      toast.success(next ? 'Match is now open to others.' : 'Match is now private.')
     } catch (err) {
       setBooking(b => ({ ...b, match: { ...b.match, isOpenToJoin: !next } }))
       const status = err?.response?.status
       const msg = status === 403
         ? 'Only the booking owner can change visibility.'
         : parseApiError(err, 'Could not update visibility.')
-      showToast(msg, 'error')
+      toast.error(msg)
     } finally {
       setIsFlipping(false)
     }
   }
 
-  const handleCancel = async (reason) => {
+  const handleCancel = async () => {
     setIsCancelling(true)
     try {
-      await cancelBooking(id, reason)
-      setShowDialog(false)
-      showToast('Booking cancelled.')
+      await cancelBooking(id, cancelReason.trim() || null)
+      closeDialog()
+      toast.success('Booking cancelled.')
       fetchBooking()
     } catch (err) {
-      setShowDialog(false)
-      showToast(parseApiError(err, 'Could not cancel booking.'), 'error')
+      closeDialog()
+      toast.error(parseApiError(err, 'Could not cancel booking.'))
     } finally {
       setIsCancelling(false)
     }
@@ -270,12 +222,12 @@ export default function BookingDetailPage() {
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#080808] px-6 py-10 text-white">
+      <div className="min-h-screen bg-[var(--bg)] px-6 py-10 text-white">
         <div className="max-w-2xl mx-auto">
-          <div className="h-8 w-32 rounded-lg bg-[#141414] animate-pulse mb-10" />
-          <div className="rounded-2xl border border-[#1a1a1a] bg-[#0d0d0d] p-6 flex flex-col gap-4">
+          <div className="h-8 w-32 rounded-lg bg-[var(--bg3)] animate-pulse mb-10" />
+          <div className="rounded-2xl border border-[var(--bg3)] bg-[var(--surface)] p-6 flex flex-col gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-5 rounded bg-[#141414] animate-pulse" style={{ width: `${60 + i * 6}%` }} />
+              <div key={i} className="h-5 rounded bg-[var(--bg3)] animate-pulse" style={{ width: `${60 + i * 6}%` }} />
             ))}
           </div>
         </div>
@@ -286,20 +238,20 @@ export default function BookingDetailPage() {
   // ── Error ────────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="min-h-screen bg-[#080808] px-6 py-10 text-white">
+      <div className="min-h-screen bg-[var(--bg)] px-6 py-10 text-white">
         <div className="max-w-2xl mx-auto">
           <button
             onClick={() => navigate(-1)}
-            className="text-[13px] font-semibold text-neutral-400 hover:text-white transition-colors mb-10"
+            className="text-[13px] font-semibold text-[var(--text2)] hover:text-white transition-colors mb-10"
           >
             ← Back
           </button>
-          <div className="rounded-2xl border border-[#1a1a1a] bg-[#0d0d0d] p-10 text-center">
+          <div className="rounded-2xl border border-[var(--bg3)] bg-[var(--surface)] p-10 text-center">
             <p className="text-3xl mb-3">{error.type === '403' ? '🔒' : error.type === '404' ? '🔍' : '⚠️'}</p>
             <p className="text-white font-semibold mb-1">
               {error.type === '403' ? 'Access denied' : error.type === '404' ? 'Not found' : 'Something went wrong'}
             </p>
-            <p className="text-[13px] text-neutral-500">{error.message}</p>
+            <p className="text-[13px] text-[var(--text3)]">{error.message}</p>
           </div>
         </div>
       </div>
@@ -314,27 +266,28 @@ export default function BookingDetailPage() {
     isPlayer && booking.status === 'confirmed' && booking.match?.id != null
 
   return (
-    <div className="min-h-screen bg-[#080808] px-6 py-10 text-white">
-      {showDialog && (
-        <CancelDialog
-          isSubmitting={isCancelling}
-          onConfirm={handleCancel}
-          onClose={() => setShowDialog(false)}
+    <div className="min-h-screen bg-[var(--bg)] px-6 py-10 text-white">
+      <ConfirmDialog
+        isOpen={showDialog}
+        title="Cancel booking?"
+        message="This action cannot be undone. The slot will become available again."
+        confirmLabel={isCancelling ? 'Cancelling…' : 'Yes, cancel'}
+        cancelLabel="Keep booking"
+        onConfirm={handleCancel}
+        onCancel={closeDialog}
+        isSubmitting={isCancelling}
+        variant="danger"
+      >
+        <textarea
+          value={cancelReason}
+          onChange={e => setCancelReason(e.target.value)}
+          placeholder="Reason for cancellation (optional)"
+          rows={3}
+          className="w-full rounded-xl border border-white/[0.08] bg-[var(--bg)] px-4 py-3
+                     text-[13px] text-white placeholder-[var(--text3)] resize-none
+                     focus:outline-none focus:border-[var(--red-border)]"
         />
-      )}
-
-      {toast && (
-        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4
-          rounded-xl shadow-2xl border text-sm font-medium
-          ${toast.type === 'success'
-            ? 'bg-[#0f1a12] border-green-600 text-green-400'
-            : 'bg-[#1a0f0f] border-red-600 text-red-400'}`}
-        >
-          <span>{toast.type === 'success' ? '✓' : '✕'}</span>
-          <span>{toast.message}</span>
-          <button onClick={() => setToast(null)} aria-label="Close" className="ml-2 opacity-50 hover:opacity-100">×</button>
-        </div>
-      )}
+      </ConfirmDialog>
 
       <div className="max-w-2xl mx-auto">
 
@@ -342,7 +295,7 @@ export default function BookingDetailPage() {
         <div className="flex items-center justify-between mb-10">
           <button
             onClick={() => navigate(-1)}
-            className="text-[13px] font-semibold text-neutral-400 hover:text-white transition-colors"
+            className="text-[13px] font-semibold text-[var(--text2)] hover:text-white transition-colors"
           >
             ← Back
           </button>
@@ -351,29 +304,29 @@ export default function BookingDetailPage() {
 
         {/* Title */}
         <div className="mb-8">
-          <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-green-500 mb-1">Booking</p>
+          <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[var(--green)] mb-1">Booking</p>
           <h1 className="text-3xl font-bold tracking-tight">
             #{String(booking.id).padStart(6, '0')}
           </h1>
         </div>
 
         {/* Pitch card */}
-        <div className="rounded-2xl border border-white/[0.06] bg-[#0d0d0d] p-5 mb-4
+        <div className="rounded-2xl border border-white/[0.06] bg-[var(--surface)] p-5 mb-4
                         flex items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Pitch</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)] mb-1">Pitch</p>
             <p className="text-[15px] font-bold text-white">{booking.pitchName}</p>
           </div>
           <button
             onClick={() => navigate(`/pitches/${booking.pitchId}`)}
-            className="shrink-0 text-[12px] font-bold text-green-400 hover:text-green-300 transition-colors"
+            className="shrink-0 text-[12px] font-bold text-[var(--green)] hover:text-[var(--green)] transition-colors"
           >
             View →
           </button>
         </div>
 
         {/* Details */}
-        <div className="rounded-2xl border border-white/[0.06] bg-[#0d0d0d] px-5 mb-4">
+        <div className="rounded-2xl border border-white/[0.06] bg-[var(--surface)] px-5 mb-4">
           <DetailRow label="Date"      value={fmtDate(booking.bookingDate)} />
           <DetailRow
             label="Time"
@@ -381,14 +334,14 @@ export default function BookingDetailPage() {
           />
           <DetailRow label="Duration"  value={durationLabel(booking.startTime, booking.endTime)} />
           <DetailRow label="Price"     value={`$${Number(booking.totalPrice).toFixed(2)}`} />
-          <DetailRow label="Booked on" value={fmtBookedAt(booking.bookedAt)} valueClass="text-neutral-400" />
+          <DetailRow label="Booked on" value={fmtBookedAt(booking.bookedAt)} valueClass="text-[var(--text2)]" />
         </div>
 
         {/* Cancellation reason */}
         {booking.status === 'cancelled' && booking.cancellationReason && (
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/5 px-5 py-4 mb-4">
-            <p className="text-[10px] font-bold tracking-widest uppercase text-red-400/70 mb-1">Cancellation reason</p>
-            <p className="text-[13px] text-red-300">{booking.cancellationReason}</p>
+          <div className="rounded-2xl border border-[var(--red)]/20 bg-[var(--red)]/5 px-5 py-4 mb-4">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--red)]/70 mb-1">Cancellation reason</p>
+            <p className="text-[13px] text-[var(--red)]">{booking.cancellationReason}</p>
           </div>
         )}
 
@@ -405,7 +358,7 @@ export default function BookingDetailPage() {
 
         {/* Upcoming: payment, chat, edit */}
         <div className="rounded-2xl border border-dashed border-white/[0.05] px-5 py-4 mb-6">
-          <p className="text-[11px] text-neutral-600">
+          <p className="text-[11px] text-[var(--text3)]">
             Coming soon: payment info · messaging · booking edit
           </p>
         </div>
@@ -414,8 +367,8 @@ export default function BookingDetailPage() {
         {canManageMatch && (
           <button
             onClick={() => navigate(`/matches/${booking.match.id}`)}
-            className="w-full py-3 rounded-2xl border border-green-500/30 bg-green-500/10
-                       text-[13px] font-bold text-green-400 hover:bg-green-500/20
+            className="w-full py-3 rounded-2xl border border-[var(--green)]/30 bg-[var(--green)]/10
+                       text-[13px] font-bold text-[var(--green)] hover:bg-[var(--green)]/20
                        transition-colors mb-3"
           >
             Manage match · Invite players
@@ -426,8 +379,8 @@ export default function BookingDetailPage() {
         {canCancel && (
           <button
             onClick={() => setShowDialog(true)}
-            className="w-full py-3 rounded-2xl border border-red-500/30 bg-red-500/10
-                       text-[13px] font-bold text-red-400 hover:bg-red-500/20 transition-colors"
+            className="w-full py-3 rounded-2xl border border-[var(--red)]/30 bg-[var(--red)]/10
+                       text-[13px] font-bold text-[var(--red)] hover:bg-[var(--red)]/20 transition-colors"
           >
             Cancel Booking
           </button>

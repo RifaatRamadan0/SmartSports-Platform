@@ -85,7 +85,7 @@ export default function BookingPage() {
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [isPhoneVerified, setIsPhoneVerified] = useState(null)
 
-  // Always fetch full pitch detail â€” the optimistic state from the card
+  // Always fetch full pitch detail — the optimistic state from the card
   // (name, price, duration) drives the first paint while the network call
   // hydrates the images array and any other up-to-date fields.
   // Phone verification is loaded lazily after the pitch resolves so it
@@ -130,7 +130,7 @@ export default function BookingPage() {
   const [isSubmitting,  setIsSubmitting]  = useState(false)
   const [confirmed,     setConfirmed]     = useState(false)
   const [confirmedDetails, setConfirmedDetails] = useState(null)
-  // SPDBTCP-247 â€” open matches show in the public games list and accept walk-on joiners;
+  // SPDBTCP-247 — open matches show in the public games list and accept walk-on joiners;
   // private matches are invite-only. Max players is read from pitch.capacity (owner-set).
   const [isOpen,        setIsOpen]        = useState(true)
 
@@ -250,7 +250,7 @@ export default function BookingPage() {
   const ctaLabel = !selectedSlot
     ? 'Select a Time Slot'
     : isSubmitting
-      ? 'Bookingâ€¦'
+      ? 'Booking…'
       : 'Confirm Booking'
 
   if (fetchError && !resolvedName && resolvedPrice == null) {
@@ -287,14 +287,14 @@ export default function BookingPage() {
       ) : (
         <motion.div key="form" variants={stepVariants} initial="initial" animate="animate" exit="exit">
 
-        {/* Unverified phone banner â€” informational only, never blocks booking */}
+        {/* Unverified phone banner — informational only, never blocks booking */}
         {isPhoneVerified === false && (
           <div className="flex items-center gap-3 px-6 sm:px-8 py-3 bg-amber-950/40 border-b border-amber-800/40 text-amber-300 text-sm">
-            <span className="shrink-0">âš </span>
+            <span className="shrink-0">⚠</span>
             <span>
-              Your phone number isn&apos;t verified â€” pitch owners may not be able to reach you.{' '}
+              Your phone number isn&apos;t verified — pitch owners may not be able to reach you.{' '}
               <Link to="/settings" className="underline underline-offset-2 hover:text-amber-100 transition-colors">
-                Verify now â†’
+                Verify now →
               </Link>
             </span>
           </div>
@@ -308,7 +308,7 @@ export default function BookingPage() {
             </h1>
             <p className="text-xs text-[var(--text2)] mt-1">
               {resolvedName || `Pitch #${pitchId}`}
-              {sport ? ` Â· ${sport}` : ''}
+              {sport ? ` · ${sport}` : ''}
             </p>
           </div>
           <button
@@ -317,7 +317,7 @@ export default function BookingPage() {
                        hover:text-white hover:border-neutral-600 transition-colors flex items-center justify-center"
             aria-label="Close"
           >
-            âœ•
+            ✕
           </button>
         </div>
 
@@ -331,13 +331,13 @@ export default function BookingPage() {
           <div className="flex-1 min-w-0">
             <h2 className="text-lg sm:text-xl font-bold text-white">
               {resolvedName || 'Pitch'}
-              {format ? <span className="text-[var(--text2)] font-medium"> â€” {format}</span> : null}
+              {format ? <span className="text-[var(--text2)] font-medium"> — {format}</span> : null}
             </h2>
             <p className="text-xs text-[var(--text2)] mt-1">
-              {[sport, surface, format].filter(Boolean).join(' Â· ')}
+              {[sport, surface, format].filter(Boolean).join(' · ')}
               {typeof rating === 'number' && (
                 <>
-                  {' '}Â· <span className="text-yellow-400">â˜…</span>{' '}
+                  {' '}· <span className="text-yellow-400">★</span>{' '}
                   <span className="text-[var(--text2)]">{rating.toFixed(1)}</span>
                   {typeof ratingCount === 'number' && (
                     <span className="text-[var(--text2)]"> ({ratingCount})</span>
@@ -371,7 +371,7 @@ export default function BookingPage() {
           )}
         </div>
 
-        {/* Gallery strip â€” only when there's more than one image */}
+        {/* Gallery strip — only when there's more than one image */}
         {pitch?.images && pitch.images.length > 1 && (
           <GalleryStrip
             images={pitch.images}
@@ -470,14 +470,14 @@ export default function BookingPage() {
           {/* Right: time slots */}
           <div>
             <SectionLabel>
-              Available Times â€” {formatDateHeader(selectedDate)}
+              Available Times — {formatDateHeader(selectedDate)}
             </SectionLabel>
 
             {isLoading && <SlotSkeleton />}
 
             {!isLoading && error && (
               <div className="flex items-center gap-3 rounded-xl border border-[var(--red-border)] bg-[var(--bg3)] px-4 py-3 text-sm text-[var(--red)]">
-                <span>âœ•</span>
+                <span>✕</span>
                 <span className="flex-1">{error}</span>
                 <button
                   onClick={fetchSlots}
@@ -575,7 +575,7 @@ export default function BookingPage() {
                 w-11 h-11 rounded-xl flex items-center justify-center shrink-0
                 ${isOpen
                   ? 'bg-[var(--green)]/10 border border-[var(--green)]/40 text-[var(--green)]'
-                  : 'bg-var(--green)/10 border border-var(--green)/40 text-var(--green)'
+                  : 'bg-[var(--green)]/10 border border-[var(--green)]/40 text-[var(--green)]'
                 }
               `}
               animate={{ scale: [1, 1.18, 1] }}
@@ -596,8 +596,8 @@ export default function BookingPage() {
                   transition={{ duration: 0.18 }}
                 >
                   {isOpen
-                    ? 'Listed in Find Games â€” anyone can discover and request to join'
-                    : 'Hidden from Find Games â€” only players you invite can join'}
+                    ? 'Listed in Find Games — anyone can discover and request to join'
+                    : 'Hidden from Find Games — only players you invite can join'}
                 </motion.p>
               </AnimatePresence>
             </div>
@@ -612,7 +612,7 @@ export default function BookingPage() {
               {!isOpen && (
                 <motion.div
                   layoutId="visibility-pill"
-                  className="absolute inset-y-1 right-1 w-[calc(50%-2px)] rounded-full bg-var(--green)"
+                  className="absolute inset-y-1 right-1 w-[calc(50%-2px)] rounded-full bg-[var(--green)]"
                   transition={springTransition}
                 />
               )}
@@ -654,15 +654,15 @@ export default function BookingPage() {
           <div className="flex gap-8 text-sm">
             <SummaryCell
               label="Date"
-              value={selectedSlot ? formatDateSummary(selectedDate) : 'â€”'}
+              value={selectedSlot ? formatDateSummary(selectedDate) : '—'}
             />
             <SummaryCell
               label="Time"
-              value={selectedSlot ? formatTime(selectedSlot.startTime) : 'â€”'}
+              value={selectedSlot ? formatTime(selectedSlot.startTime) : '—'}
             />
             <SummaryCell
               label="Total"
-              value={totalPrice !== null ? formatPrice(totalPrice, currency) : 'â€”'}
+              value={totalPrice !== null ? formatPrice(totalPrice, currency) : '—'}
               accent={totalPrice !== null}
             />
             <div>
@@ -670,7 +670,7 @@ export default function BookingPage() {
                 Visibility
               </p>
               <p className={`mt-1 text-sm font-bold flex items-center gap-1.5 ${
-                isOpen ? 'text-[var(--green)]' : 'text-var(--green)'
+                isOpen ? 'text-[var(--green)]' : 'text-[var(--green)]'
               }`}>
                 {isOpen ? <GlobeIcon className="w-3.5 h-3.5" /> : <LockIcon className="w-3.5 h-3.5" />}
                 {isOpen ? 'Open' : 'Private'}
@@ -750,7 +750,7 @@ function ArrowButton({ direction, onClick, disabled }) {
         }
       `}
     >
-      {direction === 'left' ? 'â€¹' : 'â€º'}
+      {direction === 'left' ? '‹' : '›'}
     </button>
   )
 }
@@ -779,7 +779,7 @@ function GalleryStrip({ images, onOpen }) {
                      text-[10px] text-[var(--text2)] hover:text-white hover:border-white/30
                      flex flex-col items-center justify-center gap-0.5 shrink-0"
         >
-          <span>â¤¢</span>
+          <span>⤢</span>
           View all
         </button>
       )}
@@ -855,7 +855,7 @@ function SuccessScreen({ details, onViewBookings }) {
           whileTap={{ scale: 0.95 }}
           className="shimmer-btn rounded-xl px-8 py-3 text-sm font-bold text-[var(--primary-foreground)]"
         >
-          View My Bookings â†’
+          View My Bookings →
         </motion.button>
       </motion.div>
     </motion.div>

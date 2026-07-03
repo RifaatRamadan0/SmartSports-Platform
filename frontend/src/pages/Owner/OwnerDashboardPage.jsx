@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import PageWrapper from '../../components/routing/PageWrapper'
 import { listMyPitches } from '../../services/Pitch/pitchService'
 import { getOwnerBookings } from '../../services/Booking/bookingService'
 import StatusBadge from '../../components/ui/StatusBadge'
@@ -11,17 +12,24 @@ const fmtTime = t => t?.slice(0, 5) ?? ''
 // ── Stat card ────────────────────────────────────────────────────────────────
 
 function StatCard({ label, value, sub, color = 'green' }) {
-  const accent = {
+  const accentColor = {
     green:  'text-[var(--green)]',
     amber:  'text-amber-400',
     red:    'text-red-400',
     muted:  'text-[var(--text2)]',
   }[color]
 
+  const borderColor = {
+    green:  'border-l-[var(--green)]',
+    amber:  'border-l-amber-500',
+    red:    'border-l-red-500',
+    muted:  'border-l-[var(--text2)]',
+  }[color]
+
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-[var(--surface)] p-5 flex flex-col gap-1">
+    <div className={`rounded-2xl border border-white/[0.06] bg-[var(--surface)] p-5 flex flex-col gap-1 border-l-4 ${borderColor} transition-all hover:border-white/[0.1]`}>
       <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)]">{label}</p>
-      <p className={`text-3xl font-bold ${accent}`}>{value ?? '—'}</p>
+      <p className={`text-3xl font-bold ${accentColor}`}>{value ?? '—'}</p>
       {sub && <p className="text-[11px] text-[var(--text3)] mt-0.5">{sub}</p>}
     </div>
   )
@@ -36,7 +44,7 @@ function ActionCard({ label, desc, onClick }) {
       className="rounded-2xl border border-white/[0.06] bg-[var(--surface)] p-5 text-left
                  hover:border-[var(--green-border)] hover:bg-[var(--bg3)] transition-all group"
     >
-      <p className="text-[14px] font-bold text-white group-hover:text-[var(--green)] transition-colors">{label} →</p>
+      <p className="text-[14px] font-bold text-white group-hover:text-[var(--green)] transition-colors">{label}</p>
       <p className="text-[12px] text-[var(--text2)] mt-1">{desc}</p>
     </button>
   )
@@ -98,7 +106,7 @@ export default function OwnerDashboardPage() {
   const todayCount = recentBookings.filter(b => b.bookingDate === today).length
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+    <PageWrapper className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
 
       <main className="mx-auto max-w-[1280px] px-6 py-10">
 
@@ -163,7 +171,7 @@ export default function OwnerDashboardPage() {
                       onClick={() => navigate('/dashboard/bookings')}
                       className="text-[11px] text-[var(--green)] hover:underline"
                     >
-                      View all →
+                      View all
                     </button>
                   </div>
                   <ul>
@@ -176,7 +184,7 @@ export default function OwnerDashboardPage() {
                         <div className="min-w-0">
                           <p className="text-[13px] font-semibold text-white truncate">{b.pitchName ?? 'Pitch'}</p>
                           <p className="text-[11px] text-[var(--text2)] mt-0.5">
-                            {fmtDate(b.bookingDate)} · {fmtTime(b.startTime)} – {fmtTime(b.endTime)}
+                            {fmtDate(b.bookingDate)} · {fmtTime(b.startTime)} - {fmtTime(b.endTime)}
                           </p>
                         </div>
                         <StatusBadge status={b.status} />
@@ -211,6 +219,6 @@ export default function OwnerDashboardPage() {
           </div>
         </section>
       </main>
-    </div>
+    </PageWrapper>
   )
 }

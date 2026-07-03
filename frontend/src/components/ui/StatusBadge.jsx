@@ -1,7 +1,7 @@
 const STATUS_STYLES = {
-  confirmed: 'bg-[#0f1a12] border-[#1f3d26] text-green-400',
-  pending:   'bg-[#1a140a] border-[#d97706] text-amber-400',
-  cancelled: 'bg-[#1a0f0f] border-[#7f1d1d] text-red-400',
+  confirmed: 'bg-[var(--green-muted)] border-[var(--green-border)] text-[var(--green)]',
+  pending:   'bg-amber-500/10 border-amber-500/30 text-amber-400',
+  cancelled: 'bg-[var(--red-muted)] border-[var(--red-border)] text-[var(--red)]',
 }
 
 const FALLBACK = STATUS_STYLES.pending

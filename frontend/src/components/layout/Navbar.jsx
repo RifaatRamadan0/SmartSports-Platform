@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, forwardRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../lib/utils'
@@ -232,7 +232,7 @@ function Inbox() {
         onClick={openInbox}
         aria-label="Inbox"
         aria-expanded={open}
-        className={`relative w-9 h-9 rounded-xl border flex items-center justify-center transition-colors
+        className={`relative w-9 h-9 rounded-xl border flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 outline-none
           ${open
             ? 'border-[var(--green-border)] bg-[var(--green-muted)] text-white'
             : 'border-white/[0.07] bg-[var(--bg2)] hover:border-white/[0.14] text-[var(--text2)]'}`}
@@ -277,7 +277,7 @@ function Inbox() {
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close inbox"
-                className="w-9 h-9 rounded-full bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-[var(--text2)] hover:text-white transition-colors text-[16px]"
+                className="w-9 h-9 rounded-full bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-[var(--text2)] hover:text-white transition-colors text-[16px] focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 outline-none"
               >
                 ✕
               </button>
@@ -377,7 +377,7 @@ function NavLinkButton({ onClick, children, active }) {
     <button
       onClick={onClick}
       className={cn(
-        'hover:text-white transition-colors',
+        'hover:text-white transition-colors rounded px-2 py-1 focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 outline-none',
         active ? 'text-[var(--green)] font-semibold' : 'text-[var(--text2)]',
       )}
     >
@@ -389,7 +389,7 @@ function NavLinkButton({ onClick, children, active }) {
 function ComingSoon({ label }) {
   return (
     <span className="relative group">
-      <button type="button" disabled className="hover:text-white transition-colors opacity-50 cursor-not-allowed">{label}</button>
+      <button type="button" disabled className="hover:text-white transition-colors opacity-50 cursor-not-allowed rounded px-2 py-1 focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 outline-none">{label}</button>
       <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#1a1f1c] border border-[#2a3330] px-2 py-1 text-[11px] text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity z-50">
         Coming soon
       </span>
@@ -397,14 +397,15 @@ function ComingSoon({ label }) {
   )
 }
 
-function MenuItem({ onClick, children, danger }) {
+const MenuItem = forwardRef(({ onClick, children, danger }, ref) => {
   return (
     <motion.button
+      ref={ref}
       whileHover={{ x: 3 }}
       onClick={onClick}
       role="menuitem"
       className={cn(
-        'w-full text-left px-3 py-2 transition-colors',
+        'w-full text-left px-3 py-2 transition-colors rounded focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 outline-none',
         danger
           ? 'hover:bg-[var(--red-muted)] text-[var(--text2)] hover:text-[oklch(0.62_0.2_25)] border-t border-white/[0.06] mt-1 pt-2'
           : 'hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-white',
@@ -413,7 +414,7 @@ function MenuItem({ onClick, children, danger }) {
       {children}
     </motion.button>
   )
-}
+})
 
 // ── Main navbar ─────────────────────────────────────────────────────────────────
 
@@ -422,7 +423,11 @@ export default function Navbar() {
   const { token, roles, username, logout, isLoading } = useAuth()
   const [mode, setMode] = useActiveMode()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const menuFocusIndex = useRef(-1)
   const menuRef = useRef(null)
+  const mobileMenuRef = useRef(null)
+  const menuItemsRef = useRef([])
 
   const isAuthed = !!token
   const isPlayer = roles.includes(ROLES.PLAYER)
@@ -456,7 +461,33 @@ export default function Navbar() {
   useEffect(() => {
     if (!menuOpen) return
     const onClick = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false) }
-    const onKey   = (e) => { if (e.key === 'Escape') setMenuOpen(false) }
+    const onKey   = (e) => {
+      if (e.key === 'Escape') { setMenuOpen(false); return }
+
+      const items = menuItemsRef.current.filter(item => item !== null)
+      if (items.length === 0) return
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        const next = menuFocusIndex.current < items.length - 1 ? menuFocusIndex.current + 1 : 0
+        menuFocusIndex.current = next
+        items[next]?.focus()
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        const next = menuFocusIndex.current > 0 ? menuFocusIndex.current - 1 : items.length - 1
+        menuFocusIndex.current = next
+        items[next]?.focus()
+      } else if (e.key === 'Home') {
+        e.preventDefault()
+        menuFocusIndex.current = 0
+        items[0]?.focus()
+      } else if (e.key === 'End') {
+        e.preventDefault()
+        const lastIdx = items.length - 1
+        menuFocusIndex.current = lastIdx
+        items[lastIdx]?.focus()
+      }
+    }
     document.addEventListener('mousedown', onClick)
     document.addEventListener('keydown', onKey)
     return () => {
@@ -464,6 +495,18 @@ export default function Navbar() {
       document.removeEventListener('keydown', onKey)
     }
   }, [menuOpen])
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    const onClick = (e) => { if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) setMobileMenuOpen(false) }
+    const onKey   = (e) => { if (e.key === 'Escape') setMobileMenuOpen(false) }
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [mobileMenuOpen])
 
   const avatarChar = (username || roles[0] || 'U')[0].toUpperCase()
 
@@ -486,11 +529,30 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 backdrop-blur-md bg-[var(--bg)]/80 border-b border-white/[0.06]">
       <nav className="mx-auto max-w-[1280px] px-6 h-16 flex items-center justify-between">
 
-        {/* Logo */}
-        <button onClick={() => navigate(logoHref)} className="flex items-center gap-2 group">
-          <span className="w-2.5 h-2.5 rounded-full bg-[var(--green)] shadow-[0_0_12px_var(--green-glow)]" />
-          <span className="text-[15px] font-bold tracking-tight">SmartSports</span>
-        </button>
+        {/* Logo + Mobile menu button */}
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(logoHref)} className="flex items-center gap-2 group focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 rounded-lg px-1 py-1 outline-none">
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--green)] shadow-[0_0_12px_var(--green-glow)]" />
+            <span className="text-[15px] font-bold tracking-tight">SmartSports</span>
+          </button>
+
+          {/* Hamburger button (mobile only) */}
+          {isAuthed && (
+            <button
+              onClick={() => setMobileMenuOpen(o => !o)}
+              aria-label="Navigation menu"
+              aria-expanded={mobileMenuOpen}
+              className="md:hidden w-9 h-9 rounded-xl border border-white/[0.07] bg-[var(--bg2)] hover:border-[var(--green-border)]
+                         transition-colors flex items-center justify-center text-[var(--text2)] hover:text-white focus-visible:ring-2 focus-visible:ring-[var(--green)]/60"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="6" x2="20" y2="6" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="18" x2="20" y2="18" />
+              </svg>
+            </button>
+          )}
+        </div>
 
         {/* Center nav */}
         <ul className="hidden md:flex items-center gap-8 text-[13px]">
@@ -523,14 +585,14 @@ export default function Navbar() {
             <>
               <button
                 onClick={() => navigate('/login')}
-                className="text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
+                className="text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors rounded focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 outline-none"
               >
                 Sign in
               </button>
               <button
                 onClick={() => navigate('/register')}
                 className="rounded-full bg-[var(--green)] px-4 py-2 text-[12px] font-bold text-[var(--primary-foreground)]
-                           shadow-[0_4px_12px_var(--green-glow)] hover:brightness-110 transition-all"
+                           shadow-[0_4px_12px_var(--green-glow)] hover:brightness-110 transition-all focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 outline-none"
               >
                 Register
               </button>
@@ -547,7 +609,7 @@ export default function Navbar() {
                 <button
                   onClick={() => navigate('/dashboard/pitches/new')}
                   className="hidden sm:inline-flex px-4 py-2 rounded-full bg-[var(--green-muted)] border border-[var(--green-border)]
-                             text-[var(--green)] text-[12px] font-bold hover:bg-[var(--green)] hover:text-[var(--primary-foreground)] transition-all"
+                             text-[var(--green)] text-[12px] font-bold hover:bg-[var(--green)] hover:text-[var(--primary-foreground)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 outline-none"
                 >
                   + New Pitch
                 </button>
@@ -555,7 +617,7 @@ export default function Navbar() {
               {playerView && (
                 <button
                   onClick={() => navigate('/my-bookings')}
-                  className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors"
+                  className="hidden sm:inline-flex text-[12px] font-semibold text-[var(--text2)] hover:text-white px-3 py-2 transition-colors rounded focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 outline-none"
                 >
                   My Bookings
                 </button>
@@ -571,7 +633,7 @@ export default function Navbar() {
                   aria-haspopup="menu"
                   aria-expanded={menuOpen}
                   aria-label="User menu"
-                  className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-[var(--bg2)] px-2 py-1.5 hover:border-[var(--green-border)] transition-colors"
+                  className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-[var(--bg2)] px-2 py-1.5 hover:border-[var(--green-border)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--green)]/60 outline-none"
                 >
                   <span className="w-7 h-7 rounded-full bg-[var(--green)] text-[var(--primary-foreground)] text-[12px] font-bold flex items-center justify-center">
                     {avatarChar}
@@ -599,26 +661,26 @@ export default function Navbar() {
 
                     {playerView && (
                       <>
-                        <MenuItem onClick={() => go('/my-bookings')}>My Bookings</MenuItem>
-                        <MenuItem onClick={() => go('/favorites')}>My Favorites</MenuItem>
-                        <MenuItem onClick={() => go('/matches/open')}>Find Games</MenuItem>
+                        <MenuItem ref={el => menuItemsRef.current[0] = el} onClick={() => go('/my-bookings')}>My Bookings</MenuItem>
+                        <MenuItem ref={el => menuItemsRef.current[1] = el} onClick={() => go('/favorites')}>My Favorites</MenuItem>
+                        <MenuItem ref={el => menuItemsRef.current[2] = el} onClick={() => go('/matches/open')}>Find Games</MenuItem>
                       </>
                     )}
                     {ownerView && (
                       <>
-                        <MenuItem onClick={() => go('/dashboard/owner')}>Owner Dashboard</MenuItem>
-                        <MenuItem onClick={() => go('/dashboard/pitches')}>My Pitches</MenuItem>
-                        <MenuItem onClick={() => go('/dashboard/bookings')}>Bookings</MenuItem>
+                        <MenuItem ref={el => menuItemsRef.current[0] = el} onClick={() => go('/dashboard/owner')}>Owner Dashboard</MenuItem>
+                        <MenuItem ref={el => menuItemsRef.current[1] = el} onClick={() => go('/dashboard/pitches')}>My Pitches</MenuItem>
+                        <MenuItem ref={el => menuItemsRef.current[2] = el} onClick={() => go('/dashboard/bookings')}>Bookings</MenuItem>
                       </>
                     )}
                     {isAdmin && (
                       <>
-                        <MenuItem onClick={() => go('/admin/pitches')}>Pitch Approvals</MenuItem>
-                        <MenuItem onClick={() => go('/admin/users')}>Users</MenuItem>
+                        <MenuItem ref={el => menuItemsRef.current[3] = el} onClick={() => go('/admin/pitches')}>Pitch Approvals</MenuItem>
+                        <MenuItem ref={el => menuItemsRef.current[4] = el} onClick={() => go('/admin/users')}>Users</MenuItem>
                       </>
                     )}
-                    <MenuItem onClick={() => go('/settings')}>Settings</MenuItem>
-                    <MenuItem onClick={handleLogout} danger>Sign out</MenuItem>
+                    <MenuItem ref={el => menuItemsRef.current[5] = el} onClick={() => go('/settings')}>Settings</MenuItem>
+                    <MenuItem ref={el => menuItemsRef.current[6] = el} onClick={handleLogout} danger>Sign out</MenuItem>
                   </div>
                 )}
               </div>
@@ -626,6 +688,98 @@ export default function Navbar() {
           )}
         </div>
       </nav>
+
+      {/* Mobile nav menu (appears below navbar) */}
+      <AnimatePresence>
+        {mobileMenuOpen && isAuthed && (
+          <motion.div
+            ref={mobileMenuRef}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="md:hidden border-b border-white/[0.06] bg-[var(--bg2)] overflow-hidden"
+          >
+            <div className="mx-auto max-w-[1280px] px-6 py-4 space-y-3">
+              {(!isAuthed || playerView) && (
+                <>
+                  <button
+                    onClick={() => { go('/pitches'); setMobileMenuOpen(false) }}
+                    className="block w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold text-[var(--text2)]
+                               hover:bg-[var(--bg3)] hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-[var(--green)]/60"
+                  >
+                    Pitches
+                  </button>
+                  <button
+                    onClick={() => { go('/matches/open'); setMobileMenuOpen(false) }}
+                    className="block w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold text-[var(--text2)]
+                               hover:bg-[var(--bg3)] hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-[var(--green)]/60"
+                  >
+                    Find Games
+                  </button>
+                  <button
+                    disabled
+                    className="block w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold text-[var(--text3)]
+                               opacity-50 cursor-not-allowed"
+                  >
+                    Leagues (coming soon)
+                  </button>
+                  <button
+                    disabled
+                    className="block w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold text-[var(--text3)]
+                               opacity-50 cursor-not-allowed"
+                  >
+                    Coaching (coming soon)
+                  </button>
+                </>
+              )}
+              {isAuthed && ownerView && (
+                <>
+                  <button
+                    onClick={() => { go('/dashboard/pitches'); setMobileMenuOpen(false) }}
+                    className="block w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold text-[var(--text2)]
+                               hover:bg-[var(--bg3)] hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-[var(--green)]/60"
+                  >
+                    My Pitches
+                  </button>
+                  <button
+                    onClick={() => { go('/dashboard/bookings'); setMobileMenuOpen(false) }}
+                    className="block w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold text-[var(--text2)]
+                               hover:bg-[var(--bg3)] hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-[var(--green)]/60"
+                  >
+                    Bookings
+                  </button>
+                  <button
+                    onClick={() => { go('/pitches'); setMobileMenuOpen(false) }}
+                    className="block w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold text-[var(--text2)]
+                               hover:bg-[var(--bg3)] hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-[var(--green)]/60"
+                  >
+                    Browse Pitches
+                  </button>
+                </>
+              )}
+              {isAdmin && (
+                <>
+                  <button
+                    onClick={() => { go('/admin/pitches'); setMobileMenuOpen(false) }}
+                    className="block w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold text-[var(--text2)]
+                               hover:bg-[var(--bg3)] hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-[var(--green)]/60"
+                  >
+                    Pitch Approvals
+                  </button>
+                  <button
+                    onClick={() => { go('/admin/users'); setMobileMenuOpen(false) }}
+                    className="block w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold text-[var(--text2)]
+                               hover:bg-[var(--bg3)] hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-[var(--green)]/60"
+                  >
+                    Users
+                  </button>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   )
 }

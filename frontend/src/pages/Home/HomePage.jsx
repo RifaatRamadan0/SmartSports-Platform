@@ -8,6 +8,8 @@ import { listPitches } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
 import PitchCover from '../../components/Pitch/PitchCover'
 import FavoriteButton from '../../components/Pitch/FavoriteButton'
+import Footer from '../../components/layout/Footer'
+import { GridSkeleton } from '../../components/ui/Skeleton'
 
 const SPORT_FILTERS = ['All', 'Football', 'Futsal', 'Basketball', 'Tennis']
 
@@ -292,7 +294,7 @@ function PitchesSection({
           </div>
         </div>
 
-        {isLoading && <PitchesSkeleton />}
+        {isLoading && <GridSkeleton />}
 
         {!isLoading && error && (
           <div className="rounded-2xl border border-red-800/60 bg-[#1a0f0f] px-5 py-4 flex items-center gap-3 text-sm text-red-400">
@@ -339,21 +341,6 @@ function PitchesSection({
         )}
       </div>
     </section>
-  )
-}
-
-function PitchesSkeleton() {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <motion.div
-          key={i}
-          className="h-[300px] rounded-3xl border border-white/[0.06] bg-[var(--surface)]"
-          animate={{ opacity: [0.4, 1, 0.4] }}
-          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
-        />
-      ))}
-    </div>
   )
 }
 
@@ -473,28 +460,5 @@ function HowItWorksSection() {
         </div>
       </div>
     </section>
-  )
-}
-
-// Footer
-
-function Footer() {
-  return (
-    <footer className="border-t border-white/[0.06] bg-[var(--bg)]">
-      <div className="mx-auto max-w-[1280px] px-6 py-10 flex flex-wrap items-center justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--green)]" />
-            <span className="text-sm font-bold tracking-tight text-white">SmartSports</span>
-          </div>
-          <p className="text-xs text-[var(--text2)] mt-2 max-w-[220px] leading-relaxed">
-            The easiest way to book sports facilities in your city.
-          </p>
-        </div>
-        <p className="text-[12px] text-[var(--text3)]">
-          © {new Date().getFullYear()} SmartSports Ltd. · Built for the city.
-        </p>
-      </div>
-    </footer>
   )
 }

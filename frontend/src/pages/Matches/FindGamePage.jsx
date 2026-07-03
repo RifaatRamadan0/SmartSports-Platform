@@ -13,6 +13,7 @@ import { useAuth } from '../../hooks/useAuth'
 import Toast from '../../components/ui/Toast'
 import { ROLES } from '../../constants/roles'
 import FieldLines from '../../components/Match/FieldLines'
+import { CardSkeleton } from '../../components/ui/Skeleton'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -25,7 +26,7 @@ function formatMatchDateTime(bookingDate, startTime, endTime) {
 // Sport-specific dark gradient background for card head (matches design reference)
 const SPORT_HEAD_BG = {
   Football:   '#0f2016',
-  Futsal:     '#0c1521',
+  Futsal:     '#0c1a18',
   Basketball: '#1a0e0c',
   Tennis:     '#0c1420',
 }
@@ -33,7 +34,7 @@ const SPORT_HEAD_BG = {
 // Sport tag pill colour tokens
 const SPORT_TAG_CLASS = {
   Football:   'bg-primary/10 text-primary border-primary/20',
-  Futsal:     'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  Futsal:     'bg-teal-500/10 text-teal-400 border-teal-500/20',
   Basketball: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   Tennis:     'bg-purple-500/10 text-purple-400 border-purple-500/20',
 }
@@ -103,7 +104,7 @@ function FilterPill({ label, count, active, onClick }) {
         <span
           className={cn(
             'inline-flex items-center justify-center min-w-[17px] h-[17px] rounded-[9px] px-1 text-[10px] font-bold transition-all',
-            active ? 'bg-primary text-[#061008]' : 'bg-white/7 text-muted-foreground',
+            active ? 'bg-primary text-[var(--primary-foreground)]' : 'bg-white/7 text-muted-foreground',
           )}
         >
           {count}
@@ -274,7 +275,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
         {/* organizer */}
         <div className="flex items-center gap-2 min-w-0">
           <div
-            className="font-display w-7 h-7 rounded-full bg-primary flex items-center justify-center shrink-0 font-extrabold text-[#061008]"
+            className="font-display w-7 h-7 rounded-full bg-primary flex items-center justify-center shrink-0 font-extrabold text-[var(--primary-foreground)]"
             style={{ fontSize: 9 }}
           >
             {initials}
@@ -302,7 +303,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
               <button
                 onClick={() => onLeave(match.matchId)}
                 disabled={actionLoading}
-                className="text-[11px] text-red-400 font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
+                className="text-[11px] text-[var(--red)] font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
               >
                 {actionLoading ? `${actionVerb}...` : 'Withdraw'}
               </button>
@@ -321,7 +322,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
                   <button
                     onClick={() => { setConfirmLeave(false); onLeave(match.matchId) }}
                     disabled={actionLoading}
-                    className="text-[11px] text-red-400 font-semibold hover:opacity-[0.72] transition-opacity disabled:opacity-40"
+                    className="text-[11px] text-[var(--red)] font-semibold hover:opacity-[0.72] transition-opacity disabled:opacity-40"
                   >
                     Yes
                   </button>
@@ -336,7 +337,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
                 <button
                   onClick={() => setConfirmLeave(true)}
                   disabled={actionLoading}
-                  className="text-[11px] text-red-400 font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
+                  className="text-[11px] text-[var(--red)] font-medium hover:opacity-[0.72] transition-opacity disabled:opacity-40"
                 >
                   Leave
                 </button>
@@ -347,7 +348,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
           ) : onLoginRedirect ? (
             <button
               onClick={onLoginRedirect}
-              className="font-display rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap bg-primary text-[#061008] hover:opacity-[0.88] active:scale-[0.97] transition-all"
+              className="font-display rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap bg-primary text-[var(--primary-foreground)] hover:opacity-[0.88] active:scale-[0.97] transition-all"
             >
               Log in to join
             </button>
@@ -359,7 +360,7 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
                 'rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap transition-all',
                 isFull || !onJoin
                   ? 'bg-muted border border-border text-muted-foreground cursor-not-allowed'
-                  : 'bg-primary text-[#061008] hover:opacity-[0.88] active:scale-[0.97]',
+                  : 'bg-primary text-[var(--primary-foreground)] hover:opacity-[0.88] active:scale-[0.97]',
               )}
             >
               {actionLoading ? `${actionVerb}...` : 'Join Game'}
@@ -371,56 +372,14 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
   )
 }
 
-// ── skeleton card ─────────────────────────────────────────────────────────────
-
-function SkeletonCard({ delay = 0 }) {
-  const s = `${delay}s`
-  return (
-    <div className="bg-card border border-border rounded-[20px] overflow-hidden animate-pulse" style={{ animationDelay: s }}>
-      {/* head */}
-      <div className="p-5 pb-[18px] space-y-3 bg-muted/20">
-        <div className="flex justify-between">
-          <div className="h-5 w-16 rounded-full bg-muted" style={{ animationDelay: s }} />
-          <div className="h-5 w-14 rounded-full bg-muted" style={{ animationDelay: `${delay + 0.05}s` }} />
-        </div>
-        <div className="h-5 w-[62%] rounded bg-muted" style={{ animationDelay: `${delay + 0.1}s` }} />
-        <div className="h-3.5 w-[48%] rounded bg-muted" style={{ animationDelay: `${delay + 0.15}s` }} />
-      </div>
-      {/* fill section */}
-      <div className="px-5 pt-3.5 pb-3.5 border-t border-border space-y-2">
-        <div className="flex justify-between">
-          <div className="h-3 w-[55%] rounded bg-muted" />
-          <div className="h-3 w-[30%] rounded bg-muted" />
-        </div>
-        <div className="h-[6px] rounded-full bg-muted" />
-      </div>
-      {/* body */}
-      <div className="px-5 py-3.5 grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <div className="h-3 w-[55%] rounded bg-muted" style={{ animationDelay: `${delay + 0.1}s` }} />
-          <div className="h-4 w-[40%] rounded bg-muted" style={{ animationDelay: `${delay + 0.15}s` }} />
-        </div>
-        <div className="space-y-1.5">
-          <div className="h-3 w-[55%] rounded bg-muted" style={{ animationDelay: `${delay + 0.1}s` }} />
-          <div className="h-4 w-[40%] rounded bg-muted" style={{ animationDelay: `${delay + 0.15}s` }} />
-        </div>
-      </div>
-      {/* footer */}
-      <div className="px-5 pb-5 pt-3.5 border-t border-border flex gap-3">
-        <div className="h-9 flex-1 rounded-xl bg-muted" style={{ animationDelay: `${delay + 0.2}s` }} />
-        <div className="h-9 flex-1 rounded-xl bg-muted" style={{ animationDelay: `${delay + 0.2}s` }} />
-      </div>
-    </div>
-  )
-}
 
 // ── error / empty ─────────────────────────────────────────────────────────────
 
 function ErrorBanner({ message, onRetry }) {
   return (
-    <div className="mt-8 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4 flex items-center justify-between gap-4">
-      <p className="text-sm text-red-400">{message}</p>
-      <button onClick={onRetry} className="shrink-0 text-sm font-medium text-red-400 underline underline-offset-2">
+    <div className="mt-8 rounded-xl border border-[var(--red)]/30 bg-[var(--red)]/10 px-5 py-4 flex items-center justify-between gap-4">
+      <p className="text-sm text-[var(--red)]">{message}</p>
+      <button onClick={onRetry} className="shrink-0 text-sm font-medium text-[var(--red)] underline underline-offset-2">
         Retry
       </button>
     </div>
@@ -482,7 +441,7 @@ function Pagination({ page, totalPages, hasPrev, hasNext, onPrev, onNext, setPag
             className={cn(
               btnBase,
               p === page
-                ? 'bg-primary text-[#061008] border-primary font-bold'
+                ? 'bg-primary text-[var(--primary-foreground)] border-primary font-bold'
                 : 'border-border bg-card text-muted-foreground hover:border-white/14 hover:text-foreground',
             )}
           >
@@ -517,7 +476,7 @@ function MyGamesHeader({ count }) {
         My Games
         {count != null && (
           <span
-            className="font-display inline-flex items-center justify-center min-w-[26px] h-[26px] rounded-full bg-primary text-[#061008] text-[12px] font-bold px-2 shadow-[0_0_18px_var(--green-glow)]"
+            className="font-display inline-flex items-center justify-center min-w-[26px] h-[26px] rounded-full bg-primary text-[var(--primary-foreground)] text-[12px] font-bold px-2 shadow-[0_0_18px_var(--green-glow)]"
           >
             {count}
           </span>
@@ -538,7 +497,7 @@ function MyGamesSection({ myMatches, error, onRetry, userId, onLeave, actionLoad
       <section className="mb-10">
         <MyGamesHeader count={null} />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} delay={i * 0.1} />)}
+          {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} delay={i * 0.1} />)}
         </div>
       </section>
     )
@@ -837,7 +796,7 @@ export default function FindGamePage() {
           {isLoading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {Array.from({ length: 6 }).map((_, i) => (
-                <SkeletonCard key={i} delay={i * 0.1} />
+                <CardSkeleton key={i} delay={i * 0.1} />
               ))}
             </div>
           )}

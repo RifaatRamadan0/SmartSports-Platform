@@ -1,12 +1,13 @@
 ﻿import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { pageVariants } from '../../lib/motion'
 import { inviteByUsername } from '../../services/Invitation/invitationService'
 import { getMatchById } from '../../services/Match/matchService'
 import { parseApiError } from '../../utils/errorUtils'
 import Toast from '../../components/ui/Toast'
 
-// SPDBTCP-76 â€” Rifaat
+// SPDBTCP-76 — Rifaat
 // Participant invite UI. Any accepted participant (including the booking owner)
 // can dispatch invitations by username. Joined-players list and pitch metadata
 // are deferred to later sprint-5 stories.
@@ -14,7 +15,7 @@ export default function MatchDetailPage() {
   const { matchId } = useParams()
   const navigate = useNavigate()
 
-  // SPDBTCP-83 â€” Existence guard. We don't render the page shell until we know
+  // SPDBTCP-83 — Existence guard. We don't render the page shell until we know
   // the match exists, so a deep-link to a deleted/typo'd id falls through to
   // the catch-all NotFoundPage instead of showing an invite form for nothing.
   const [isCheckingMatch, setIsCheckingMatch] = useState(true)
@@ -69,9 +70,9 @@ export default function MatchDetailPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
+      variants={pageVariants}
+      initial="initial"
+      animate="animate"
       className="min-h-screen bg-[var(--bg)] px-6 py-10 text-white"
     >
       {toast && (
@@ -87,7 +88,7 @@ export default function MatchDetailPage() {
           onClick={() => navigate('/my-bookings')}
           className="text-[13px] font-semibold text-[var(--text2)] hover:text-white transition-colors mb-10"
         >
-          â† Back
+          ← Back
         </button>
 
         <motion.div
@@ -132,7 +133,7 @@ export default function MatchDetailPage() {
                          bg-[var(--green)]/20 border border-[var(--green)]/40 text-[var(--green)]
                          hover:bg-[var(--green)]/30 transition-colors disabled:opacity-50"
             >
-              {isSubmitting ? 'Sendingâ€¦' : 'Invite'}
+              {isSubmitting ? 'Sending…' : 'Invite'}
             </button>
           </form>
           <p className="text-[11px] text-[var(--text3)] mt-3">
@@ -140,7 +141,7 @@ export default function MatchDetailPage() {
           </p>
         </motion.div>
 
-        {/* Participants placeholder â€” wired in later sprint-5 stories */}
+        {/* Participants placeholder — wired in later sprint-5 stories */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -148,7 +149,7 @@ export default function MatchDetailPage() {
           className="rounded-2xl border border-dashed border-white/5 px-5 py-4"
         >
           <p className="text-[11px] text-[var(--text3)]">
-            Coming soon: joined players Â· open/private toggle Â· shareable link
+            Coming soon: joined players · open/private toggle · shareable link
           </p>
         </motion.div>
       </div>

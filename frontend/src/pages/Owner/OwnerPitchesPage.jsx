@@ -6,23 +6,10 @@ import { listMyPitches, deletePitch } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
 import PitchCover from '../../components/Pitch/PitchCover'
 import Toast from '../../components/ui/Toast'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import { ListSkeleton } from '../../components/ui/Skeleton'
+import EmptyState from '../../components/ui/EmptyState'
 
-// Skeleton
-
-function PitchCardSkeleton() {
-  return (
-    <div className="flex flex-col gap-3">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <motion.div
-          key={i}
-          className="h-32 rounded-2xl bg-[var(--surface)] border border-white/[0.06]"
-          animate={{ opacity: [0.4, 1, 0.4] }}
-          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
-        />
-      ))}
-    </div>
-  )
-}
 
 // 0 = PendingApproval, 1 = Approved, 2 = Rejected
 const PITCH_STATUS = { PENDING: 0, APPROVED: 1, REJECTED: 2 }
@@ -63,61 +50,9 @@ function StatusPill({ isActive, status }) {
   )
 }
 
-// Delete dialog
-
-function DeletePitchDialog({ pitch, isDeleting, onConfirm, onClose }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl border border-white/[0.07] bg-[var(--surface)] p-6 shadow-2xl"
-      >
-        <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--red)]">
-          Delete Pitch
-        </p>
-        <h2 className="text-lg font-bold text-white mt-1">{pitch.name}</h2>
-        <p className="text-xs text-[var(--text2)] mt-1">{pitch.address}</p>
-
-        <p className="mt-4 text-sm text-[var(--text2)] leading-relaxed">
-          This pitch will be permanently removed from public listings. This action cannot be undone.
-        </p>
-        <p className="mt-2 text-sm text-amber-400 leading-relaxed">
-          Any confirmed bookings will remain visible to the players who made them â€” they will not be automatically cancelled.
-        </p>
-
-        <div className="mt-5 flex items-center justify-end gap-2">
-          <button
-            onClick={onClose}
-            disabled={isDeleting}
-            className="rounded-lg px-4 py-2 text-xs font-semibold border
-                       border-white/[0.07] text-[var(--text2)] hover:text-white hover:border-white/30
-                       transition-colors disabled:opacity-50"
-          >
-            Keep pitch
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="rounded-lg px-4 py-2 text-xs font-bold
-                       bg-[var(--red)] text-white hover:bg-[var(--red)] active:scale-95
-                       transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {isDeleting ? 'Deletingâ€¦' : 'Delete pitch'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // Card
 
-function PitchCard({ pitch, onNavigate, onDelete, isDeleting, onDeleteRequest }) {
+function PitchCard({ pitch, onNavigate, isDeleting, onDeleteRequest }) {
   return (
     <motion.div
       variants={cardVariants}
@@ -134,7 +69,7 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting, onDeleteRequest })
           <div className="min-w-0">
             <h3 className="font-bold tracking-tight text-white truncate">{pitch.name}</h3>
             <p className="text-xs text-[var(--text2)] mt-0.5 truncate">
-              {pitch.sportName} Â· {pitch.address}
+              {pitch.sportName} · {pitch.address}
             </p>
           </div>
           <div className="font-bold text-[var(--green)] whitespace-nowrap">
@@ -151,7 +86,7 @@ function PitchCard({ pitch, onNavigate, onDelete, isDeleting, onDeleteRequest })
             </span>
           )}
           {pitch.rating != null && (
-            <span className="text-xs text-[var(--text2)]">â­ {pitch.rating}</span>
+            <span className="text-xs text-[var(--text2)]">⭐ {pitch.rating}</span>
           )}
         </div>
 
@@ -269,7 +204,7 @@ export default function OwnerPitchesPage() {
           </p>
           <h1 className="text-3xl font-bold tracking-tight">My Pitches</h1>
           <p className="text-sm text-[var(--text2)] mt-1">
-            Every pitch you own â€” including listings still pending admin approval.
+            Every pitch you own — including listings still pending admin approval.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -279,7 +214,7 @@ export default function OwnerPitchesPage() {
                        bg-[var(--surface)] border border-white/[0.07] text-[var(--text2)]
                        hover:text-white hover:border-white/15 transition-colors"
           >
-            â† Dashboard
+            ← Dashboard
           </button>
           <button
             onClick={() => navigate('/dashboard/bookings')}
@@ -333,7 +268,7 @@ export default function OwnerPitchesPage() {
       )}
 
       {/* Body */}
-      {isLoading && <PitchCardSkeleton />}
+      {isLoading && <ListSkeleton count={3} height="h-32" />}
 
       {!isLoading && error && (
         <div className="rounded-2xl border border-red-500/30 bg-[var(--red)]/5 p-6 text-center">
@@ -350,19 +285,20 @@ export default function OwnerPitchesPage() {
       )}
 
       {!isLoading && !error && pitches.length === 0 && (
-        <div className="rounded-2xl border border-white/[0.07] bg-[var(--surface)] p-10 text-center">
-          <p className="text-base font-semibold text-white">No pitches yet</p>
-          <p className="text-sm text-[var(--text2)] mt-1">
-            Add your first pitch to start receiving bookings.
-          </p>
-          <button
-            onClick={() => navigate('/dashboard/pitches/new')}
-            className="mt-5 rounded-xl px-4 py-2.5 text-sm font-semibold
-                       bg-[var(--green)] text-black hover:bg-[var(--green)] transition-colors"
-          >
-            + Add Pitch
-          </button>
-        </div>
+        <EmptyState
+          icon="🏟️"
+          title="No pitches yet"
+          message="Add your first pitch to start receiving bookings."
+          action={
+            <button
+              onClick={() => navigate('/dashboard/pitches/new')}
+              className="rounded-xl px-4 py-2.5 text-sm font-semibold
+                         bg-[var(--green)] text-black hover:brightness-110 transition-all"
+            >
+              + Add Pitch
+            </button>
+          }
+        />
       )}
 
       {!isLoading && !error && pitches.length > 0 && visiblePitches.length === 0 && (
@@ -393,7 +329,6 @@ export default function OwnerPitchesPage() {
               key={p.id}
               pitch={p}
               onNavigate={navigate}
-              onDelete={handleDelete}
               isDeleting={deletingId === p.id}
               onDeleteRequest={setDeleteTarget}
             />
@@ -401,14 +336,24 @@ export default function OwnerPitchesPage() {
         </motion.div>
       )}
 
-      {deleteTarget && (
-        <DeletePitchDialog
-          pitch={deleteTarget}
-          isDeleting={!!deletingId}
-          onConfirm={handleDelete}
-          onClose={() => !deletingId && setDeleteTarget(null)}
-        />
-      )}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete Pitch"
+        message="This pitch will be permanently removed from public listings. This action cannot be undone. Any confirmed bookings will remain visible to the players who made them — they will not be automatically cancelled."
+        confirmLabel="Delete pitch"
+        cancelLabel="Keep pitch"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        isSubmitting={!!deletingId}
+        variant="danger"
+      >
+        {deleteTarget && (
+          <div className="rounded-lg border border-white/[0.06] bg-[var(--bg)] p-3">
+            <p className="text-sm font-semibold text-white">{deleteTarget.name}</p>
+            <p className="text-xs text-[var(--text2)] mt-0.5">{deleteTarget.address}</p>
+          </div>
+        )}
+      </ConfirmDialog>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
     </div>

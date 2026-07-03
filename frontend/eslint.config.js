@@ -23,7 +23,10 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]|^motion$' }],
+      // No eslint-plugin-react here, so JSX-only usage isn't counted as a "use".
+      // Capitalized identifiers are components/hooks referenced in JSX — ignore them
+      // when unused, for both variables (imports) and args (e.g. `{ icon: Icon }` in a map).
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]|^motion$', argsIgnorePattern: '^[A-Z_]' }],
     },
   },
 ])
