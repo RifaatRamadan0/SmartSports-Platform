@@ -15,6 +15,13 @@ export default function ConfirmDialog({
   const dialogRef = useRef(null)
   const previouslyFocused = useRef(null)
 
+  const onCancelRef = useRef(onCancel)
+  const isSubmittingRef = useRef(isSubmitting)
+  useEffect(() => {
+    onCancelRef.current = onCancel
+    isSubmittingRef.current = isSubmitting
+  })
+
   useEffect(() => {
     if (!isOpen) return
 
@@ -33,8 +40,8 @@ export default function ConfirmDialog({
     getFocusable()[0]?.focus()
 
     const onKey = (e) => {
-      if (e.key === 'Escape' && !isSubmitting) {
-        onCancel?.()
+      if (e.key === 'Escape' && !isSubmittingRef.current) {
+        onCancelRef.current?.()
         return
       }
       if (e.key === 'Tab') {
@@ -58,7 +65,7 @@ export default function ConfirmDialog({
       // Restore focus to whatever was focused before the dialog opened.
       previouslyFocused.current?.focus?.()
     }
-  }, [isOpen, isSubmitting, onCancel])
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -68,7 +75,7 @@ export default function ConfirmDialog({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4
                  bg-black/70 backdrop-blur-sm"
-      onClick={onCancel}
+      onClick={() => !isSubmitting && onCancel?.()}
     >
       <div
         ref={dialogRef}
