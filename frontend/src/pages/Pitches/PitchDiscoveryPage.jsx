@@ -304,6 +304,11 @@ function FilterBar({
   )
 }
 
+// Native <option> popups are drawn by the OS, outside the DOM box model, so the
+// wrapping div's background can't reach them. Set the colors explicitly here so
+// the open dropdown stays readable regardless of OS/browser theme.
+const optionStyle = { backgroundColor: 'var(--surface)', color: 'var(--text)' }
+
 function FilterSelect({ value, onChange, placeholder, options }) {
   return (
     <div className="relative rounded-xl border border-white/[0.10] bg-[var(--surface)] overflow-hidden">
@@ -313,9 +318,9 @@ function FilterSelect({ value, onChange, placeholder, options }) {
         className="appearance-none bg-transparent text-sm text-white px-3 py-2 pr-7 outline-none cursor-pointer min-w-[120px]"
         style={{ colorScheme: 'dark' }}
       >
-        <option value="">{placeholder}</option>
+        <option value="" style={optionStyle}>{placeholder}</option>
         {options.map(o => (
-          <option key={o.value} value={o.value}>{o.label}</option>
+          <option key={o.value} value={o.value} style={optionStyle}>{o.label}</option>
         ))}
       </select>
       <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[var(--text3)]">▾</span>
