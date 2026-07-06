@@ -54,31 +54,34 @@ function StatsBanner({ statsResult }) {
   ]
 
   return (
-    <div className="flex items-center bg-card border border-border rounded-[18px] overflow-hidden mb-7">
+    <div className="grid grid-cols-2 sm:grid-cols-4 bg-card border border-border rounded-[18px] overflow-hidden mb-7">
       {blocks.map(({ label, value, fallback }, i) => (
-        <div key={i} className="contents">
-          <div className="flex-1 flex flex-col items-center py-5 px-8 gap-0.5 text-center">
-            {loading ? (
-              <div className="animate-pulse w-full flex flex-col items-center gap-2">
-                <div className="h-7 w-[55%] rounded bg-muted" />
-                <div className="h-3 w-[40%] rounded bg-muted" />
-              </div>
-            ) : (
-              <>
-                <span
-                  className="font-display font-extrabold text-primary leading-none mb-0.5"
-                  style={{ fontSize: 26, letterSpacing: '-0.8px' }}
-                >
-                  {value ?? fallback ?? '—'}
-                </span>
-                <span className="text-[10px] font-semibold tracking-[0.7px] uppercase text-muted-foreground">
-                  {label}
-                </span>
-              </>
-            )}
-          </div>
-          {i < blocks.length - 1 && (
-            <div className="w-px self-center bg-border" style={{ height: 40 }} />
+        <div
+          key={i}
+          className={cn(
+            'flex flex-col items-center justify-center py-4 sm:py-5 px-3 sm:px-8 gap-0.5 text-center border-border',
+            i % 2 === 1 && 'border-l',          // divider between the two mobile columns
+            i >= 2 && 'border-t sm:border-t-0', // divider above the second mobile row
+            i > 0 && 'sm:border-l',             // vertical dividers between all four on desktop
+          )}
+        >
+          {loading ? (
+            <div className="animate-pulse w-full flex flex-col items-center gap-2">
+              <div className="h-7 w-[55%] rounded bg-muted" />
+              <div className="h-3 w-[40%] rounded bg-muted" />
+            </div>
+          ) : (
+            <>
+              <span
+                className="font-display font-extrabold text-primary leading-none mb-0.5"
+                style={{ fontSize: 26, letterSpacing: '-0.8px' }}
+              >
+                {value ?? fallback ?? '—'}
+              </span>
+              <span className="text-[10px] font-semibold tracking-[0.7px] uppercase text-muted-foreground">
+                {label}
+              </span>
+            </>
           )}
         </div>
       ))}
@@ -482,7 +485,7 @@ function MyGamesHeader({ count }) {
           </span>
         )}
       </h2>
-      <span className="text-[13px] text-muted-foreground">
+      <span className="hidden sm:block text-[13px] text-muted-foreground">
         Matches you're organising or have joined
       </span>
     </div>
@@ -730,17 +733,17 @@ export default function FindGamePage() {
   return (
     <>
     <PageWrapper className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-324 pt-12 pb-20 px-12">
+      <div className="mx-auto max-w-324 pt-8 sm:pt-12 pb-20 px-4 sm:px-6 lg:px-12">
 
         {/* Page header */}
         <div className="mb-9">
           <h1
-            className="font-display text-[40px] font-extrabold leading-none mb-2 text-foreground"
+            className="font-display text-[30px] sm:text-[40px] font-extrabold leading-none mb-2 text-foreground"
             style={{ letterSpacing: '-1px' }}
           >
             Find Games
           </h1>
-          <p className="text-[16px] text-muted-foreground max-w-[540px] leading-relaxed">
+          <p className="text-[15px] sm:text-[16px] text-muted-foreground max-w-[540px] leading-relaxed">
             Catch up on the matches you're organising or have joined, and find open spots in other games.
           </p>
         </div>

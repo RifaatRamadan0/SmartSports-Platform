@@ -195,6 +195,18 @@ public class PitchRepository : IPitchRepository
         if (filters.MaxPrice.HasValue)
             conditions.Add("p.price_per_hour <= @MaxPrice");
 
+        // Date filter: keep only pitches open on the selected date's weekday.
+        // pitch_weekly_schedules.day_of_week is 0=Sunday..6=Saturday, matching EXTRACT(DOW).
+        if (filters.Date.HasValue)
+            conditions.Add("""
+                EXISTS (
+                    SELECT 1 FROM pitch_weekly_schedules ws
+                    WHERE ws.pitch_id    = p.id
+                      AND ws.is_active   = TRUE
+                      AND ws.day_of_week = CAST(EXTRACT(DOW FROM @FilterDate::date) AS INTEGER)
+                )
+                """);
+
         // ORDER BY comes from a closed whitelist — never user input.
         var orderBy = filters.SortBy switch
         {
@@ -211,6 +223,7 @@ public class PitchRepository : IPitchRepository
             Sport          = filters.Sport,
             City           = filters.City,
             MaxPrice       = filters.MaxPrice,
+            FilterDate     = filters.Date,
             PageSize       = filters.PageSize,
             Offset         = (filters.Page - 1) * filters.PageSize,
             ApprovedStatus = (int)PitchStatus.Approved,

@@ -11,6 +11,13 @@ public class PitchSearchQuery
     public string?  City     { get; set; }
     public decimal? MaxPrice { get; set; }
 
+    /// <summary>
+    /// Optional ISO date (yyyy-MM-dd). Filters to pitches whose weekly schedule is
+    /// active on that date's weekday. Kept as a string (not DateOnly) so a malformed
+    /// value fails soft in the service rather than returning a binding-level 400.
+    /// </summary>
+    public string?  Date     { get; set; }
+
     /// <summary>Accepted values: newest (default), price_asc, price_desc, rating_desc.</summary>
     public string?  SortBy   { get; set; }
 

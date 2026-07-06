@@ -11,6 +11,7 @@ export async function listPitches({
   city     = '',
   maxPrice = '',
   sortBy   = '',
+  date     = '',
   page     = 1,
   pageSize = 12,
 } = {}) {
@@ -20,6 +21,7 @@ export async function listPitches({
   if (city)                         params.city     = city
   if (maxPrice && Number(maxPrice) > 0) params.maxPrice = maxPrice
   if (sortBy && sortBy !== 'newest')    params.sortBy   = sortBy
+  if (date)                         params.date     = date
   const { data } = await api.get('/api/pitches', { params })
   return data
 }

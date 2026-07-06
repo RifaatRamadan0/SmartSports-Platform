@@ -13,6 +13,19 @@ import { GridSkeleton } from '../../components/ui/Skeleton'
 
 const SPORT_FILTERS = ['All', 'Football', 'Futsal', 'Basketball', 'Tennis']
 
+// Booking is limited to a 30-day window; keep the hero date filter in the same range.
+const MAX_DAYS_AHEAD = 30
+
+// Local calendar date → "YYYY-MM-DD" (no timezone shift, unlike toISOString).
+const localDateStr = (offsetDays = 0) => {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetDays)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 export default function HomePage() {
   const navigate   = useNavigate()
   const pitchesRef = useRef(null)
@@ -181,12 +194,14 @@ function SearchBar() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [sport, setSport] = useState('')
+  const [date,  setDate]  = useState('')
 
   const handleSubmit = (e) => {
     e.preventDefault()
     const params = new URLSearchParams()
     if (query.trim()) params.set('search', query.trim())
     if (sport && sport !== 'All') params.set('sport', sport)
+    if (date) params.set('date', date)
     navigate(`/pitches${params.toString() ? `?${params}` : ''}`)
   }
 
@@ -231,10 +246,20 @@ function SearchBar() {
             </select>
           </div>
 
-          {/* Date — display only; no backend support yet */}
-          <div className="sm:col-span-2 px-4 py-3 rounded-xl opacity-40 cursor-not-allowed" title="Date filter coming soon">
-            <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)]">Date</span>
-            <p className="mt-1 text-sm text-[var(--text3)]">Coming soon</p>
+          {/* Date — filters to pitches open on the chosen day (30-day booking window) */}
+          <div className="sm:col-span-2 px-4 py-3 rounded-xl hover:bg-[var(--bg3)] transition-colors">
+            <label htmlFor="hero-date" className="text-[10px] font-bold tracking-widest uppercase text-[var(--text3)]">
+              Date
+            </label>
+            <input
+              id="hero-date"
+              type="date"
+              value={date}
+              min={localDateStr(0)}
+              max={localDateStr(MAX_DAYS_AHEAD)}
+              onChange={e => setDate(e.target.value)}
+              className="mt-1 w-full bg-transparent border-0 outline-none text-sm text-white [color-scheme:dark]"
+            />
           </div>
 
           <button
