@@ -48,6 +48,7 @@ public class PitchRepository : IPitchRepository
                    p.address,
                    p.price_per_hour,
                    p.rating,
+                   p.rating_count,
                    p.max_booking_duration_minutes,
                    p.capacity
             FROM   pitches     p
@@ -122,6 +123,7 @@ public class PitchRepository : IPitchRepository
                    p.address,
                    p.price_per_hour,
                    p.rating,
+                   p.rating_count,
                    p.max_booking_duration_minutes,
                    p.capacity,
                    EXISTS (
@@ -231,6 +233,7 @@ public class PitchRepository : IPitchRepository
                     p.address,
                     p.price_per_hour,
                     p.rating,
+                    p.rating_count,
                     p.max_booking_duration_minutes,
                     p.capacity,
                     s.name              AS sport_name,
@@ -282,6 +285,7 @@ public class PitchRepository : IPitchRepository
                     p.address,
                     p.price_per_hour,
                     p.rating,
+                    p.rating_count,
                     s.name              AS sport_name,
                     p.max_booking_duration_minutes,
                     p.capacity,

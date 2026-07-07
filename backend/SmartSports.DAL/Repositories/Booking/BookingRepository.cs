@@ -136,7 +136,11 @@ public class BookingRepository : IBookingRepository
                     b.booked_at,
                     b.cancellation_reason,
                     p.name              AS pitch_name,
-                    p.owner_id          AS pitch_owner_id
+                    p.owner_id          AS pitch_owner_id,
+                    EXISTS (
+                        SELECT 1 FROM reviews r
+                        WHERE  r.booking_id = b.id AND r.user_id = b.user_id
+                    )                   AS has_reviewed
             FROM    bookings b
             JOIN    pitches  p ON p.id = b.pitch_id
             WHERE   b.id = @BookingId

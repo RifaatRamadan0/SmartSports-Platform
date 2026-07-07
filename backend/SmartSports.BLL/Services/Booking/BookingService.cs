@@ -293,6 +293,7 @@ public class BookingService : IBookingService
         TotalPrice = booking.TotalPrice,
         Status = booking.Status,
         BookedAt = booking.BookedAt,
-        CancellationReason = booking.CancellationReason
+        CancellationReason = booking.CancellationReason,
+        HasReviewed = booking.HasReviewed
     };
 }

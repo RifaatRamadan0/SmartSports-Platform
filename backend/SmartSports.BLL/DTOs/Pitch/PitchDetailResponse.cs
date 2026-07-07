@@ -10,6 +10,7 @@ public class PitchDetailResponse
     public string   Address                   { get; init; } = string.Empty;
     public decimal  PricePerHour              { get; init; }
     public decimal? Rating                    { get; init; }
+    public int      RatingCount               { get; init; }
     public int      MaxBookingDurationMinutes { get; init; }
     public int      Capacity                  { get; init; }
 
