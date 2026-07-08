@@ -6,11 +6,12 @@ namespace SmartSports.DAL.Parameters;
 /// creating a dependency on the BLL.
 /// </summary>
 public record PitchFilterParams(
-    string?  Search,
-    string?  Sport,
-    string?  City,
-    decimal? MaxPrice,
-    string?  SortBy,
-    int      Page,
-    int      PageSize
+    string?   Search,
+    string?   Sport,
+    string?   City,
+    decimal?  MaxPrice,
+    string?   SortBy,
+    DateOnly? Date,
+    int       Page,
+    int       PageSize
 );

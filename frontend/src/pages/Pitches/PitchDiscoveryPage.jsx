@@ -18,6 +18,19 @@ const SORT_OPTIONS = [
   { value: 'rating_desc', label: 'Top rated' },
 ]
 
+// Booking is limited to a 30-day window; keep the date filter in the same range.
+const MAX_DAYS_AHEAD = 30
+
+// Local calendar date → "YYYY-MM-DD" (no timezone shift, unlike toISOString).
+const localDateStr = (offsetDays = 0) => {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetDays)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 export default function PitchDiscoveryPage() {
   const navigate           = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -30,6 +43,7 @@ export default function PitchDiscoveryPage() {
   const urlMaxPrice = rawMaxPrice !== '' && Number(rawMaxPrice) > 0 ? rawMaxPrice : ''
   const rawSortBy   = searchParams.get('sortBy') ?? ''
   const urlSortBy   = SORT_OPTIONS.some(o => o.value === rawSortBy) ? rawSortBy : 'newest'
+  const urlDate     = searchParams.get('date')   ?? ''
   const urlPage     = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
 
   const [refreshKey, setRefreshKey] = useState(0)
@@ -79,6 +93,7 @@ export default function PitchDiscoveryPage() {
       city:     urlCity,
       maxPrice: urlMaxPrice,
       sortBy:   urlSortBy,
+      date:     urlDate,
       page:     urlPage,
       pageSize: 12,
     })
@@ -87,7 +102,7 @@ export default function PitchDiscoveryPage() {
       .finally(()  => { if (!cancelled) setIsLoading(false) })
 
     return () => { cancelled = true }
-  }, [urlSearch, urlSport, urlCity, urlMaxPrice, urlSortBy, urlPage, refreshKey])
+  }, [urlSearch, urlSport, urlCity, urlMaxPrice, urlSortBy, urlDate, urlPage, refreshKey])
 
   // Helpers to mutate URL params.
   const setFilter = useCallback((key, value) => {
@@ -129,7 +144,7 @@ export default function PitchDiscoveryPage() {
     setSearchParams({})
   }
 
-  const hasActiveFilters = urlSearch || urlSport || urlCity || urlMaxPrice || (urlSortBy && urlSortBy !== 'newest')
+  const hasActiveFilters = urlSearch || urlSport || urlCity || urlMaxPrice || urlDate || (urlSortBy && urlSortBy !== 'newest')
 
   return (
     <PageWrapper className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
@@ -157,6 +172,8 @@ export default function PitchDiscoveryPage() {
         onCityChange={v => setFilter('city', v)}
         maxPrice={urlMaxPrice}
         onMaxPriceChange={v => setFilter('maxPrice', Number(v) > 0 ? v : '')}
+        date={urlDate}
+        onDateChange={v => setFilter('date', v)}
         sortBy={urlSortBy}
         onSortChange={v => setFilter('sortBy', v)}
         sportTypes={sportTypes}
@@ -223,10 +240,13 @@ function FilterBar({
   sport, onSportChange,
   city, onCityChange,
   maxPrice, onMaxPriceChange,
+  date, onDateChange,
   sortBy, onSortChange,
   sportTypes, cities, lookupError,
   hasActiveFilters, onClearAll,
 }) {
+  const minDate = localDateStr(0)
+  const maxDate = localDateStr(MAX_DAYS_AHEAD)
   return (
     <div className="sticky top-16 z-30 bg-[var(--bg)]/95 backdrop-blur border-b border-white/[0.06] py-3">
       <div className="mx-auto max-w-[1280px] px-6">
@@ -279,6 +299,23 @@ function FilterBar({
               placeholder="Any"
               className="bg-transparent outline-none text-sm text-white placeholder:text-[var(--text3)] w-full min-w-0"
             />
+          </div>
+
+          {/* Date — shows pitches open on the chosen day (booking window: 30 days) */}
+          <div className="flex items-center gap-2 rounded-xl border border-white/[0.10] bg-[var(--surface)] px-3 py-2 min-w-[150px]">
+            <span className="text-[var(--text3)] text-xs shrink-0">Date</span>
+            <input
+              type="date"
+              aria-label="Available on date"
+              value={date}
+              min={minDate}
+              max={maxDate}
+              onChange={e => onDateChange(e.target.value)}
+              className="bg-transparent outline-none text-sm text-white [color-scheme:dark] w-full min-w-0"
+            />
+            {date && (
+              <button onClick={() => onDateChange('')} aria-label="Clear date" className="text-[var(--text3)] hover:text-white transition-colors text-xs">✕</button>
+            )}
           </div>
 
           {/* Sort */}

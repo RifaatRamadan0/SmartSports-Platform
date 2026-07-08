@@ -70,12 +70,23 @@ public class PitchService : IPitchService
         if (query.MaxPrice.HasValue && query.MaxPrice <= 0)
             query.MaxPrice = null;
 
+        // Parse the optional date filter leniently: ignore unparseable or out-of-window
+        // values (same 30-day window as booking) so a stray URL param never hard-fails.
+        DateOnly? date = null;
+        if (DateOnly.TryParse(query.Date, out var parsedDate))
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            if (parsedDate >= today && parsedDate <= today.AddDays(30))
+                date = parsedDate;
+        }
+
         var filters = new PitchFilterParams(
             Search:   query.Search?.Trim(),
             Sport:    query.Sport?.Trim(),
             City:     query.City?.Trim(),
             MaxPrice: query.MaxPrice,
             SortBy:   query.SortBy?.Trim(),
+            Date:     date,
             Page:     query.Page,
             PageSize: query.PageSize
         );

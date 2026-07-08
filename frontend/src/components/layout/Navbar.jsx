@@ -255,7 +255,8 @@ function Inbox() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="absolute right-0 top-12 w-[440px] max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-hidden flex flex-col
+            className="fixed sm:absolute inset-x-4 sm:inset-x-auto sm:right-0 top-16 sm:top-12
+                       w-auto sm:w-[440px] sm:max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-hidden flex flex-col
                        rounded-2xl border border-white/[0.07] bg-[var(--bg2)] shadow-[0_16px_40px_rgba(0,0,0,0.5)] z-50"
           >
             <div className="px-5 pt-5 pb-3 flex items-start justify-between">

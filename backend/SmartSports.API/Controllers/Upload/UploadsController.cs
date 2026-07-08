@@ -22,14 +22,13 @@ public class UploadsController : ControllerBase
     /// GET /api/uploads/imagekit-auth
     /// Returns short-lived ImageKit auth params (token, expire, signature) that the
     /// browser pairs with the file when POSTing directly to ImageKit.
-    /// PitchOwner-only — relax the policy if other roles ever need to upload.
+    /// Any authenticated user may request these: pitch owners upload pitch images,
+    /// while players (and admins) upload their own profile avatar on the Settings page.
     /// </summary>
     [HttpGet("imagekit-auth")]
-    [Authorize(Policy = "PitchOwnerOnly")]
     [EnableRateLimiting("imagekit-auth")]
     [ProducesResponseType(typeof(ImageKitAuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public IActionResult ImageKitAuth()
     {

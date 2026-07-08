@@ -139,11 +139,11 @@ export default function PlayerBookingsPage() {
       </div>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 mb-6">
         <select
           value={filters.status}
           onChange={e => handleFilterChange('status', e.target.value)}
-          className="rounded-xl px-4 py-2.5 text-sm bg-[var(--surface)] border border-white/[0.07]
+          className="w-full sm:w-auto rounded-xl px-4 py-2.5 text-sm bg-[var(--surface)] border border-white/[0.07]
                      text-white focus:outline-none focus:ring-1 focus:ring-[var(--green)]
                      transition-all duration-200 cursor-pointer"
         >
@@ -158,7 +158,7 @@ export default function PlayerBookingsPage() {
           aria-label="From date"
           value={filters.from}
           onChange={e => handleFilterChange('from', e.target.value)}
-          className="rounded-xl px-4 py-2.5 text-sm bg-[var(--surface)] border border-white/[0.07]
+          className="w-full sm:w-auto rounded-xl px-4 py-2.5 text-sm bg-[var(--surface)] border border-white/[0.07]
                      text-white [color-scheme:dark] focus:outline-none focus:ring-1
                      focus:ring-[var(--green)] transition-all duration-200"
         />
@@ -168,7 +168,7 @@ export default function PlayerBookingsPage() {
           aria-label="To date"
           value={filters.to}
           onChange={e => handleFilterChange('to', e.target.value)}
-          className="rounded-xl px-4 py-2.5 text-sm bg-[var(--surface)] border border-white/[0.07]
+          className="w-full sm:w-auto rounded-xl px-4 py-2.5 text-sm bg-[var(--surface)] border border-white/[0.07]
                      text-white [color-scheme:dark] focus:outline-none focus:ring-1
                      focus:ring-[var(--green)] transition-all duration-200"
         />
