@@ -61,3 +61,7 @@ export async function listFavorites({ page = 1, pageSize = 12 } = {}) {
   const { data } = await api.get('/api/users/me/favorites', { params: { page, pageSize } })
   return data
 }
+
+export async function createReview(bookingId, { rating, comment }) {
+  await api.post(`/api/bookings/${bookingId}/reviews`, { rating, comment })
+}

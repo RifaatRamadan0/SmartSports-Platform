@@ -46,6 +46,7 @@ public class FavoriteService : IFavoriteService
                 Address                   = r.Address,
                 PricePerHour              = r.PricePerHour,
                 Rating                    = r.Rating,
+                RatingCount               = r.RatingCount,
                 SportName                 = r.SportName,
                 MaxBookingDurationMinutes = r.MaxBookingDurationMinutes,
                 Capacity                  = r.Capacity,

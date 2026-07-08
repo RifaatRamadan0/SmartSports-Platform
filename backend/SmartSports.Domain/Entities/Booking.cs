@@ -19,4 +19,5 @@ public class Booking
     // check will silently fail and deny legitimate pitch owners.
     public string PitchName    { get; set; } = string.Empty;
     public int?   PitchOwnerId { get; set; }
+    public bool   HasReviewed  { get; set; }
 }

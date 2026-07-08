@@ -9,6 +9,7 @@ public record PitchListRow
     public string   Address                   { get; init; } = "";
     public decimal  PricePerHour              { get; init; }
     public decimal? Rating                    { get; init; }
+    public int      RatingCount               { get; init; }
     public string   SportName                 { get; init; } = "";
     public int      MaxBookingDurationMinutes { get; init; }
     public int      Capacity                  { get; init; }

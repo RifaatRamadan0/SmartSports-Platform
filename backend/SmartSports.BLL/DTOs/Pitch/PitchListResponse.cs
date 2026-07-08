@@ -9,6 +9,7 @@ public class PitchListResponse
     public string   Address                   { get; set; } = string.Empty;
     public decimal  PricePerHour              { get; set; }
     public decimal? Rating                    { get; set; }
+    public int      RatingCount               { get; set; }
     public string   SportName                 { get; set; } = string.Empty;
     public int      MaxBookingDurationMinutes { get; set; }
     public int      Capacity                  { get; set; }

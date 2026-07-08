@@ -5,9 +5,11 @@ import { ROLES } from '../../constants/roles'
 import { getBookingById, cancelBooking } from '../../services/Booking/bookingService'
 import { updateMatchVisibility } from '../../services/Match/matchService'
 import { generateInviteLink } from '../../services/Invitation/invitationService'
+import { createReview } from '../../services/Pitch/pitchService'
 import { parseApiError } from '../../utils/errorUtils'
 import { getUserIdFromToken } from '../../utils/jwtUtils'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import StarRatingInput from '../../components/ui/StarRatingInput'
 import { useToast } from '../../context/ToastContext'
 
 import { CANCEL_BUFFER_MS } from '../../constants'
@@ -39,6 +41,12 @@ function isCancellable(booking) {
   if (booking.status !== 'confirmed') return false
   const start = new Date(`${booking.bookingDate}T${booking.startTime}`)
   return start.getTime() > Date.now() + CANCEL_BUFFER_MS
+}
+
+function isReviewable(booking) {
+  if (booking.status !== 'confirmed' || booking.hasReviewed) return false
+  const end = new Date(`${booking.bookingDate}T${booking.endTime}`)
+  return end.getTime() < Date.now()
 }
 
 const STATUS_STYLES = {
@@ -142,10 +150,15 @@ export default function BookingDetailPage() {
   const [showDialog,   setShowDialog]   = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [isCancelling, setIsCancelling] = useState(false)
+  const [showReview,         setShowReview]         = useState(false)
+  const [reviewRating,       setReviewRating]       = useState(0)
+  const [reviewComment,      setReviewComment]      = useState('')
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false)
 
   const toast = useToast()
 
   const closeDialog = () => { setShowDialog(false); setCancelReason('') }
+  const closeReview = () => { setShowReview(false); setReviewRating(0); setReviewComment('') }
 
   const fetchBooking = useCallback(async () => {
     setIsLoading(true)
@@ -258,8 +271,27 @@ export default function BookingDetailPage() {
     )
   }
 
+  const handleSubmitReview = async () => {
+    if (reviewRating < 1 || isSubmittingReview) return
+    setIsSubmittingReview(true)
+    try {
+      await createReview(booking.id, {
+        rating: reviewRating,
+        comment: reviewComment.trim() || null,
+      })
+      closeReview()
+      toast.success('Thanks for your review!')
+      fetchBooking()
+    } catch (err) {
+      toast.error(parseApiError(err, 'Could not submit review.'))
+    } finally {
+      setIsSubmittingReview(false)
+    }
+  }
+
   // ── Main ─────────────────────────────────────────────────────────────────────
   const canCancel = isPlayer && isCancellable(booking)
+  const canReview = isPlayer && isReviewable(booking)
   // SPDBTCP-76 — the booking-detail API already 403s non-owner players, so
   // reaching this page as a Player means this booking belongs to them.
   const canManageMatch =
@@ -287,6 +319,35 @@ export default function BookingDetailPage() {
                      text-[13px] text-white placeholder-[var(--text3)] resize-none
                      focus:outline-none focus:border-[var(--red-border)]"
         />
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        isOpen={showReview}
+        title="Rate your experience"
+        message="How was your game at this pitch?"
+        confirmLabel={isSubmittingReview ? 'Submitting…' : 'Submit review'}
+        cancelLabel="Not now"
+        onConfirm={handleSubmitReview}
+        onCancel={closeReview}
+        isSubmitting={isSubmittingReview || reviewRating < 1}
+      >
+        <div className="flex flex-col gap-3">
+          <StarRatingInput
+            value={reviewRating}
+            onChange={setReviewRating}
+            disabled={isSubmittingReview}
+          />
+          <textarea
+            value={reviewComment}
+            onChange={e => setReviewComment(e.target.value)}
+            placeholder="Share a few words (optional)"
+            rows={3}
+            maxLength={1000}
+            className="w-full rounded-xl border border-white/[0.08] bg-[var(--bg)] px-4 py-3
+                       text-[13px] text-white placeholder-[var(--text3)] resize-none
+                       focus:outline-none focus:border-[var(--green-border)]"
+          />
+        </div>
       </ConfirmDialog>
 
       <div className="max-w-2xl mx-auto">
@@ -373,6 +434,24 @@ export default function BookingDetailPage() {
           >
             Manage match · Invite players
           </button>
+        )}
+
+        {/* Review action */}
+        {canReview && (
+          <button
+            onClick={() => setShowReview(true)}
+            className="w-full py-3 rounded-2xl border border-[var(--green)]/30 bg-[var(--green)]/10
+                       text-[13px] font-bold text-[var(--green)] hover:bg-[var(--green)]/20
+                       transition-colors mb-3"
+          >
+            Leave a review
+          </button>
+        )}
+        {isPlayer && booking.hasReviewed && (
+          <div className="w-full py-3 rounded-2xl border border-white/[0.07] bg-[var(--surface)]
+                          text-[13px] font-bold text-[var(--text2)] text-center mb-3">
+            Reviewed ✓
+          </div>
         )}
 
         {/* Cancel action */}

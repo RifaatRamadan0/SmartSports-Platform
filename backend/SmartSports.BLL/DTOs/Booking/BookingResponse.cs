@@ -15,6 +15,7 @@ public class BookingResponse
     public string Status { get; set; } = string.Empty;
     public DateTime BookedAt { get; set; }
     public string? CancellationReason { get; set; }
+    public bool HasReviewed { get; set; }
 
     // SPDBTCP-245 — populated for endpoints that include the linked match (create, detail).
     public MatchResponse? Match { get; set; }

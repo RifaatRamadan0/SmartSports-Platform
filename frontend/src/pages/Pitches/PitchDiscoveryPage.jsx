@@ -435,6 +435,9 @@ function PitchCard({ pitch, onBook }) {
             <div className="flex items-center gap-1 text-[12px] shrink-0">
               <span className="text-yellow-400">★</span>
               <span className="text-white font-semibold">{rating.toFixed(1)}</span>
+              {pitch.ratingCount > 0 && (
+                <span className="text-[var(--text3)]">({pitch.ratingCount})</span>
+              )}
             </div>
           )}
         </div>

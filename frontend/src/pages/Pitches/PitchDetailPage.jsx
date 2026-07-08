@@ -162,6 +162,11 @@ export default function PitchDetailPage() {
                       <span className="text-sm font-semibold text-white">
                         {Number(pitch.rating).toFixed(1)}
                       </span>
+                      {pitch.ratingCount > 0 && (
+                        <span className="text-sm text-[var(--text3)]">
+                          ({pitch.ratingCount})
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
