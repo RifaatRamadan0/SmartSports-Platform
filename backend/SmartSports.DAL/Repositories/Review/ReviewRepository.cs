@@ -24,6 +24,15 @@ public class ReviewRepository : IReviewRepository
         await using var transaction = await connection.BeginTransactionAsync();
         try
         {
+            // Serialize concurrent reviewers of the same pitch on the pitch row
+            // before recomputing the rating roll-up below. Without this lock, two
+            // reviews inserted concurrently can each recompute AVG/COUNT from a
+            // snapshot that excludes the other's uncommitted insert, so the last
+            // UPDATE to commit silently undercounts (READ COMMITTED lost update).
+            await connection.ExecuteAsync(
+                "SELECT 1 FROM pitches WHERE id = @PitchId FOR UPDATE",
+                new { review.PitchId }, transaction);
+
             var reviewId = await connection.ExecuteScalarAsync<int>(
                 """
                 INSERT INTO reviews (user_id, pitch_id, booking_id, rating, comment)
