@@ -316,12 +316,60 @@ public class BookingRepository : IBookingRepository
             new { Id = bookingId });
     }
 
-    public async Task CancelAsync(int bookingId, string? cancellationReason)
+    public async Task<BookingCancelResult> CancelWithParticipantsAsync(int bookingId, string? cancellationReason)
     {
         using var connection = _connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(
-            "UPDATE bookings SET status = 'cancelled', cancellation_reason = @Reason WHERE id = @Id AND status = 'confirmed'",
-            new { Id = bookingId, Reason = cancellationReason });
+        await connection.OpenAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
+        try
+        {
+            var updated = await connection.ExecuteAsync(
+                "UPDATE bookings SET status = 'cancelled', cancellation_reason = @Reason WHERE id = @Id AND status = 'confirmed'",
+                new { Id = bookingId, Reason = cancellationReason },
+                transaction);
+
+            // Nothing to cascade if the booking wasn't actually cancelled (already
+            // cancelled/pending, or a race with another cancel request).
+            if (updated == 0)
+            {
+                await transaction.RollbackAsync();
+                return new BookingCancelResult(null, Array.Empty<int>());
+            }
+
+            var matchId = await connection.ExecuteScalarAsync<int?>(
+                "SELECT id FROM matches WHERE booking_id = @BookingId",
+                new { BookingId = bookingId },
+                transaction);
+
+            if (matchId is null)
+            {
+                await transaction.CommitAsync();
+                return new BookingCancelResult(null, Array.Empty<int>());
+            }
+
+            // Both 'accepted' and 'pending' players consider themselves "in" the match —
+            // both should be told it's off.
+            var participantIds = (await connection.QueryAsync<int>(
+                "SELECT user_id FROM match_participants WHERE match_id = @MatchId AND status IN ('accepted', 'pending')",
+                new { MatchId = matchId },
+                transaction)).ToList();
+
+            // A pending invitation to a now-dead match can never be accepted (guarded at the
+            // service layer), so mark it expired rather than leaving it stuck in the invitee's
+            // pending list forever.
+            await connection.ExecuteAsync(
+                "UPDATE invitations SET status = 'expired' WHERE match_id = @MatchId AND status = 'pending'",
+                new { MatchId = matchId },
+                transaction);
+
+            await transaction.CommitAsync();
+            return new BookingCancelResult(matchId, participantIds);
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     //  Private records

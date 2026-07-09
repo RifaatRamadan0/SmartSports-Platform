@@ -19,6 +19,7 @@ export default function MatchDetailPage() {
   // the match exists, so a deep-link to a deleted/typo'd id falls through to
   // the catch-all NotFoundPage instead of showing an invite form for nothing.
   const [isCheckingMatch, setIsCheckingMatch] = useState(true)
+  const [match, setMatch] = useState(null)
   const [toast, setToast] = useState(null)
   const [username, setUsername] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -27,9 +28,10 @@ export default function MatchDetailPage() {
     let cancelled = false
     async function verifyMatchExists() {
       try {
-        const match = await getMatchById(matchId)
+        const fetchedMatch = await getMatchById(matchId)
         if (cancelled) return
-        if (match === null) { navigate('/404', { replace: true }); return }
+        if (fetchedMatch === null) { navigate('/404', { replace: true }); return }
+        setMatch(fetchedMatch)
         setIsCheckingMatch(false)
       } catch (err) {
         if (cancelled) return
@@ -68,6 +70,8 @@ export default function MatchDetailPage() {
     return <div className="min-h-screen bg-[var(--bg)]" aria-busy="true" />
   }
 
+  const isCancelled = match?.bookingStatus === 'cancelled'
+
   return (
     <motion.div
       variants={pageVariants}
@@ -103,43 +107,59 @@ export default function MatchDetailPage() {
           </h1>
         </motion.div>
 
-        {/* Invite by username */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1, ease: 'easeOut' }}
-          className="rounded-2xl border border-white/6 bg-[var(--surface)] p-5 mb-4"
-        >
-          <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text2)] mb-3">
-            Invite a player
-          </p>
-          <form onSubmit={handleInvite} className="flex gap-2">
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Username"
-              minLength={3}
-              maxLength={50}
-              required
-              className="flex-1 rounded-xl border border-[#2a2a2a] bg-[var(--bg)] px-4 py-3
-                         text-[13px] text-white placeholder-neutral-600
-                         focus:outline-none focus:border-[var(--green)]/50"
-            />
-            <button
-              type="submit"
-              disabled={isSubmitting || username.trim().length < 3}
-              className="px-5 py-3 rounded-xl text-[13px] font-bold
-                         bg-[var(--green)]/20 border border-[var(--green)]/40 text-[var(--green)]
-                         hover:bg-[var(--green)]/30 transition-colors disabled:opacity-50"
-            >
-              {isSubmitting ? 'Sending…' : 'Invite'}
-            </button>
-          </form>
-          <p className="text-[11px] text-[var(--text3)] mt-3">
-            Anyone already in this match can send invitations. The invitee will see it in their inbox.
-          </p>
-        </motion.div>
+        {isCancelled ? (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1, ease: 'easeOut' }}
+            className="rounded-2xl border border-[var(--red)]/20 bg-[var(--red)]/5 px-5 py-4 mb-4"
+          >
+            <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--red)]/70 mb-1">
+              Booking cancelled
+            </p>
+            <p className="text-[13px] text-[var(--red)]">
+              This match's booking was cancelled. Invitations and joins are no longer possible.
+            </p>
+          </motion.div>
+        ) : (
+          /* Invite by username */
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1, ease: 'easeOut' }}
+            className="rounded-2xl border border-white/6 bg-[var(--surface)] p-5 mb-4"
+          >
+            <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text2)] mb-3">
+              Invite a player
+            </p>
+            <form onSubmit={handleInvite} className="flex gap-2">
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username"
+                minLength={3}
+                maxLength={50}
+                required
+                className="flex-1 rounded-xl border border-[#2a2a2a] bg-[var(--bg)] px-4 py-3
+                           text-[13px] text-white placeholder-neutral-600
+                           focus:outline-none focus:border-[var(--green)]/50"
+              />
+              <button
+                type="submit"
+                disabled={isSubmitting || username.trim().length < 3}
+                className="px-5 py-3 rounded-xl text-[13px] font-bold
+                           bg-[var(--green)]/20 border border-[var(--green)]/40 text-[var(--green)]
+                           hover:bg-[var(--green)]/30 transition-colors disabled:opacity-50"
+              >
+                {isSubmitting ? 'Sending…' : 'Invite'}
+              </button>
+            </form>
+            <p className="text-[11px] text-[var(--text3)] mt-3">
+              Anyone already in this match can send invitations. The invitee will see it in their inbox.
+            </p>
+          </motion.div>
+        )}
 
         {/* Participants placeholder — wired in later sprint-5 stories */}
         <motion.div
