@@ -45,6 +45,10 @@ public interface IBookingRepository
 
     /// <summary>
     /// Sets the booking status to 'cancelled' and records an optional cancellation reason.
+    /// If the booking has a linked match, also expires its still-pending invitations and
+    /// returns the match id plus the user ids of every pending/accepted participant, so the
+    /// caller can notify them. Returns a result with a null MatchId if the booking was not
+    /// in 'confirmed' status (no-op) or had no linked match.
     /// </summary>
-    Task CancelAsync(int bookingId, string? cancellationReason);
+    Task<BookingCancelResult> CancelWithParticipantsAsync(int bookingId, string? cancellationReason);
 }

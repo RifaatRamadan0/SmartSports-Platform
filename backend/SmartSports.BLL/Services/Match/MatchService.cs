@@ -257,10 +257,11 @@ public class MatchService : IMatchService
 
     private static MatchResponse MapToResponse(MatchEntity match) => new()
     {
-        Id           = match.Id,
-        BookingId    = match.BookingId,
-        IsOpenToJoin = match.IsOpenToJoin,
-        MaxPlayers   = match.MaxPlayers,
+        Id            = match.Id,
+        BookingId     = match.BookingId,
+        IsOpenToJoin  = match.IsOpenToJoin,
+        MaxPlayers    = match.MaxPlayers,
+        BookingStatus = match.BookingStatus,
     };
 
     private static MatchParticipantResponse MapParticipant(MatchParticipant p) =>

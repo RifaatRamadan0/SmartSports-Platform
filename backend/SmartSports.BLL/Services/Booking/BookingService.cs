@@ -2,9 +2,12 @@ using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Common;
 using SmartSports.BLL.DTOs.Match;
 using SmartSports.BLL.Interfaces.Booking;
+using SmartSports.BLL.Interfaces.Notification;
 using SmartSports.DAL.Interfaces.Booking;
 using SmartSports.DAL.Interfaces.Match;
 using SmartSports.DAL.Interfaces.Pitch;
+using SmartSports.Domain.Common;
+using SmartSports.Domain.Entities.Projections;
 using SmartSports.Domain.Enums;
 using SmartSports.Domain.Exceptions;
 
@@ -19,18 +22,21 @@ public class BookingService : IBookingService
     private readonly IPitchScheduleRepository _pitchScheduleRepository;
     private readonly IBookingRepository _bookingRepository;
     private readonly IMatchRepository _matchRepository;
+    private readonly INotificationService _notificationService;
     private static readonly string[] ValidStatuses = { "pending", "confirmed", "cancelled" };
 
     public BookingService(
         IPitchRepository pitchRepository,
         IPitchScheduleRepository pitchScheduleRepository,
         IBookingRepository bookingRepository,
-        IMatchRepository matchRepository)
+        IMatchRepository matchRepository,
+        INotificationService notificationService)
     {
         _pitchRepository         = pitchRepository;
         _pitchScheduleRepository = pitchScheduleRepository;
         _bookingRepository       = bookingRepository;
         _matchRepository         = matchRepository;
+        _notificationService     = notificationService;
     }
 
     // SPDBTCP-166 — Rifaat
@@ -124,10 +130,11 @@ public class BookingService : IBookingService
             BookedAt    = bookedAt,
             Match       = new MatchResponse
             {
-                Id           = matchId,
-                BookingId    = bookingId,
-                IsOpenToJoin = request.IsOpenToJoin,
-                MaxPlayers   = pitch.Capacity,
+                Id            = matchId,
+                BookingId     = bookingId,
+                IsOpenToJoin  = request.IsOpenToJoin,
+                MaxPlayers    = pitch.Capacity,
+                BookingStatus = "confirmed",
             },
         };
     }
@@ -151,7 +158,12 @@ public class BookingService : IBookingService
         if (bookingStart <= DateTime.Now.AddHours(1))
             throw new ArgumentException("Bookings can only be cancelled more than 1 hour before the start time.");
 
-        await _bookingRepository.CancelAsync(bookingId, cancellationReason);
+        var result = await _bookingRepository.CancelWithParticipantsAsync(bookingId, cancellationReason);
+
+        // The organizer is the one cancelling, so they don't need a notification about their
+        // own action — only the players who joined their match need to be told it's off.
+        if (result.MatchId is not null)
+            await NotifyParticipantsAsync(result, "The organizer cancelled the booking for this match.");
     }
 
 
@@ -172,7 +184,18 @@ public class BookingService : IBookingService
         if (bookingStart <= DateTime.Now.AddHours(1))
             throw new ArgumentException("Bookings can only be cancelled more than 1 hour before the start time.");
 
-        await _bookingRepository.CancelAsync(bookingId, cancellationReason);
+        var result = await _bookingRepository.CancelWithParticipantsAsync(bookingId, cancellationReason);
+
+        // Here it's the pitch owner cancelling, not the organizer — so unlike the player-initiated
+        // path, the organizer themselves must also be notified, in addition to the participants.
+        await _notificationService.CreateAsync(
+            booking.UserId,
+            NotificationTypes.BookingCancelled,
+            bookingId,
+            $"The pitch owner cancelled your booking for {booking.PitchName} on {booking.BookingDate:yyyy-MM-dd}.");
+
+        if (result.MatchId is not null)
+            await NotifyParticipantsAsync(result, "The pitch owner cancelled the booking for this match.");
     }
 
     /// <inheritdoc/>
@@ -204,10 +227,13 @@ public class BookingService : IBookingService
         {
             response.Match = new MatchResponse
             {
-                Id           = match.Id,
-                BookingId    = match.BookingId,
-                IsOpenToJoin = match.IsOpenToJoin,
-                MaxPlayers   = match.MaxPlayers,
+                Id            = match.Id,
+                BookingId     = match.BookingId,
+                IsOpenToJoin  = match.IsOpenToJoin,
+                MaxPlayers    = match.MaxPlayers,
+                // GetByBookingIdAsync doesn't join booking_status (the caller already has
+                // it on `booking`), so use that instead of a second DB round-trip.
+                BookingStatus = booking.Status,
             };
         }
 
@@ -279,6 +305,19 @@ public class BookingService : IBookingService
     }
 
     // Private helpers
+
+    /// <summary>Notifies every pending/accepted participant that their match's booking was cancelled.</summary>
+    private async Task NotifyParticipantsAsync(BookingCancelResult result, string message)
+    {
+        foreach (var participantUserId in result.ParticipantUserIds)
+        {
+            await _notificationService.CreateAsync(
+                participantUserId,
+                NotificationTypes.MatchCancelled,
+                result.MatchId,
+                message);
+        }
+    }
 
     /// <summary>Maps a Booking domain entity to a BookingResponse DTO.</summary>
     private static BookingResponse MapToResponse(Booking booking) => new()
