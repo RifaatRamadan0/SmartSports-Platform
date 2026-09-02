@@ -4,6 +4,24 @@ A sports pitch booking system where players reserve time slots, open their games
 
 ASP.NET Core 8 Web API with a React frontend, PostgreSQL behind Dapper and hand-written SQL, JWT auth with refresh-token rotation, email and phone verification, and image hosting on ImageKit.
 
+## Screens
+
+Browsing pitches. Filters for sport, city, price and sort order run over the loaded rows, and each card carries the cover image, city, rating and hourly price.
+
+![Pitch browsing with filters and result cards](docs/screenshots/find-pitches.png)
+
+The slot picker, which is where most of the booking logic surfaces. Dates with a green dot are days the pitch is open, the time grid is what is left after existing bookings are subtracted, and changing the duration reprices the booking and re-filters the slots to those with enough consecutive free time. The visibility toggle decides whether the match this creates is listed for other players.
+
+![Booking dialog with date strip, duration options and available time slots](docs/screenshots/booking-slot-picker.png)
+
+Find Games: matches the player organises or has joined, then open games from other players with spots left.
+
+![Find Games page showing my games and other open games](docs/screenshots/find-games.png)
+
+The owner dashboard: pitch counts by approval status, recent booking counts, and the latest bookings.
+
+![Owner dashboard with pitch and booking counts](docs/screenshots/owner-dashboard.png)
+
 ## Roles
 
 Three roles, each with a different view of the same data.
@@ -11,7 +29,7 @@ Three roles, each with a different view of the same data.
 | Role | Can do |
 |---|---|
 | Player | Browse pitches, book slots, open a match to joiners, invite players, request to join open matches, review pitches after playing, favourite pitches |
-| Pitch owner | Register pitches, set weekly opening hours, manage the photo gallery, view and cancel incoming bookings |
+| Pitch owner | Register pitches, set weekly opening hours, manage the photo gallery, view and cancel incoming bookings, see a dashboard of pitch and booking counts |
 | Admin | Approve or reject pitch submissions, handle pitch-owner role requests, ban and delete users |
 
 A new account is a Player. Becoming a pitch owner is a request an admin approves, and a pitch is not visible to anyone until an admin approves it separately.
@@ -61,6 +79,8 @@ Rate limits are per IP and fixed-window: 10/min on auth, 30/min on availability,
 **Joining matches.** A host can open a match to joiners, invite specific users, or generate a single-use invite link that works for anyone who has it. Join requests sit as `pending` participants until the host accepts or rejects them. Every outcome (invited, accepted, rejected, someone left, booking cancelled) writes a notification row, typed against a Postgres enum through constants in `NotificationTypes` so a mismatch fails at compile time instead of at runtime.
 
 What players actually see today is the inbox in the navbar, which reads pending invitations and pending join requests directly and acts on them inline. The notification rows are written but not yet surfaced. See the last section.
+
+**Owner dashboard.** Pitches split by approval status, booking counts, and the five most recent bookings with their status. It is assembled in the browser from two existing calls, `listMyPitches` and `getOwnerBookings`, with the counts derived by filtering those rows. There is no aggregate endpoint behind it, which is why the booking counts describe the five bookings fetched rather than every booking the owner has.
 
 **Images.** Pitch photos are uploaded straight from the browser to ImageKit. The backend only signs the upload, so image bytes never pass through the API. Owners pick one image as the cover.
 
@@ -207,7 +227,7 @@ Nothing secret is committed. `appsettings.json` holds only non-sensitive default
 - **Real time.** Everything is request/response today. SignalR would push notifications instead of leaving them to be fetched, and is a prerequisite for chat below.
 - **In-match chat.** The `chat_messages` table and `ChatMessage` entity exist, but there is no repository, service or UI behind them.
 - **AI slot recommendations and demand forecasting.** The original goal for the project: suggest the best time to play from historical booking density, and give owners a utilisation forecast. No model or service exists yet.
-- **Owner analytics.** Owners can list their bookings, but there is no revenue or utilisation reporting.
+- **Owner analytics.** The dashboard counts are derived in the browser from the five most recent bookings, so they are a summary of that page rather than true totals. A stats endpoint that aggregates in SQL would fix the counts and is the basis for the revenue and utilisation reporting that is missing.
 - **Automated tests.** There is no test project; everything was verified by hand through Swagger and direct SQL. A suite around the booking concurrency rules and the availability calculation is the first thing to add, since those two carry the most logic.
 - **Deployment.** Runs locally only. There is a Dockerfile for the API but nothing is hosted yet.
 
