@@ -19,6 +19,7 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IConfiguration _configuration;
+    private readonly SymmetricSecurityKey _signingKey;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IPasswordResetTokenRepository _passwordResetTokenRepository;
     private readonly IEmailVerificationTokenRepository _emailVerificationTokenRepository;
@@ -36,6 +37,7 @@ public class AuthService : IAuthService
     public AuthService(
         IUserRepository userRepository,
         IConfiguration configuration,
+        SymmetricSecurityKey signingKey,
         IRefreshTokenRepository refreshTokenRepository,
         IPasswordResetTokenRepository passwordResetTokenRepository,
         IEmailVerificationTokenRepository emailVerificationTokenRepository,
@@ -45,6 +47,7 @@ public class AuthService : IAuthService
     {
         _userRepository = userRepository;
         _configuration = configuration;
+        _signingKey = signingKey;
         _refreshTokenRepository = refreshTokenRepository;
         _passwordResetTokenRepository = passwordResetTokenRepository;
         _emailVerificationTokenRepository = emailVerificationTokenRepository;
@@ -360,11 +363,7 @@ public class AuthService : IAuthService
 
     private string GenerateJwtToken(int userId, string username, string email, IEnumerable<string> roles, int expiryMinutes)
     {
-        var secret = _configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("JWT Secret is not configured.");
-
-        var key         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var credentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256);
 
         var claims = new List<Claim>
         {
