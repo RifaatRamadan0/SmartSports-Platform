@@ -106,12 +106,13 @@ public class MatchRepository : IMatchRepository
         {
             "m.is_open_to_join = TRUE",
             "b.status          = 'confirmed'::booking_status",
-            "b.booking_date    >= CURRENT_DATE",
+            "b.booking_date    >= @Today",
             "p.deleted_at      IS NULL",
             "p.status          = @ApprovedStatus",
         };
         var parameters = new DynamicParameters();
         parameters.Add("ApprovedStatus", (short)PitchStatus.Approved);
+        parameters.Add("Today", filters.Today);
 
         // Optional filters — user input goes through Dapper params, never string-interpolated
         if (!string.IsNullOrWhiteSpace(filters.Sport))
@@ -193,11 +194,11 @@ public class MatchRepository : IMatchRepository
         return (items, total);
     }
 
-    public async Task<(MatchStatsRow Summary, IEnumerable<MatchCountByName> BySport, IEnumerable<MatchCountByName> ByCity)> GetStatsAsync()
+    public async Task<(MatchStatsRow Summary, IEnumerable<MatchCountByName> BySport, IEnumerable<MatchCountByName> ByCity)> GetStatsAsync(DateOnly today)
     {
         using var connection = _connectionFactory.CreateConnection();
 
-        var parameters = new { ApprovedStatus = (short)PitchStatus.Approved };
+        var parameters = new { ApprovedStatus = (short)PitchStatus.Approved, Today = today };
 
         // Open-match subquery reused across all three queries for consistency
         const string openMatchesCte = """
@@ -216,7 +217,7 @@ public class MatchRepository : IMatchRepository
                 LEFT JOIN match_participants mp ON mp.match_id = m.id AND mp.status = 'accepted'
                 WHERE  m.is_open_to_join = TRUE
                   AND  b.status          = 'confirmed'::booking_status
-                  AND  b.booking_date   >= CURRENT_DATE
+                  AND  b.booking_date   >= @Today
                   AND  p.deleted_at      IS NULL
                   AND  p.status          = @ApprovedStatus
                 GROUP  BY m.id, b.total_price, m.max_players, c.id, c.name, s.name

@@ -49,7 +49,7 @@ public interface IMatchRepository
     /// Aggregate stats for open matches: total count, distinct city count,
     /// and per-sport and per-city breakdowns.
     /// </summary>
-    Task<(MatchStatsRow Summary, IEnumerable<MatchCountByName> BySport, IEnumerable<MatchCountByName> ByCity)> GetStatsAsync();
+    Task<(MatchStatsRow Summary, IEnumerable<MatchCountByName> BySport, IEnumerable<MatchCountByName> ByCity)> GetStatsAsync(DateOnly today);
 
     /// <summary>
     /// Returns upcoming matches the user is involved in — either as organizer
