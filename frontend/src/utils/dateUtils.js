@@ -1,3 +1,5 @@
+import { CANCEL_BUFFER_MS } from '../constants'
+
 // Pitches are in Lebanon, so the pitch's timezone decides every deadline, not the
 // viewer's. The API sends booking dates and times as wall-clock strings with no
 // offset ("2026-09-21", "18:00:00"), which the browser would otherwise read in
@@ -32,4 +34,16 @@ export function pitchTimeToInstant(dateStr, timeStr) {
 export function pitchToday(offsetDays = 0) {
   const p = partsAt(Date.now() + offsetDays * 86400000)
   return `${p.year}-${p.month}-${p.day}`
+}
+
+// Mirrors the backend rules in BookingService and ReviewService. Keep the two in
+// step: a disagreement shows the user a button the API then rejects.
+export function isCancellable(booking) {
+  if (booking.status !== 'confirmed') return false
+  return pitchTimeToInstant(booking.bookingDate, booking.startTime) > Date.now() + CANCEL_BUFFER_MS
+}
+
+export function isReviewable(booking) {
+  if (booking.status !== 'confirmed' || booking.hasReviewed) return false
+  return pitchTimeToInstant(booking.bookingDate, booking.endTime) < Date.now()
 }
