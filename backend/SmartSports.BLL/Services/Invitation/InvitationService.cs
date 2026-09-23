@@ -119,7 +119,7 @@ public class InvitationService : IInvitationService
         // Fix #3: guard cancelled bookings and past matches — same checks as InviteByUsernameAsync
         if (match.BookingStatus != "confirmed")
             throw new ConflictException("This match's booking is no longer active.");
-        if (match.BookingDate < DateOnly.FromDateTime(DateTime.Today))
+        if (match.BookingDate < PitchTime.Today)
             throw new ConflictException("This match has already taken place.");
 
         if (match.BookingOwnerId == callerUserId)
@@ -170,7 +170,7 @@ public class InvitationService : IInvitationService
 
         if (match.BookingStatus != "confirmed")
             throw new ConflictException("This match's booking is not active.");
-        if (match.BookingDate < DateOnly.FromDateTime(DateTime.Today))
+        if (match.BookingDate < PitchTime.Today)
             throw new ConflictException("This match has already taken place.");
 
         var invitee = await _userRepository.GetByUsernameAsync(username)
@@ -243,7 +243,7 @@ public class InvitationService : IInvitationService
 
         if (match.BookingStatus != "confirmed")
             throw new ConflictException("This match's booking is no longer active.");
-        if (match.BookingDate < DateOnly.FromDateTime(DateTime.Today))
+        if (match.BookingDate < PitchTime.Today)
             throw new ConflictException("This match has already taken place.");
 
         // Fix #5: steps 3-5 (insert participant, capacity-guard accept, mark invitation) run

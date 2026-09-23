@@ -37,7 +37,7 @@ public class ReviewService : IReviewService
         if (booking.Status != "confirmed")
             throw new ArgumentException("Only completed bookings can be reviewed.");
 
-        if (booking.BookingDate.ToDateTime(booking.EndTime) >= DateTime.Now)
+        if (PitchTime.ToUtc(booking.BookingDate, booking.EndTime) >= DateTime.UtcNow)
             throw new ArgumentException("You can review this booking after it has taken place.");
 
         await _reviewRepository.CreateAsync(new ReviewEntity

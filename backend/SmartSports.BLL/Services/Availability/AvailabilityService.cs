@@ -1,6 +1,7 @@
 ﻿using SmartSports.BLL.DTOs.Availability;
 using SmartSports.BLL.Interfaces.Availability;
 using SmartSports.DAL.Interfaces.Availability;
+using SmartSports.Domain.Common;
 using SmartSports.Domain.Entities.Projections;
 
 
@@ -36,7 +37,7 @@ namespace SmartSports.BLL.Services.Availability
         {
             // Validation
 
-            var today = DateOnly.FromDateTime(DateTime.Today);
+            var today = PitchTime.Today;
 
             if (date < today)
                 throw new ArgumentException("Date cannot be in the past.");
@@ -171,14 +172,14 @@ namespace SmartSports.BLL.Services.Availability
         /// </summary>
         private static TimeOnly? GetCutoffTime(DateOnly date)
         {
-            var today = DateOnly.FromDateTime(DateTime.Today);
+            var today = PitchTime.Today;
 
             if (date != today)
                 return null;
 
             // No buffer — cutoff is exactly now.
             // Slots strictly after now are visible.
-            return TimeOnly.FromDateTime(DateTime.Now);
+            return TimeOnly.FromDateTime(PitchTime.Now);
         }
     }
 }
