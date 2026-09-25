@@ -7,7 +7,8 @@ import StatusBadge from '../../components/ui/StatusBadge'
 import { parseApiError } from '../../utils/errorUtils'
 import { pitchToday } from '../../utils/dateUtils'
 
-const fmtDate = d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+// 'T00:00:00' keeps this a local calendar day; a bare date string parses as UTC.
+const fmtDate = d => new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 const fmtTime = t => t?.slice(0, 5) ?? ''
 
 // ── Stat card ────────────────────────────────────────────────────────────────
