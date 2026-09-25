@@ -10,6 +10,7 @@ import PitchCover from '../../components/Pitch/PitchCover'
 import FavoriteButton from '../../components/Pitch/FavoriteButton'
 import Footer from '../../components/layout/Footer'
 import { GridSkeleton } from '../../components/ui/Skeleton'
+import { pitchToday } from '../../utils/dateUtils'
 
 const SORT_OPTIONS = [
   { value: 'newest',     label: 'Newest first' },
@@ -20,16 +21,6 @@ const SORT_OPTIONS = [
 
 // Booking is limited to a 30-day window; keep the date filter in the same range.
 const MAX_DAYS_AHEAD = 30
-
-// Local calendar date → "YYYY-MM-DD" (no timezone shift, unlike toISOString).
-const localDateStr = (offsetDays = 0) => {
-  const d = new Date()
-  d.setDate(d.getDate() + offsetDays)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
 
 export default function PitchDiscoveryPage() {
   const navigate           = useNavigate()
@@ -245,8 +236,8 @@ function FilterBar({
   sportTypes, cities, lookupError,
   hasActiveFilters, onClearAll,
 }) {
-  const minDate = localDateStr(0)
-  const maxDate = localDateStr(MAX_DAYS_AHEAD)
+  const minDate = pitchToday(0)
+  const maxDate = pitchToday(MAX_DAYS_AHEAD)
   return (
     <div className="sticky top-16 z-30 bg-[var(--bg)]/95 backdrop-blur border-b border-white/[0.06] py-3">
       <div className="mx-auto max-w-[1280px] px-6">

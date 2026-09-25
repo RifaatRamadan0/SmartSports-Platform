@@ -5,6 +5,7 @@ import { listMyPitches } from '../../services/Pitch/pitchService'
 import { getOwnerBookings } from '../../services/Booking/bookingService'
 import StatusBadge from '../../components/ui/StatusBadge'
 import { parseApiError } from '../../utils/errorUtils'
+import { pitchToday } from '../../utils/dateUtils'
 
 const fmtDate = d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 const fmtTime = t => t?.slice(0, 5) ?? ''
@@ -102,7 +103,7 @@ export default function OwnerDashboardPage() {
   const confirmedCount = recentBookings.filter(b => b.status === 'confirmed').length
   const pendingCount   = recentBookings.filter(b => b.status === 'pending').length
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = pitchToday()
   const todayCount = recentBookings.filter(b => b.bookingDate === today).length
 
   return (

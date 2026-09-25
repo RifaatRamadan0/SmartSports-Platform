@@ -10,21 +10,12 @@ import PitchCover from '../../components/Pitch/PitchCover'
 import FavoriteButton from '../../components/Pitch/FavoriteButton'
 import Footer from '../../components/layout/Footer'
 import { GridSkeleton } from '../../components/ui/Skeleton'
+import { pitchToday } from '../../utils/dateUtils'
 
 const SPORT_FILTERS = ['All', 'Football', 'Futsal', 'Basketball', 'Tennis']
 
 // Booking is limited to a 30-day window; keep the hero date filter in the same range.
 const MAX_DAYS_AHEAD = 30
-
-// Local calendar date → "YYYY-MM-DD" (no timezone shift, unlike toISOString).
-const localDateStr = (offsetDays = 0) => {
-  const d = new Date()
-  d.setDate(d.getDate() + offsetDays)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
 
 export default function HomePage() {
   const navigate   = useNavigate()
@@ -255,8 +246,8 @@ function SearchBar() {
               id="hero-date"
               type="date"
               value={date}
-              min={localDateStr(0)}
-              max={localDateStr(MAX_DAYS_AHEAD)}
+              min={pitchToday(0)}
+              max={pitchToday(MAX_DAYS_AHEAD)}
               onChange={e => setDate(e.target.value)}
               className="mt-1 w-full bg-transparent border-0 outline-none text-sm text-white [color-scheme:dark]"
             />
