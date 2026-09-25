@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { ROLES } from '@/constants/roles'
 import { getJoinPreview, joinViaToken } from '@/services/Invitation/invitationService'
 import { parseApiError } from '@/utils/errorUtils'
+import { pitchTimeToInstant } from '@/utils/dateUtils'
 import Toast from '@/components/ui/Toast'
 import FieldLines from '@/components/Match/FieldLines'
 
@@ -39,7 +40,7 @@ function fmtDate(d) {
 function fmtTime(t) { return t.slice(0, 5) }
 
 function timeUntil(dateStr, timeStr) {
-  const diff = new Date(`${dateStr}T${timeStr}`) - Date.now()
+  const diff = pitchTimeToInstant(dateStr, timeStr) - Date.now()
   if (diff <= 0) return null
   const days  = Math.floor(diff / 86400000)
   const hours = Math.floor((diff % 86400000) / 3600000)

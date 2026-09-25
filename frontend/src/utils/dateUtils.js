@@ -31,9 +31,26 @@ export function pitchTimeToInstant(dateStr, timeStr) {
 }
 
 // "Today" in Beirut as "YYYY-MM-DD". Not toISOString(), which renders UTC.
+// Offsets are calendar days, matching DateOnly.AddDays on the backend — adding
+// 24h per day instead would drift by one across a DST change.
 export function pitchToday(offsetDays = 0) {
-  const p = partsAt(Date.now() + offsetDays * 86400000)
-  return `${p.year}-${p.month}-${p.day}`
+  const p = partsAt(Date.now())
+  const d = new Date(Date.UTC(p.year, p.month - 1, p.day))
+  d.setUTCDate(d.getUTCDate() + offsetDays)
+  return d.toISOString().slice(0, 10)
+}
+
+// Beirut's calendar day as a local Date, so getDay()/getDate() and any local
+// formatting read the day the pitch is on rather than the viewer's.
+export function pitchDate(offsetDays = 0) {
+  const [y, m, d] = pitchToday(offsetDays).split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+// Minutes since midnight in Beirut. Mirrors the slot cutoff in AvailabilityService.
+export function pitchMinutesNow() {
+  const p = partsAt(Date.now())
+  return Number(p.hour) * 60 + Number(p.minute)
 }
 
 // Mirrors the backend rules in BookingService and ReviewService. Keep the two in
