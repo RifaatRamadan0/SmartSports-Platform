@@ -65,9 +65,10 @@ public class BookingService : IBookingService
         if (endTime <= startTime)
             throw new ArgumentException("Booking cannot cross midnight. Choose an earlier start time or shorter duration.");
 
-        // 4. Booking date must not be in the past, and must be within the 30-day advance window
-        if (bookingDate < PitchTime.Today)
-            throw new ArgumentException("Booking date cannot be in the past.");
+        // 4. Booking must not start in the past (date and time, so an earlier slot today is
+        // rejected too), and must be within the 30-day advance window
+        if (PitchTime.ToUtc(bookingDate, startTime) <= DateTime.UtcNow)
+            throw new ArgumentException("Booking time cannot be in the past.");
 
         if (bookingDate > PitchTime.Today.AddDays(30))
             throw new ArgumentException("Bookings can only be made up to 30 days in advance.");
