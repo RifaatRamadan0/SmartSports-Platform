@@ -164,8 +164,8 @@ public class MatchService : IMatchService
         // mirrors InvitationService.JoinViaTokenAsync so both join paths behave the same.
         if (match.BookingStatus != "confirmed")
             throw new ConflictException("This match's booking is no longer active.");
-        if (match.BookingDate < PitchTime.Today)
-            throw new ConflictException("This match has already taken place.");
+        if (PitchTime.ToUtc(match.BookingDate, match.StartTime) <= DateTime.UtcNow)
+            throw new ConflictException("This match has already started.");
 
         if (!match.IsOpenToJoin)
             throw new ArgumentException("This match is not open to join.");
