@@ -10,18 +10,12 @@ import Toast from '../../components/ui/Toast'
 import { ListSkeleton } from '../../components/ui/Skeleton'
 import { parseApiError } from '../../utils/errorUtils'
 
-import { BOOKINGS_PAGE_SIZE, CANCEL_BUFFER_MS } from '../../constants'
+import { BOOKINGS_PAGE_SIZE } from '../../constants'
+import { isCancellable } from '../../utils/dateUtils'
 
 const PAGE_SIZE = BOOKINGS_PAGE_SIZE
 
 const fmtTime = t => t.slice(0, 5)
-
-// Booking is cancellable only if status === 'confirmed' AND start > now + 1h
-function isCancellable(booking) {
-  if (booking.status !== 'confirmed') return false
-  const start = new Date(`${booking.bookingDate}T${booking.startTime}`)
-  return start.getTime() > Date.now() + CANCEL_BUFFER_MS
-}
 
 
 // Page 

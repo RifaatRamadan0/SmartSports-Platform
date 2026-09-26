@@ -1,4 +1,5 @@
-﻿using SmartSports.API.Extensions;
+﻿using Microsoft.IdentityModel.Tokens;
+using SmartSports.API.Extensions;
 using SmartSports.API.Middleware;
 using SmartSports.DAL.Data;
 
@@ -15,8 +16,9 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
 
         // Fail fast if the JWT signing key is not a base64-encoded value of at least
-        // 32 raw bytes (256 bits — the HS256 minimum). Runs before AddJwtAuthentication
-        // so we never wire the auth pipeline against an invalid key.
+        // 32 raw bytes (256 bits — the HS256 minimum). The decoded bytes become the
+        // single SymmetricSecurityKey that every signing and validation site resolves,
+        // so the bytes checked here are the bytes that actually sign tokens.
         // Generate one with:  openssl rand -base64 48
         var jwtSecret = builder.Configuration["Jwt:Secret"] ?? string.Empty;
         byte[] decodedSecret;
@@ -35,6 +37,9 @@ public class Program
                 $"Jwt:Secret decodes to {decodedSecret.Length} bytes; minimum is 32 bytes (256 bits) for HS256. " +
                 "Generate one with:  openssl rand -base64 48");
 
+        var signingKey = new SymmetricSecurityKey(decodedSecret);
+        builder.Services.AddSingleton(signingKey);
+
         if (string.IsNullOrWhiteSpace(builder.Configuration["Twilio:AccountSid"]))
             throw new InvalidOperationException("Twilio:AccountSid is not configured.");
         if (string.IsNullOrWhiteSpace(builder.Configuration["Twilio:AuthToken"]))
@@ -47,7 +52,7 @@ public class Program
         builder.Services.AddResponseCaching();
         builder.Services.AddSwaggerConfiguration();
         builder.Services.AddCorsConfiguration(builder.Configuration);
-        builder.Services.AddJwtAuthentication(builder.Configuration);
+        builder.Services.AddJwtAuthentication(builder.Configuration, signingKey);
         builder.Services.AddRoleBasedAuthorization();
         builder.Services.AddAuthRateLimiting();
         builder.Services.AddForwardedHeadersConfiguration(builder.Configuration);

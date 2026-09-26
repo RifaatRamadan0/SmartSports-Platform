@@ -66,6 +66,7 @@ public class MatchService : IMatchService
         var pageSize = Math.Clamp(query.PageSize < 1 ? 10 : query.PageSize, 1, 100);
 
         var filters = new MatchFilterParams(
+            Today:    PitchTime.Today,
             Sport:    query.Sport?.Trim(),
             City:     query.City?.Trim(),
             Page:     page,
@@ -123,7 +124,7 @@ public class MatchService : IMatchService
 
     public async Task<MatchStatsResponse> GetStatsAsync()
     {
-        var (summary, bySport, byCity) = await _matchRepository.GetStatsAsync();
+        var (summary, bySport, byCity) = await _matchRepository.GetStatsAsync(PitchTime.Today);
 
         return new MatchStatsResponse
         {
@@ -163,8 +164,8 @@ public class MatchService : IMatchService
         // mirrors InvitationService.JoinViaTokenAsync so both join paths behave the same.
         if (match.BookingStatus != "confirmed")
             throw new ConflictException("This match's booking is no longer active.");
-        if (match.BookingDate < DateOnly.FromDateTime(DateTime.Today))
-            throw new ConflictException("This match has already taken place.");
+        if (PitchTime.ToUtc(match.BookingDate, match.StartTime) <= DateTime.UtcNow)
+            throw new ConflictException("This match has already started.");
 
         if (!match.IsOpenToJoin)
             throw new ArgumentException("This match is not open to join.");

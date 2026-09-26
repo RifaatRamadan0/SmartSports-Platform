@@ -65,11 +65,12 @@ public class BookingService : IBookingService
         if (endTime <= startTime)
             throw new ArgumentException("Booking cannot cross midnight. Choose an earlier start time or shorter duration.");
 
-        // 4. Booking date must not be in the past, and must be within the 30-day advance window
-        if (bookingDate < DateOnly.FromDateTime(DateTime.Today))
-            throw new ArgumentException("Booking date cannot be in the past.");
+        // 4. Booking must not start in the past (date and time, so an earlier slot today is
+        // rejected too), and must be within the 30-day advance window
+        if (PitchTime.ToUtc(bookingDate, startTime) <= DateTime.UtcNow)
+            throw new ArgumentException("Booking time cannot be in the past.");
 
-        if (bookingDate > DateOnly.FromDateTime(DateTime.Today.AddDays(30)))
+        if (bookingDate > PitchTime.Today.AddDays(30))
             throw new ArgumentException("Bookings can only be made up to 30 days in advance.");
 
         // 5. Pitch must exist (404) and be active/approved (400 — exists but in a non-bookable state).
@@ -151,11 +152,8 @@ public class BookingService : IBookingService
         if (booking.Status != "confirmed")
             throw new ArgumentException("Only confirmed bookings can be cancelled.");
 
-        // Booking times are stored as local/wall-clock time with no timezone component.
-        // DateTime.Now (not UtcNow) is intentional — the server must run in the same
-        // timezone as the pitches (Lebanon, UTC+3). Revisit if multi-timezone support is added.
-        var bookingStart = booking.BookingDate.ToDateTime(booking.StartTime);
-        if (bookingStart <= DateTime.Now.AddHours(1))
+        var bookingStartUtc = PitchTime.ToUtc(booking.BookingDate, booking.StartTime);
+        if (bookingStartUtc <= DateTime.UtcNow.AddHours(1))
             throw new ArgumentException("Bookings can only be cancelled more than 1 hour before the start time.");
 
         var result = await _bookingRepository.CancelWithParticipantsAsync(bookingId, cancellationReason);
@@ -180,8 +178,8 @@ public class BookingService : IBookingService
         if (booking.Status != "confirmed")
             throw new ArgumentException("Only confirmed bookings can be cancelled.");
 
-        var bookingStart = booking.BookingDate.ToDateTime(booking.StartTime);
-        if (bookingStart <= DateTime.Now.AddHours(1))
+        var bookingStartUtc = PitchTime.ToUtc(booking.BookingDate, booking.StartTime);
+        if (bookingStartUtc <= DateTime.UtcNow.AddHours(1))
             throw new ArgumentException("Bookings can only be cancelled more than 1 hour before the start time.");
 
         var result = await _bookingRepository.CancelWithParticipantsAsync(bookingId, cancellationReason);

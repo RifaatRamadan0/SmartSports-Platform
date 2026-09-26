@@ -52,7 +52,7 @@ public class InvitationService : IInvitationService
         if (existing is not null)
             return new InviteLinkResponse(existing.Token, $"{frontendBaseUrl}/join/{existing.Token}");
 
-        var expiresAt = match.BookingDate.ToDateTime(match.StartTime, DateTimeKind.Utc);
+        var expiresAt = PitchTime.ToUtc(match.BookingDate, match.StartTime);
 
         try
         {
@@ -119,8 +119,8 @@ public class InvitationService : IInvitationService
         // Fix #3: guard cancelled bookings and past matches — same checks as InviteByUsernameAsync
         if (match.BookingStatus != "confirmed")
             throw new ConflictException("This match's booking is no longer active.");
-        if (match.BookingDate < DateOnly.FromDateTime(DateTime.Today))
-            throw new ConflictException("This match has already taken place.");
+        if (PitchTime.ToUtc(match.BookingDate, match.StartTime) <= DateTime.UtcNow)
+            throw new ConflictException("This match has already started.");
 
         if (match.BookingOwnerId == callerUserId)
             throw new ArgumentException("You are the organizer of this match.");
@@ -170,8 +170,8 @@ public class InvitationService : IInvitationService
 
         if (match.BookingStatus != "confirmed")
             throw new ConflictException("This match's booking is not active.");
-        if (match.BookingDate < DateOnly.FromDateTime(DateTime.Today))
-            throw new ConflictException("This match has already taken place.");
+        if (PitchTime.ToUtc(match.BookingDate, match.StartTime) <= DateTime.UtcNow)
+            throw new ConflictException("This match has already started.");
 
         var invitee = await _userRepository.GetByUsernameAsync(username)
             ?? throw new KeyNotFoundException($"User '{username}' was not found.");
@@ -191,7 +191,7 @@ public class InvitationService : IInvitationService
             InvitedById   = currentUserId,
             InvitedUserId = invitee.Id,
             Token         = Guid.NewGuid().ToString("N"),
-            ExpiresAt     = match.BookingDate.ToDateTime(match.StartTime, DateTimeKind.Utc),
+            ExpiresAt     = PitchTime.ToUtc(match.BookingDate, match.StartTime),
             Status        = "pending"
         });
 
@@ -243,8 +243,8 @@ public class InvitationService : IInvitationService
 
         if (match.BookingStatus != "confirmed")
             throw new ConflictException("This match's booking is no longer active.");
-        if (match.BookingDate < DateOnly.FromDateTime(DateTime.Today))
-            throw new ConflictException("This match has already taken place.");
+        if (PitchTime.ToUtc(match.BookingDate, match.StartTime) <= DateTime.UtcNow)
+            throw new ConflictException("This match has already started.");
 
         // Fix #5: steps 3-5 (insert participant, capacity-guard accept, mark invitation) run
         // inside a single transaction — a failure in any step rolls back all three, eliminating
