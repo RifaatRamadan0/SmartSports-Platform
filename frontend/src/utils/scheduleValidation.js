@@ -21,6 +21,13 @@ export const validateSchedule = (schedule) => {
       continue;
     }
 
+    // Mirrors the API: slots are 30 minutes, so times must sit on :00 or :30
+    const offGrid = (t) => !['00', '30'].includes(t.slice(3, 5));
+    if (offGrid(day.openTime) || offGrid(day.closeTime)) {
+      errors.push(`${DAY_NAMES[day.dayOfWeek]}: Times must be on the hour or half hour (e.g. 08:00, 22:30).`);
+      continue;
+    }
+
     // Compare as strings — "HH:MM:SS" format sorts correctly lexicographically
     if (day.openTime >= day.closeTime) {
       errors.push(`${DAY_NAMES[day.dayOfWeek]}: Opening time must be earlier than closing time.`);

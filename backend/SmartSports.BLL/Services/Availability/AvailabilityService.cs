@@ -1,6 +1,7 @@
 ﻿using SmartSports.BLL.DTOs.Availability;
 using SmartSports.BLL.Interfaces.Availability;
 using SmartSports.DAL.Interfaces.Availability;
+using SmartSports.Domain.Common;
 using SmartSports.Domain.Entities.Projections;
 
 
@@ -36,7 +37,7 @@ namespace SmartSports.BLL.Services.Availability
         {
             // Validation
 
-            var today = DateOnly.FromDateTime(DateTime.Today);
+            var today = PitchTime.Today;
 
             if (date < today)
                 throw new ArgumentException("Date cannot be in the past.");
@@ -78,55 +79,52 @@ namespace SmartSports.BLL.Services.Availability
             DateOnly date,
             int maxDurationMinutes)
         {
-            var slots = new List<SlotResponse>();
-            var current = schedule.OpenTime;
-            var cutoff  = GetCutoffTime(date);
+            var slots    = new List<SlotResponse>();
+            var current  = schedule.OpenTime;
+            var cutoff   = GetCutoffTime(date);
+            var maxSlots = maxDurationMinutes / SlotDurationMinutes;
 
+            // Generate the slots, deciding availability as each one is created.
             while (current < schedule.CloseTime)
             {
                 var slotEnd = current.AddMinutes(SlotDurationMinutes);
                 if (slotEnd > schedule.CloseTime)
                     break;
 
+                var isBooked = bookings.Any(b => b.StartTime < slotEnd && b.EndTime > current);
+
+                // Past slots and slots inside the buffer window are not bookable.
+                var isPast = cutoff.HasValue && current <= cutoff.Value;
+
                 slots.Add(new SlotResponse
                 {
                     StartTime           = current,
                     EndTime             = slotEnd,
-                    IsAvailable         = false,
+                    IsAvailable         = !isBooked && !isPast,
                     MaxConsecutiveSlots = 0
                 });
 
                 current = slotEnd;
             }
 
-            // Pre-compute which slot indices are blocked by existing bookings.
-            // This single O(n*m) pass replaces repeated bookings.Any() calls inside
-            // the availability loop and the consecutive-slot scan, reducing total
-            // work from O(n*m*maxSlots) to O(n*m + n*maxSlots).
-            var blockedIndices = new HashSet<int>();
+            // For each available slot, count how many available slots run forward
+            // from it, capped by the pitch's max booking duration.
             for (int i = 0; i < slots.Count; i++)
             {
-                var slot = slots[i];
-                if (bookings.Any(b => b.StartTime < slot.EndTime && b.EndTime > slot.StartTime))
-                    blockedIndices.Add(i);
-            }
-
-            // Mark Availability
-
-            for (int i = 0; i < slots.Count; i++)
-            {
-                var slot = slots[i];
-
-                // Hide past slots and slots within the buffer window
-                if (cutoff.HasValue && slot.StartTime <= cutoff.Value)
+                if (!slots[i].IsAvailable)
                     continue;
 
-                if (blockedIndices.Contains(i))
-                    continue;
+                int count = 0;
 
-                slot.IsAvailable         = true;
-                slot.MaxConsecutiveSlots = ComputeMaxConsecutiveSlots(
-                    slots, blockedIndices, i, maxDurationMinutes, cutoff);
+                for (int j = i; j < slots.Count && count < maxSlots; j++)
+                {
+                    if (!slots[j].IsAvailable)
+                        break;
+
+                    count++;
+                }
+
+                slots[i].MaxConsecutiveSlots = count;
             }
 
             // Only return slots that have enough consecutive free slots for
@@ -137,48 +135,20 @@ namespace SmartSports.BLL.Services.Availability
         }
 
         /// <summary>
-        /// Counts how many consecutive free slots exist starting from index i,
-        /// capped by the pitch's max booking duration.
-        /// Uses the pre-computed blockedIndices set for O(1) per-slot lookup.
-        /// </summary>
-        private static int ComputeMaxConsecutiveSlots(
-            List<SlotResponse> slots,
-            HashSet<int> blockedIndices,
-            int startIndex,
-            int maxDurationMinutes,
-            TimeOnly? cutoff)
-        {
-            int maxSlots = maxDurationMinutes / SlotDurationMinutes;
-            int count    = 0;
-
-            for (int i = startIndex; i < slots.Count && count < maxSlots; i++)
-            {
-                if (cutoff.HasValue && slots[i].StartTime <= cutoff.Value)
-                    break;
-
-                if (blockedIndices.Contains(i))
-                    break;
-
-                count++;
-            }
-            return count;
-        }
-
-        /// <summary>
         /// Returns the cutoff time for today's date.
         /// Slots at or before this time are hidden.
         /// Returns null for future dates — no cutoff needed.
         /// </summary>
         private static TimeOnly? GetCutoffTime(DateOnly date)
         {
-            var today = DateOnly.FromDateTime(DateTime.Today);
+            var today = PitchTime.Today;
 
             if (date != today)
                 return null;
 
             // No buffer — cutoff is exactly now.
             // Slots strictly after now are visible.
-            return TimeOnly.FromDateTime(DateTime.Now);
+            return TimeOnly.FromDateTime(PitchTime.Now);
         }
     }
 }

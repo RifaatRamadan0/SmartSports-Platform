@@ -141,16 +141,11 @@ public static class ServiceExtensions
 
     public static IServiceCollection AddJwtAuthentication(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        SymmetricSecurityKey signingKey)
     {
-        var secret = configuration["Jwt:Secret"];
         var issuer = configuration["Jwt:Issuer"];
         var audience = configuration["Jwt:Audience"];
-
-        if (string.IsNullOrWhiteSpace(secret))
-            throw new InvalidOperationException("JWT Secret is not configured.");
-
-        var key = Encoding.UTF8.GetBytes(secret);
 
         services
             .AddAuthentication(options =>
@@ -168,7 +163,7 @@ public static class ServiceExtensions
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = issuer,
                     ValidAudience = audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    IssuerSigningKey = signingKey,
                     ClockSkew = TimeSpan.Zero
                 };
 

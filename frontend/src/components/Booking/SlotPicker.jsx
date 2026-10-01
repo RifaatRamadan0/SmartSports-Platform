@@ -3,6 +3,7 @@ import { getAvailableSlots } from '../../services/Availability/availabilityServi
 import { parseApiError } from '../../utils/errorUtils';
 
 import { SLOT_DURATION_MINUTES, DAY_NAMES_SHORT } from '../../constants';
+import { pitchDate } from '../../utils/dateUtils';
 
 // Constants
 const MIN_BOOKING_SLOTS = 2;  // 1 hour minimum = 2 slots
@@ -49,12 +50,7 @@ const getDurationOptions = (maxConsecutiveSlots) => {
 
 // Generate next 30 days including today
 const generateDateOptions = () => {
-  return Array.from({ length: MAX_DAYS_AHEAD + 1 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() + i);
-    date.setHours(0, 0, 0, 0);
-    return date;
-  });
+  return Array.from({ length: MAX_DAYS_AHEAD + 1 }, (_, i) => pitchDate(i));
 };
 
 // Sub-components

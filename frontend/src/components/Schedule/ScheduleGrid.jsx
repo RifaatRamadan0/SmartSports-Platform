@@ -85,6 +85,7 @@ function DayCard({ day, onChange, disabled }) {
           <input
             id={`open-${day.dayOfWeek}`}
             type="time"
+            step="1800"
             value={toInputTime(day.openTime)}
             disabled={!isOpen || disabled}
             onChange={(e) => handleTimeChange('openTime', e.target.value)}
@@ -114,6 +115,7 @@ function DayCard({ day, onChange, disabled }) {
           <input
             id={`close-${day.dayOfWeek}`}
             type="time"
+            step="1800"
             value={toInputTime(day.closeTime)}
             disabled={!isOpen || disabled}
             onChange={(e) => handleTimeChange('closeTime', e.target.value)}

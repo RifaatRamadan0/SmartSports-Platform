@@ -9,6 +9,7 @@ import { cardVariants, cardTap, listContainerVariants } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { listOpenMatches, listMyMatches, getMatchStats, joinMatch, leaveMatch, getMyMatchStatus } from '../../services/Match/matchService'
 import { parseApiError } from '../../utils/errorUtils'
+import { pitchTimeToInstant } from '../../utils/dateUtils'
 import { useAuth } from '../../hooks/useAuth'
 import Toast from '../../components/ui/Toast'
 import { ROLES } from '../../constants/roles'
@@ -160,11 +161,18 @@ function FilterBar({ statsResult, filters, setFilter, clearAllFilters, totalCoun
 
 // ── match card ────────────────────────────────────────────────────────────────
 
-function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRedirect, actionLoading, actionVerb, statusLoading }) {
+function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRedirect, actionLoading, actionVerb, statusLoading, now }) {
   const [confirmLeave, setConfirmLeave] = useState(false)
   const fillPct   = Math.min(100, Math.round((match.acceptedCount / match.maxPlayers) * 100))
   const isFull    = match.acceptedCount >= match.maxPlayers
   const spotsLeft = match.maxPlayers - match.acceptedCount
+
+  // The open-match query filters by date only, so a match that started earlier today
+  // is still listed. The API rejects the join (409), so this is a hint, not a guard —
+  // it must use the same instant the server does: start time, not end time.
+  // `now` is a ticking prop, not Date.now(), or the button would never re-disable
+  // while the page sits open.
+  const hasStarted = now != null && pitchTimeToInstant(match.bookingDate, match.startTime) <= now
 
   const headBg   = SPORT_HEAD_BG[match.sportName] ?? '#111'
   const tagClass = SPORT_TAG_CLASS[match.sportName] ?? 'bg-muted/20 text-muted-foreground border-border'
@@ -191,7 +199,11 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
             <span className={cn('rounded-full border text-[11px] font-bold tracking-wide uppercase px-3 py-1', tagClass)}>
               {match.sportName}
             </span>
-            {isFull ? (
+            {hasStarted ? (
+              <span className="rounded-full border border-border bg-muted/30 text-muted-foreground text-[11px] font-semibold px-[10px] py-1 whitespace-nowrap">
+                Started
+              </span>
+            ) : isFull ? (
               <span className="rounded-full border border-border bg-muted/30 text-muted-foreground text-[11px] font-semibold px-[10px] py-1 whitespace-nowrap">
                 Full
               </span>
@@ -223,9 +235,12 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
       <div className="px-5 pt-3.5 pb-0 border-t border-border">
         <div className="flex items-center justify-between text-[12px] mb-2">
           <span className="text-muted-foreground">{match.acceptedCount} / {match.maxPlayers} players joined</span>
-          {isFull
-            ? <span className="text-muted-foreground font-medium">No spots left</span>
-            : <span className="font-display text-primary font-semibold">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} open</span>
+          {/* "N spots open" would be a lie once the match has started — the badge says why. */}
+          {hasStarted
+            ? null
+            : isFull
+              ? <span className="text-muted-foreground font-medium">No spots left</span>
+              : <span className="font-display text-primary font-semibold">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} open</span>
           }
         </div>
         <div className="h-[6px] bg-muted rounded-full overflow-hidden mb-3.5">
@@ -358,15 +373,15 @@ function MatchCard({ match, userStatus, isOrganizer, onJoin, onLeave, onLoginRed
           ) : (
             <button
               onClick={() => onJoin && onJoin(match.matchId)}
-              disabled={isFull || !onJoin || actionLoading}
+              disabled={hasStarted || isFull || !onJoin || actionLoading}
               className={cn(
                 'rounded-full text-[13px] font-bold px-[22px] py-2.5 whitespace-nowrap transition-all',
-                isFull || !onJoin
+                hasStarted || isFull || !onJoin
                   ? 'bg-muted border border-border text-muted-foreground cursor-not-allowed'
                   : 'bg-primary text-[var(--primary-foreground)] hover:opacity-[0.88] active:scale-[0.97]',
               )}
             >
-              {actionLoading ? `${actionVerb}...` : 'Join Game'}
+              {actionLoading ? `${actionVerb}...` : hasStarted ? 'Started' : 'Join Game'}
             </button>
           )}
         </div>
@@ -492,7 +507,7 @@ function MyGamesHeader({ count }) {
   )
 }
 
-function MyGamesSection({ myMatches, error, onRetry, userId, onLeave, actionLoading }) {
+function MyGamesSection({ myMatches, error, onRetry, userId, onLeave, actionLoading, now }) {
   // Loading: skeletons identical to Open Games but capped at 3 rows since the
   // typical user has only a handful of in-flight matches.
   if (myMatches === null) {
@@ -551,6 +566,7 @@ function MyGamesSection({ myMatches, error, onRetry, userId, onLeave, actionLoad
             actionLoading={actionLoading?.matchId === m.matchId}
             actionVerb={actionLoading?.matchId === m.matchId ? actionLoading.verb : null}
             statusLoading={false}
+            now={now}
           />
         ))}
       </motion.div>
@@ -582,6 +598,16 @@ export default function FindGamePage() {
   const [actionLoading,   setActionLoading]   = useState(null)  // { matchId, verb } | null
   const [isStatusLoading, setIsStatusLoading] = useState(false) // true while pre-fetching join statuses
   const [toast,           setToast]           = useState(null)
+
+  // One clock for every card on the page, so a match that starts while the list is
+  // open disables its own Join button instead of waiting for the next fetch. 30s is
+  // enough: the API is the real guard and returns 409, so the worst case is a brief
+  // window where a click errors — the same window any network delay already gives.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000)
+    return () => clearInterval(id)
+  }, [])
 
   // Fetch "My Games" — only meaningful for authenticated players. Refreshed
   // whenever refreshKey bumps (e.g. after join/leave) so the section stays in
@@ -761,6 +787,7 @@ export default function FindGamePage() {
             userId={userId}
             onLeave={handleLeave}
             actionLoading={actionLoading}
+            now={now}
           />
         )}
 
@@ -834,6 +861,7 @@ export default function FindGamePage() {
                       actionLoading={actionLoading?.matchId === m.matchId}
                       actionVerb={actionLoading?.matchId === m.matchId ? actionLoading.verb : null}
                       statusLoading={isPlayer && isStatusLoading}
+                      now={now}
                     />
                   ))}
                 </motion.div>

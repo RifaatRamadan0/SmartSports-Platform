@@ -12,7 +12,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import StarRatingInput from '../../components/ui/StarRatingInput'
 import { useToast } from '../../context/ToastContext'
 
-import { CANCEL_BUFFER_MS } from '../../constants'
+import { isCancellable, isReviewable } from '../../utils/dateUtils'
 
 const fmtDate = d =>
   new Date(d + 'T00:00:00').toLocaleDateString('en-GB', {
@@ -35,18 +35,6 @@ function durationLabel(start, end) {
   const h = Math.floor(mins / 60)
   const m = mins % 60
   return m === 0 ? `${h}h` : `${h}h ${m}min`
-}
-
-function isCancellable(booking) {
-  if (booking.status !== 'confirmed') return false
-  const start = new Date(`${booking.bookingDate}T${booking.startTime}`)
-  return start.getTime() > Date.now() + CANCEL_BUFFER_MS
-}
-
-function isReviewable(booking) {
-  if (booking.status !== 'confirmed' || booking.hasReviewed) return false
-  const end = new Date(`${booking.bookingDate}T${booking.endTime}`)
-  return end.getTime() < Date.now()
 }
 
 const STATUS_STYLES = {

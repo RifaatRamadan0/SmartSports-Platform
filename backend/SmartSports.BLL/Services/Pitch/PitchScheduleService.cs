@@ -56,6 +56,12 @@ public class PitchScheduleService : IPitchScheduleService
         {
             if (!day.IsActive) continue;
 
+            // Opening hours must line up with the 30-minute booking slots. Off-grid hours are
+            // also unsafe: with a close of 23:59 the last slot runs past midnight, TimeOnly wraps
+            // to 00:00, and AvailabilityService's slot loop never ends.
+            if (!IsOnHalfHour(day.OpenTime) || !IsOnHalfHour(day.CloseTime))
+                throw new ArgumentException($"{(DayOfWeek)day.DayOfWeek}: Times must be on the hour or half hour (e.g. 08:00, 22:30).");
+
             if (day.CloseTime <= day.OpenTime)
                 throw new ArgumentException($"{(DayOfWeek)day.DayOfWeek}: CloseTime must be after OpenTime.");
         }
@@ -71,4 +77,7 @@ public class PitchScheduleService : IPitchScheduleService
 
         await _scheduleRepository.UpsertAsync(pitchId, schedules);
     }
+
+    private static bool IsOnHalfHour(TimeOnly time) =>
+        time.Minute % 30 == 0 && time.Second == 0 && time.Millisecond == 0;
 }

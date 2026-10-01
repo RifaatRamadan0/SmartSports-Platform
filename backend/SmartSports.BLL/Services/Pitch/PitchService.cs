@@ -4,6 +4,7 @@ using SmartSports.BLL.DTOs.Pitch;
 using SmartSports.BLL.Interfaces.Pitch;
 using SmartSports.DAL.Interfaces.Pitch;
 using SmartSports.DAL.Parameters;
+using SmartSports.Domain.Common;
 using SmartSports.Domain.Entities.Projections;
 using SmartSports.Domain.Enums;
 using SmartSports.Domain.Exceptions;
@@ -76,7 +77,7 @@ public class PitchService : IPitchService
         DateOnly? date = null;
         if (DateOnly.TryParse(query.Date, out var parsedDate))
         {
-            var today = DateOnly.FromDateTime(DateTime.Today);
+            var today = PitchTime.Today;
             if (parsedDate >= today && parsedDate <= today.AddDays(30))
                 date = parsedDate;
         }

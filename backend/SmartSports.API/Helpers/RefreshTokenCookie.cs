@@ -19,23 +19,15 @@ public static class RefreshTokenCookie
     public static void Delete(HttpResponse response) =>
         response.Cookies.Delete(Name, BuildOptions());
 
-    // SameSite=None is intentional.
-    // The frontend (e.g. http://localhost:5173) and API (e.g. http://localhost:5000)
-    // run on different origins, so the /api/auth/refresh call is a cross-site
-    // credentialed XHR. SameSite=Lax allows top-level GET navigations but blocks
-    // the cookie on cross-site fetch/XHR, which is what would break silent refresh.
-    // SameSite=None + Secure is the only combination that lets the browser send
-    // the cookie on a cross-origin fetch.
-    // CSRF risk is acceptable here because:
-    //   - The cookie is HttpOnly (unreachable by JS)
-    //   - The refresh endpoint only issues a new access token; it performs no state mutation
-    //   - Access tokens expire in 15 minutes, limiting blast radius
-    //   - The path scopes the cookie to /api/auth so it isn't sent on ordinary API calls
+    // Lax works because frontend and API are same-site (localhost:5173 → :5079 locally,
+    // one origin in production); SameSite ignores the port. It stops other sites from
+    // triggering /refresh or /logout with this cookie, which CORS does not prevent.
+    // Hosting the frontend on a different domain would need SameSite=None again.
     private static CookieOptions BuildOptions() => new()
     {
         HttpOnly = true,
         Secure   = true,
-        SameSite = SameSiteMode.None,
+        SameSite = SameSiteMode.Lax,
         Path     = "/api/auth"
     };
 }

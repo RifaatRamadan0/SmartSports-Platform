@@ -4,7 +4,9 @@ import { listItemVariants } from '../../lib/motion'
 
 export default function BookingCard({ booking, onClick, onCancel, isCancelling, isCancellable }) {
   const fmtTime = t => t?.slice(0, 5) ?? ''
-  const fmtDate = d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  // 'T00:00:00' keeps this a local calendar day; a bare date string parses as UTC
+  // and renders as the previous day west of Greenwich.
+  const fmtDate = d => new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 
   const statusColor = {
     confirmed: 'text-[var(--green)] bg-[var(--green-muted)] border-[var(--green-border)]',

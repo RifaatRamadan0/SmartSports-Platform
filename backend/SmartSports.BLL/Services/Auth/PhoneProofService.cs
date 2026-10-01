@@ -1,7 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SmartSports.BLL.Interfaces.Auth;
 
@@ -14,11 +12,9 @@ public class PhoneProofService : IPhoneProofService
 
     private readonly SymmetricSecurityKey _key;
 
-    public PhoneProofService(IConfiguration configuration)
+    public PhoneProofService(SymmetricSecurityKey signingKey)
     {
-        var secret = configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
-        _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        _key = signingKey;
     }
 
     public string GenerateProof(string phoneNumber)

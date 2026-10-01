@@ -10,6 +10,7 @@ import { springTransition, stepVariants, confirmCardVariants, buttonHover, butto
 import PitchCover from '../../components/Pitch/PitchCover'
 import GalleryModal from '../../components/Pitch/GalleryModal'
 import { SLOT_DURATION_MINUTES, DAY_NAMES_ABBR, MONTH_NAMES } from '../../constants'
+import { pitchDate, pitchMinutesNow } from '../../utils/dateUtils'
 
 const MAX_DAYS_AHEAD        = 30
 const VISIBLE_DATES         = 7
@@ -47,12 +48,7 @@ const formatPrice = (amount, currency = '$') =>
   `${currency}${Number.isInteger(amount) ? amount : amount.toFixed(2)}`
 
 const generateDateOptions = () =>
-  Array.from({ length: MAX_DAYS_AHEAD + 1 }, (_, i) => {
-    const date = new Date()
-    date.setDate(date.getDate() + i)
-    date.setHours(0, 0, 0, 0)
-    return date
-  })
+  Array.from({ length: MAX_DAYS_AHEAD + 1 }, (_, i) => pitchDate(i))
 
 // Builds duration chip options in 30-min steps from 60 up to the pitch's max.
 const buildDurationOptions = (maxMinutes) => {
@@ -174,8 +170,7 @@ export default function BookingPage() {
   const isToday = toApiDate(selectedDate) === toApiDate(dates[0])
   const futureSlots = useMemo(() => {
     if (!isToday) return slots
-    const now = new Date()
-    const nowMinutes = now.getHours() * 60 + now.getMinutes()
+    const nowMinutes = pitchMinutesNow()
     return slots.filter((slot) => {
       const [h, m] = slot.startTime.split(':').map(Number)
       return h * 60 + m > nowMinutes
