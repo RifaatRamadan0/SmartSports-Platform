@@ -91,6 +91,11 @@ public class Program
 
         app.UseHttpsRedirection();
 
+        // Serves the React build copied into wwwroot/ by CI. Early so file
+        // requests skip CORS, rate limiting and auth. No wwwroot/ locally.
+        app.UseDefaultFiles();
+        app.UseStaticFiles();
+
         app.UseCors("SmartSportsCorsPolicy");
 
         app.UseResponseCaching();
@@ -101,6 +106,12 @@ public class Program
         app.UseAuthorization();
 
         app.MapControllers();
+
+        // Keep-alive ping target. No DB call, so pings don't wake Neon.
+        app.MapGet("/health", () => Results.Ok());
+
+        // Unmatched paths (e.g. /bookings/5) go to React Router.
+        app.MapFallbackToFile("index.html");
 
         app.Run();
     }
