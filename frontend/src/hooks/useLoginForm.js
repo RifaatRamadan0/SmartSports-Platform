@@ -23,14 +23,24 @@ export function useLoginForm() {
     if (error) setError(null)
   }
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault()
+    return submitCredentials(form)
+  }
+
+  // Takes credentials as an argument instead of reading `form`, so the demo
+  // buttons can log in immediately without waiting for a state update.
+  function loginAsDemo(emailOrUsername, password) {
+    return submitCredentials({ emailOrUsername, password })
+  }
+
+  async function submitCredentials(credentials) {
     setIsSubmitting(true)
     setError(null)
     setUnverified(false)
 
     try {
-      const { data } = await api.post('/api/auth/login', form)
+      const { data } = await api.post('/api/auth/login', credentials)
       login(data)
       const roles    = data.roles ?? []
       const isPlayer = roles.includes(ROLES.PLAYER)
@@ -55,6 +65,7 @@ export function useLoginForm() {
     unverified,
     isSubmitting,
     handleChange,
+    loginAsDemo,
     handleSubmit,
   }
 }
