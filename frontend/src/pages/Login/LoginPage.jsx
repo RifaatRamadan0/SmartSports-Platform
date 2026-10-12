@@ -7,10 +7,11 @@ import { Eye, EyeOff, MailWarning } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { DemoAccounts } from '@/components/Demo/DemoAccounts'
 import { useLoginForm } from '@/hooks/useLoginForm'
 
 function LoginPage() {
-  const { form, error, unverified, isSubmitting, handleChange, handleSubmit } = useLoginForm()
+  const { form, error, unverified, isSubmitting, handleChange, loginAsDemo, handleSubmit } = useLoginForm()
   const [showPassword, setShowPassword] = useState(false)
 
   return (
@@ -58,6 +59,10 @@ function LoginPage() {
           </CardHeader>
 
           <CardContent className="pt-6">
+            <div className="mb-5">
+              <DemoAccounts onSelect={loginAsDemo} disabled={isSubmitting} />
+            </div>
+
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
               <div className="flex flex-col gap-1.5">

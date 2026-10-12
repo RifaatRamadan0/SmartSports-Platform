@@ -7,6 +7,7 @@ import { Eye, EyeOff, ChevronRight, AlertCircle, Loader2, Check, X } from 'lucid
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { DemoNotice } from '@/components/Demo/DemoAccounts'
 import { useRegisterForm } from '@/hooks/useRegisterForm'
 
 const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Pro']
@@ -175,6 +176,12 @@ function RegisterPage() {
               <div className="h-px flex-1 bg-border" />
               <div className={`size-2 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-border'}`} />
             </div>
+
+            {step === 1 && (
+              <div className="mb-4">
+                <DemoNotice />
+              </div>
+            )}
 
             {error && (
               <div className="mb-4 flex items-start gap-2 rounded-[0.625rem] border border-destructive/30 bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive">
