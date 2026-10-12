@@ -1,5 +1,6 @@
 -- Demo data for the public live demo: the three accounts shown on the login page
--- (password Demo1234!), four pitches owned by demo_owner and a few bookings by demo_player.
+-- (password Demo1234!), four pitches owned by demo_owner and a few bookings (each with its
+-- match) by demo_player.
 -- Idempotent: every insert is guarded, so databases that already have some of this data
 -- (e.g. a local DB where the demo users were created by hand) skip it instead of failing.
 -- Cities and sports are looked up by name and booking dates are relative to the run date.
@@ -85,3 +86,13 @@ JOIN users o  ON o.username  = 'demo_owner'
 JOIN pitches p ON p.owner_id = o.id AND p.name = d.pitch_name
 WHERE NOT EXISTS (SELECT 1 FROM bookings b WHERE b.user_id = pl.id AND b.pitch_id = p.id)
 ORDER BY d.day_offset;
+
+-- One match per booking, as BookingRepository.CreateWithMatchAsync does for real bookings.
+-- Open to join so the upcoming ones appear in Find a Game.
+INSERT INTO matches (booking_id, is_open_to_join, max_players)
+SELECT b.id, TRUE, p.capacity
+FROM bookings b
+JOIN users pl  ON pl.id = b.user_id AND pl.username = 'demo_player'
+JOIN pitches p ON p.id = b.pitch_id
+ORDER BY b.id
+ON CONFLICT (booking_id) DO NOTHING;
