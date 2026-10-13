@@ -4,12 +4,11 @@ namespace SmartSports.DAL.Interfaces.Pitch;
 
 public interface IFavoritePitchRepository
 {
-    /// <summary>
-    /// Toggles the favorite for (userId, pitchId) in a single atomic statement and
-    /// returns the resulting state: true when the pitch is now favorited, false when
-    /// it was just un-favorited. The composite PK prevents duplicate rows.
-    /// </summary>
-    Task<bool> ToggleAsync(int userId, int pitchId);
+    /// <summary>Favorites the pitch. No-op if it is already favorited.</summary>
+    Task AddAsync(int userId, int pitchId);
+
+    /// <summary>Removes the favorite. No-op if it does not exist.</summary>
+    Task RemoveAsync(int userId, int pitchId);
 
     /// <summary>
     /// Returns a paged list of the user's favorited pitches, newest favorite first.

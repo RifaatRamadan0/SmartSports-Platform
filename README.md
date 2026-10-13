@@ -141,7 +141,7 @@ Roles, Lebanese regions and cities, and sport types are seeded by migration, so 
 | GET | `/api/pitches/mine`, `/api/pitches/mine/{id}` | Pitch owner |
 | GET/POST/PATCH/DELETE | `/api/pitches/mine/{id}/images/*` | Pitch owner |
 | PUT | `/api/pitches/{id}/schedule` | Pitch owner |
-| POST | `/api/pitches/{id}/favorite` | Player |
+| PUT/DELETE | `/api/pitches/{id}/favorite` | Player |
 | POST | `/api/bookings` | Player |
 | PATCH | `/api/bookings/{id}/cancel` | Player |
 | PATCH | `/api/bookings/{id}/owner-cancel` | Pitch owner |

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { ROLES } from '../../constants/roles'
-import { toggleFavorite } from '../../services/Pitch/pitchService'
+import { addFavorite, removeFavorite } from '../../services/Pitch/pitchService'
 
 // Heart toggle for saving a pitch. Rendered only for authenticated players;
 // guests, owners, and admins see nothing. Updates optimistically and reverts on error.
@@ -30,9 +30,8 @@ export default function FavoriteButton({ pitchId, initialFavorited = false, onCh
     setFavorited(next)
     setBusy(true)
     try {
-      const result = await toggleFavorite(pitchId)
-      setFavorited(result)
-      onChange?.(result)
+      await (next ? addFavorite : removeFavorite)(pitchId)
+      onChange?.(next)
     } catch (err) {
       setFavorited(!next) // revert
       if (import.meta.env.DEV) console.error('Failed to toggle favorite:', err)

@@ -19,15 +19,18 @@ public class FavoriteService : IFavoriteService
         _pitchRepository    = pitchRepository;
     }
 
-    public async Task<bool> ToggleAsync(int userId, int pitchId)
+    public async Task AddAsync(int userId, int pitchId)
     {
         // Only allow favoriting pitches a player could actually discover. A lightweight
         // EXISTS check is enough here — we just need the visibility gate, not the full row.
         if (!await _pitchRepository.ExistsVisibleAsync(pitchId))
             throw new KeyNotFoundException($"Pitch with ID {pitchId} was not found.");
 
-        return await _favoriteRepository.ToggleAsync(userId, pitchId);
+        await _favoriteRepository.AddAsync(userId, pitchId);
     }
+
+    public Task RemoveAsync(int userId, int pitchId) =>
+        _favoriteRepository.RemoveAsync(userId, pitchId);
 
     public async Task<PagedResult<PitchListResponse>> ListFavoritesAsync(int userId, int page, int pageSize)
     {

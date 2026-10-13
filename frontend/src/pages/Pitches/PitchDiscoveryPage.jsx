@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import PageWrapper from '@/components/routing/PageWrapper'
 import { cardVariants, cardHover, cardTap, listContainerVariants } from '@/lib/motion'
+import { useAuth } from '../../hooks/useAuth'
 import { listPitches } from '../../services/Pitch/pitchService'
 import { getSportTypes, getCities } from '../../services/Lookup/lookupService'
 import { parseApiError } from '../../utils/errorUtils'
@@ -25,6 +26,7 @@ const MAX_DAYS_AHEAD = 30
 export default function PitchDiscoveryPage() {
   const navigate           = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { token, isLoading: authLoading } = useAuth()
 
   // Read filter state from URL so the page is bookmarkable.
   const urlSearch   = searchParams.get('search')   ?? ''
@@ -74,6 +76,7 @@ export default function PitchDiscoveryPage() {
 
   // Fetch pitches whenever any URL-driven filter changes.
   useEffect(() => {
+    if (authLoading) return
     let cancelled = false
     setIsLoading(true)
     setError(null)
@@ -93,7 +96,7 @@ export default function PitchDiscoveryPage() {
       .finally(()  => { if (!cancelled) setIsLoading(false) })
 
     return () => { cancelled = true }
-  }, [urlSearch, urlSport, urlCity, urlMaxPrice, urlSortBy, urlDate, urlPage, refreshKey])
+  }, [urlSearch, urlSport, urlCity, urlMaxPrice, urlSortBy, urlDate, urlPage, refreshKey, authLoading, token])
 
   // Helpers to mutate URL params.
   const setFilter = useCallback((key, value) => {
