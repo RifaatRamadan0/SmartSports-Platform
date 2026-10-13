@@ -15,29 +15,26 @@ public class FavoritePitchRepository : IFavoritePitchRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task<bool> ToggleAsync(int userId, int pitchId)
+    public async Task AddAsync(int userId, int pitchId)
     {
         using var connection = _connectionFactory.CreateConnection();
 
-        // Single atomic statement: delete the favorite if it exists, otherwise insert it.
-        // A returned row means the INSERT fired (now favorited); no row means a delete
-        // happened (now un-favorited). Concurrent toggles can't create duplicates — the
-        // composite PK guards that — and this avoids a check-then-act race.
-        var nowFavorited = await connection.QuerySingleOrDefaultAsync<bool?>(
+        await connection.ExecuteAsync(
             """
-            WITH deleted AS (
-                DELETE FROM user_favorite_pitches
-                WHERE user_id = @UserId AND pitch_id = @PitchId
-                RETURNING 1
-            )
             INSERT INTO user_favorite_pitches (user_id, pitch_id)
-            SELECT @UserId, @PitchId
-            WHERE NOT EXISTS (SELECT 1 FROM deleted)
-            RETURNING TRUE
+            VALUES (@UserId, @PitchId)
+            ON CONFLICT (user_id, pitch_id) DO NOTHING
             """,
             new { UserId = userId, PitchId = pitchId });
+    }
 
-        return nowFavorited ?? false;
+    public async Task RemoveAsync(int userId, int pitchId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        await connection.ExecuteAsync(
+            "DELETE FROM user_favorite_pitches WHERE user_id = @UserId AND pitch_id = @PitchId",
+            new { UserId = userId, PitchId = pitchId });
     }
 
     public async Task<(IEnumerable<PitchListRow> Items, long TotalCount)> ListFavoritesAsync(int userId, int page, int pageSize)

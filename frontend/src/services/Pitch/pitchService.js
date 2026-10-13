@@ -50,10 +50,12 @@ export async function deletePitch(id) {
   await api.delete(`/api/pitches/${id}`)
 }
 
-// Toggles the favorite for the current player and returns the new state (boolean).
-export async function toggleFavorite(id) {
-  const { data } = await api.post(`/api/pitches/${id}/favorite`)
-  return data.isFavorited
+export async function addFavorite(id) {
+  await api.put(`/api/pitches/${id}/favorite`)
+}
+
+export async function removeFavorite(id) {
+  await api.delete(`/api/pitches/${id}/favorite`)
 }
 
 // Returns the current player's saved pitches as a paged result.

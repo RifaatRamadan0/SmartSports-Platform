@@ -47,6 +47,7 @@ export default function PitchDetailPage() {
   const [error,   setError]   = useState(null)
 
   useEffect(() => {
+    if (authLoading) return
     let cancelled = false
 
     getPitchById(id)
@@ -64,7 +65,7 @@ export default function PitchDetailPage() {
       })
 
     return () => { cancelled = true }
-  }, [id])
+  }, [id, authLoading, token])
 
   const handleBookNow = () => {
     if (!token) {
@@ -124,7 +125,7 @@ export default function PitchDetailPage() {
                 <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
                   {pitch.name}
                 </h1>
-                <FavoriteButton pitchId={pitch.id} initialFavorited={pitch.isFavorited} size="lg" className="shrink-0" />
+                <FavoriteButton key={pitch.id} pitchId={pitch.id} initialFavorited={pitch.isFavorited} size="lg" className="shrink-0" />
               </div>
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 <span className="inline-flex items-center rounded-full border border-[var(--green-border)] bg-[var(--green)]/10

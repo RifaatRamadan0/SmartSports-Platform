@@ -99,24 +99,43 @@ public class PitchesController : BaseApiController
     }
 
     /// <summary>
-    /// POST /api/pitches/{id}/favorite
-    /// Toggles the favorite for the authenticated player and returns the new state.
+    /// PUT /api/pitches/{id}/favorite
+    /// Favorites the pitch for the authenticated player. Idempotent.
     /// 404 if the pitch does not exist or is not publicly visible.
     /// </summary>
-    [HttpPost("{id:int}/favorite")]
+    [HttpPut("{id:int}/favorite")]
     [Authorize(Policy = "PlayerOnly")]
     [EnableRateLimiting("favorites")]
-    [ProducesResponseType(typeof(FavoriteToggleResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ToggleFavorite(int id)
+    public async Task<IActionResult> AddFavorite(int id)
     {
         var userId = GetUserId();
         if (userId is null) return Unauthorized();
 
-        var isFavorited = await _favoriteService.ToggleAsync(userId.Value, id);
-        return Ok(new FavoriteToggleResponse { IsFavorited = isFavorited });
+        await _favoriteService.AddAsync(userId.Value, id);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// DELETE /api/pitches/{id}/favorite
+    /// Removes the favorite for the authenticated player. Idempotent.
+    /// </summary>
+    [HttpDelete("{id:int}/favorite")]
+    [Authorize(Policy = "PlayerOnly")]
+    [EnableRateLimiting("favorites")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> RemoveFavorite(int id)
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        await _favoriteService.RemoveAsync(userId.Value, id);
+        return NoContent();
     }
 
     /// <summary>

@@ -7,11 +7,13 @@ namespace SmartSports.BLL.Interfaces.Pitch;
 public interface IFavoriteService
 {
     /// <summary>
-    /// Toggles the favorite for the given player and pitch, returning the resulting state.
-    /// Throws KeyNotFoundException when the pitch does not exist or is not publicly visible
-    /// (inactive, unapproved, or soft-deleted).
+    /// Favorites the pitch for the player. Idempotent.
+    /// Throws KeyNotFoundException when the pitch does not exist or is not publicly visible.
     /// </summary>
-    Task<bool> ToggleAsync(int userId, int pitchId);
+    Task AddAsync(int userId, int pitchId);
+
+    /// <summary>Removes the player's favorite. Idempotent; no pitch check.</summary>
+    Task RemoveAsync(int userId, int pitchId);
 
     /// <summary>
     /// Returns a paged list of the player's favorited pitches (active, approved, non-deleted),

@@ -20,7 +20,7 @@ const MAX_DAYS_AHEAD = 30
 export default function HomePage() {
   const navigate   = useNavigate()
   const pitchesRef = useRef(null)
-  const { roles }  = useAuth()
+  const { roles, token, isLoading: authLoading } = useAuth()
   const isPlayer   = roles.includes(ROLES.PLAYER)
 
   const [activeSport, setActiveSport] = useState('All')
@@ -42,7 +42,9 @@ export default function HomePage() {
     }
   }, [])
 
-  useEffect(() => { fetchPitches(activeSport) }, [activeSport, fetchPitches])
+  useEffect(() => {
+    if (!authLoading) fetchPitches(activeSport)
+  }, [activeSport, fetchPitches, authLoading, token])
 
   const scrollToPitches = () => {
     pitchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
