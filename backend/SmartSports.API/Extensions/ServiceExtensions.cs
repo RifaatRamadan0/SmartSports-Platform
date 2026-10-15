@@ -393,11 +393,10 @@ public static class ServiceExtensions
         return services;
     }
 
-    // Configures forwarded-header trust so X-Forwarded-For from a known proxy
-    // populates RemoteIpAddress before the rate limiter runs. Without trusted
-    // entries, ASP.NET only honors forwarders from localhost — meaning a real
-    // proxy (nginx, ALB, Cloudflare) is silently ignored and every request
-    // shares the proxy's IP in the rate-limit bucket.
+    // Sets RemoteIpAddress from X-Forwarded-For so the rate limiter partitions
+    // by client, not by proxy. Exactly one proxy (App Service's front end) sits
+    // in front, so only the last entry is trusted; entries left of it are
+    // client-written and spoofable.
     public static IServiceCollection AddForwardedHeadersConfiguration(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -406,7 +405,12 @@ public static class ServiceExtensions
         {
             options.ForwardedHeaders =
                 ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-            options.ForwardLimit = 2;
+            options.ForwardLimit = 1;
+
+            // The default trusts only localhost, which would ignore App Service's
+            // front end. Nothing else can reach the app, so trust whoever connects.
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
 
             var section = configuration.GetSection("ForwardedHeaders");
             var knownNetworks = section.GetSection("KnownNetworks").Get<string[]>() ?? Array.Empty<string>();

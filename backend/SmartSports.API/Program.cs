@@ -76,6 +76,8 @@ public class Program
 
         // Must run before rate limiting so RemoteIpAddress is set from
         // X-Forwarded-For when the app is behind a reverse proxy/load balancer.
+        // Don't also set ASPNETCORE_FORWARDEDHEADERS_ENABLED: it adds a second
+        // instance, and each one reads an entry, reaching the spoofable one.
         app.UseForwardedHeaders();
 
         app.UseMiddleware<ExceptionHandlingMiddleware>();
