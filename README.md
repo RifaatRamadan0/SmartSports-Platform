@@ -4,6 +4,14 @@ A sports pitch booking system where players reserve time slots, open their games
 
 ASP.NET Core 8 Web API with a React frontend, PostgreSQL behind Dapper and hand-written SQL, JWT auth with refresh-token rotation, email and phone verification, and image hosting on ImageKit.
 
+## Live demo
+
+**https://smartsports.azurewebsites.net**
+
+Use the one-click demo accounts on the login page (Player, Pitch owner, Admin). Sign-up and password reset don't work on the live site: SMS and email run on Twilio and Resend trial tiers, which only deliver to the project owner. The demo accounts can't be renamed, deleted or have their password changed, so the next visitor can use the same demo accounts.
+
+Hosted on the Azure App Service free tier, so the first request after a quiet period can take several seconds while the app starts.
+
 ## Screens
 
 Browsing pitches. Filters for sport, city, price and sort order run over the loaded rows, and each card carries the cover image, city, rating and hourly price.
@@ -229,7 +237,6 @@ Nothing secret is committed. `appsettings.json` holds only non-sensitive default
 - **AI slot recommendations and demand forecasting.** The original goal for the project: suggest the best time to play from historical booking density, and give owners a utilisation forecast. No model or service exists yet.
 - **Owner analytics.** The dashboard counts are derived in the browser from the five most recent bookings, so they are a summary of that page rather than true totals. A stats endpoint that aggregates in SQL would fix the counts and is the basis for the revenue and utilisation reporting that is missing.
 - **Automated tests.** There is no test project; everything was verified by hand through Swagger and direct SQL. A suite around the booking concurrency rules and the availability calculation is the first thing to add, since those two carry the most logic.
-- **Deployment.** Runs locally only. There is a Dockerfile for the API but nothing is hosted yet.
 
 ## License
 
