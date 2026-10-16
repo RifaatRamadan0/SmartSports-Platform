@@ -8,7 +8,7 @@ ASP.NET Core 8 Web API with a React frontend, PostgreSQL behind Dapper and hand-
 
 **https://smartsports.azurewebsites.net**
 
-Use the one-click demo accounts on the login page (Player, Pitch owner, Admin). Sign-up and password reset don't work on the live site: SMS and email run on Twilio and Resend trial tiers, which only deliver to the project owner. The demo accounts can't be renamed, deleted or have their password changed, so the next visitor can use the same demo accounts.
+Use the one-click demo accounts on the login page (Player, Pitch owner, Admin). Sign-up and password reset don't work on the live site: SMS and email run on Twilio and Resend trial tiers, which only deliver to the project owner. The demo accounts can't be deleted, banned or have their password changed, so the next visitor can use the same demo accounts.
 
 Hosted on the Azure App Service free tier, so the first request after a quiet period can take several seconds while the app starts.
 
