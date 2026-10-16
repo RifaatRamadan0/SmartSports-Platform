@@ -2,6 +2,7 @@ using SmartSports.BLL.DTOs.User;
 using SmartSports.BLL.Interfaces.Auth;
 using SmartSports.BLL.Interfaces.User;
 using SmartSports.DAL.Interfaces.Auth;
+using SmartSports.Domain.Common;
 
 namespace SmartSports.BLL.Services.User;
 
@@ -47,6 +48,9 @@ public class UserService(
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new KeyNotFoundException("User not found.");
 
+        if (DemoAccounts.IsDemo(user.Email))
+            throw new ArgumentException(DemoAccounts.ReadOnlyMessage);
+
         if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
             throw new ArgumentException("Current password is incorrect.");
 
@@ -90,6 +94,9 @@ public class UserService(
     {
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new KeyNotFoundException("User not found.");
+
+        if (DemoAccounts.IsDemo(user.Email))
+            throw new ArgumentException(DemoAccounts.ReadOnlyMessage);
 
         if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
             throw new ArgumentException("Current password is incorrect.");
