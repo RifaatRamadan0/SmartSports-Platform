@@ -22,10 +22,10 @@ export function DemoNotice() {
 export function DemoAccounts({ onSelect, disabled }) {
   const [pending, setPending] = useState(null)
 
-  async function handleClick(username) {
-    setPending(username)
+  async function handleClick(email) {
+    setPending(email)
     try {
-      await onSelect(username, DEMO_PASSWORD)
+      await onSelect(email, DEMO_PASSWORD)
     } finally {
       setPending(null)
     }
@@ -39,17 +39,17 @@ export function DemoAccounts({ onSelect, disabled }) {
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        {DEMO_ACCOUNTS.map(({ label, username, icon: Icon }) => (
+        {DEMO_ACCOUNTS.map(({ label, username, email, icon: Icon }) => (
           <button
-            key={username}
+            key={email}
             type="button"
             disabled={disabled}
-            onClick={() => handleClick(username)}
+            onClick={() => handleClick(email)}
             title={`Sign in as ${username}`}
             className="flex flex-col items-center gap-1 rounded-[0.625rem] border border-border bg-input px-2 py-2.5 transition-colors hover:border-primary/40 hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-              {pending === username
+              {pending === email
                 ? <Loader2 size={16} className="animate-spin" />
                 : <Icon size={16} />}
             </span>

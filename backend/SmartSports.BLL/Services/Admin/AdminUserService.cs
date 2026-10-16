@@ -3,6 +3,7 @@ using SmartSports.BLL.DTOs.Booking;
 using SmartSports.BLL.DTOs.Common;
 using SmartSports.BLL.Interfaces.Admin;
 using SmartSports.DAL.Interfaces.Auth;
+using SmartSports.Domain.Common;
 using SmartSports.Domain.Entities.Projections;
 
 namespace SmartSports.BLL.Services.Admin;
@@ -59,6 +60,9 @@ public class AdminUserService(
         if (roles.Contains("Admin"))
             throw new ArgumentException("Admin accounts cannot be banned.");
 
+        if (DemoAccounts.IsDemo(user.Email))
+            throw new ArgumentException(DemoAccounts.ReadOnlyMessage);
+
         if (user.IsBanned)
             throw new ArgumentException("User is already banned.");
 
@@ -91,6 +95,9 @@ public class AdminUserService(
         var roles = await userRepository.GetUserRolesAsync(userId);
         if (roles.Contains("Admin"))
             throw new ArgumentException("Admin accounts cannot be deleted.");
+
+        if (DemoAccounts.IsDemo(user.Email))
+            throw new ArgumentException(DemoAccounts.ReadOnlyMessage);
 
         if (await userRepository.HasActiveFutureBookingsAsync(userId))
             throw new ArgumentException(
