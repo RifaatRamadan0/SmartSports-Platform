@@ -1,42 +1,35 @@
 import axios from 'axios'
 
-// Create an Axios instance with default config
+let accessToken = null
+
+export const setAccessToken = (token) => {
+  accessToken = token
+}
+
 const api = axios.create({
-  // Base URL loaded from environment variable
   baseURL: import.meta.env.VITE_API_BASE_URL,
+  withCredentials: true,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 })
 
-// Request interceptor — attaches JWT token to every request automatically
+// Attaches JWT token to every request
 api.interceptors.request.use(
   (config) => {
-    // Get token from localStorage if it exists
-    const token = localStorage.getItem('token')
-    if (token) {
-      // Add it to the Authorization header
-      config.headers.Authorization = `Bearer ${token}`
+    if (accessToken) {
+      config.headers['Authorization'] = `Bearer ${accessToken}`
     }
     return config
   },
   (error) => Promise.reject(error)
 )
 
-// Response interceptor — handles token expiry globally
-api.interceptors.response.use(
-  // If response is successful just return it
-  (response) => response,
-  (error) => {
-    // If server returns 401 (Unauthorized) token has expired
-    if (error.response?.status === 401) {
-      // Clear the stored token
-      localStorage.removeItem('token')
-      // Redirect to login page
-      window.location.href = '/login'
-    }
-    return Promise.reject(error)
-  }
-)
+export const sendPhoneOtp = (phoneNumber) =>
+  api.post('/api/auth/phone/send-otp', { phoneNumber })
+
+export const verifyPhoneOtp = (phoneNumber, code) =>
+  api.post('/api/auth/phone/verify-otp', { phoneNumber, code })
 
 export default api

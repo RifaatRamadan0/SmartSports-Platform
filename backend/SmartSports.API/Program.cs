@@ -1,4 +1,5 @@
-﻿using SmartSports.API.Extensions;
+﻿using Microsoft.IdentityModel.Tokens;
+using SmartSports.API.Extensions;
 using SmartSports.API.Middleware;
 using SmartSports.DAL.Data;
 
@@ -14,18 +15,71 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
 
+        // Fail fast if the JWT signing key is not a base64-encoded value of at least
+        // 32 raw bytes (256 bits — the HS256 minimum). The decoded bytes become the
+        // single SymmetricSecurityKey that every signing and validation site resolves,
+        // so the bytes checked here are the bytes that actually sign tokens.
+        // Generate one with:  openssl rand -base64 48
+        var jwtSecret = builder.Configuration["Jwt:Secret"] ?? string.Empty;
+        byte[] decodedSecret;
+        try
+        {
+            decodedSecret = Convert.FromBase64String(jwtSecret);
+        }
+        catch (FormatException)
+        {
+            throw new InvalidOperationException(
+                "Jwt:Secret must be a base64-encoded value (not a passphrase). " +
+                "Generate one with:  openssl rand -base64 48");
+        }
+        if (decodedSecret.Length < 32)
+            throw new InvalidOperationException(
+                $"Jwt:Secret decodes to {decodedSecret.Length} bytes; minimum is 32 bytes (256 bits) for HS256. " +
+                "Generate one with:  openssl rand -base64 48");
+
+        var signingKey = new SymmetricSecurityKey(decodedSecret);
+        builder.Services.AddSingleton(signingKey);
+
+        if (string.IsNullOrWhiteSpace(builder.Configuration["Twilio:AccountSid"]))
+            throw new InvalidOperationException("Twilio:AccountSid is not configured.");
+        if (string.IsNullOrWhiteSpace(builder.Configuration["Twilio:AuthToken"]))
+            throw new InvalidOperationException("Twilio:AuthToken is not configured.");
+        if (string.IsNullOrWhiteSpace(builder.Configuration["Twilio:VerifyServiceSid"]))
+            throw new InvalidOperationException("Twilio:VerifyServiceSid is not configured.");
+        if (string.IsNullOrWhiteSpace(builder.Configuration["ImageKit:PrivateKey"]))
+            throw new InvalidOperationException("ImageKit:PrivateKey is not configured.");
+
+        builder.Services.AddResponseCaching();
         builder.Services.AddSwaggerConfiguration();
         builder.Services.AddCorsConfiguration(builder.Configuration);
-        builder.Services.AddJwtAuthentication(builder.Configuration);
-        builder.Services.AddApplicationServices();
+        builder.Services.AddJwtAuthentication(builder.Configuration, signingKey);
+        builder.Services.AddRoleBasedAuthorization();
+        builder.Services.AddAuthRateLimiting();
+        builder.Services.AddForwardedHeadersConfiguration(builder.Configuration);
+        builder.Services.AddApplicationServices(builder.Configuration);
         builder.Services.AddDataAccess(builder.Configuration);
 
         // ── Build ────────────────────────────────────────────────
         var app = builder.Build();
 
+        // Tell Dapper to map snake_case column names to PascalCase properties
+        // e.g. password_hash → PasswordHash, created_at → CreatedAt
+        Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        // Dapper doesn't natively bind .NET 6 DateOnly/TimeOnly as parameters
+        Dapper.SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+        Dapper.SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
+
         app.Services.GetRequiredService<MigrationRunner>().Run();
 
         // ── Middleware Pipeline ──────────────────────────────────
+
+        // Must run before rate limiting so RemoteIpAddress is set from
+        // X-Forwarded-For when the app is behind a reverse proxy/load balancer.
+        // Don't also set ASPNETCORE_FORWARDEDHEADERS_ENABLED: it adds a second
+        // instance, and each one reads an entry, reaching the spoofable one.
+        app.UseForwardedHeaders();
+
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         if (app.Environment.IsDevelopment())
@@ -39,12 +93,27 @@ public class Program
 
         app.UseHttpsRedirection();
 
+        // Serves the React build copied into wwwroot/ by CI. Early so file
+        // requests skip CORS, rate limiting and auth. No wwwroot/ locally.
+        app.UseDefaultFiles();
+        app.UseStaticFiles();
+
         app.UseCors("SmartSportsCorsPolicy");
+
+        app.UseResponseCaching();
+
+        app.UseRateLimiter();
 
         app.UseAuthentication();
         app.UseAuthorization();
 
         app.MapControllers();
+
+        // Keep-alive ping target. No DB call, so pings don't wake Neon.
+        app.MapGet("/health", () => Results.Ok());
+
+        // Unmatched paths (e.g. /bookings/5) go to React Router.
+        app.MapFallbackToFile("index.html");
 
         app.Run();
     }

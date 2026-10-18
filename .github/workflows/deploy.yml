@@ -1,0 +1,62 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: smartsports
+
+# id-token: write lets the job request GitHub's OIDC token for azure/login.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Empty base URL makes axios call /api/... on the same origin,
+      # so the SameSite=Lax refresh cookie is sent.
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: ""
+          VITE_IMAGEKIT_URL_ENDPOINT: ${{ vars.VITE_IMAGEKIT_URL_ENDPOINT }}
+          VITE_IMAGEKIT_PUBLIC_KEY: ${{ vars.VITE_IMAGEKIT_PUBLIC_KEY }}
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
+      - name: Copy frontend into API wwwroot
+        run: |
+          mkdir -p backend/SmartSports.API/wwwroot
+          cp -r frontend/dist/. backend/SmartSports.API/wwwroot/
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish API
+        run: dotnet publish backend/SmartSports.API -c Release -o publish
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: publish

@@ -2,4 +2,17 @@ namespace SmartSports.Domain.Entities;
 
 public class User
 {
+    public int Id { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string PasswordHash { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string? ProfilePicture { get; set; }
+    public short? SkillLevel { get; set; }
+    public string? PreferredPosition { get; set; }
+    public bool IsEmailVerified { get; set; }
+    public bool IsPhoneVerified { get; set; }
+    public bool IsBanned { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }

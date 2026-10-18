@@ -12,6 +12,7 @@
 *.env
 
 appsettings.*.json
+!appsettings.*.example.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -374,5 +375,11 @@ healthchecksdb
 # Migration backup
 MigrationBackup/
 
-
+# CLAUDE Code
 .claude/
+CLAUDE.md
+audit_prompt.md
+
+**/.github/copilot*
+
+backend/SmartSports.API/wwwroot/

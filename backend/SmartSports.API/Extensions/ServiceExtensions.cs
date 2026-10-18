@@ -1,9 +1,61 @@
+﻿using System.Net;
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
+using SmartSports.API.BackgroundServices;
+using Resend;
+using SmartSports.BLL.Interfaces.Admin;
+using SmartSports.BLL.Interfaces.Auth;
+using SmartSports.BLL.Interfaces.Availability;
+using SmartSports.BLL.Interfaces.Booking;
+using SmartSports.BLL.Interfaces.Invitation;
+using SmartSports.BLL.Interfaces.Lookup;
+using SmartSports.BLL.Interfaces.Match;
+using SmartSports.BLL.Interfaces.Notification;
+using SmartSports.BLL.Interfaces.Pitch;
+using SmartSports.BLL.Interfaces.Review;
+using SmartSports.BLL.Interfaces.RoleRequest;
+using SmartSports.BLL.Interfaces.Upload;
+using SmartSports.BLL.Interfaces.User;
+using SmartSports.BLL.Services.Auth;
+using SmartSports.BLL.Services.User;
+using SmartSports.BLL.Services.Pitch;
+using SmartSports.BLL.Services.Availability;
+using SmartSports.BLL.Services.Booking;
+using SmartSports.BLL.Services.Match;
+using SmartSports.BLL.Services.Invitation;
+using SmartSports.BLL.Services.Notification;
+using SmartSports.BLL.Services.RoleRequest;
+using SmartSports.BLL.Services.Review;
+using SmartSports.BLL.Services.Lookup;
+using SmartSports.BLL.Services.Upload;
+using SmartSports.BLL.Services.Admin;
 using SmartSports.DAL.Data;
+using SmartSports.DAL.Interfaces.Auth;
+using SmartSports.DAL.Interfaces.Availability;
+using SmartSports.DAL.Interfaces.Booking;
+using SmartSports.DAL.Interfaces.Invitation;
+using SmartSports.DAL.Interfaces.Lookup;
+using SmartSports.DAL.Interfaces.Match;
+using SmartSports.DAL.Interfaces.Notification;
+using SmartSports.DAL.Interfaces.Pitch;
+using SmartSports.DAL.Interfaces.Review;
+using SmartSports.DAL.Interfaces.RoleRequests;
+using SmartSports.API.Services;
+using SmartSports.DAL.Repositories.Auth;
+using SmartSports.DAL.Repositories.Pitch;
+using SmartSports.DAL.Repositories.Availability;
+using SmartSports.DAL.Repositories.Booking;
+using SmartSports.DAL.Repositories.Match;
+using SmartSports.DAL.Repositories.Invitation;
+using SmartSports.DAL.Repositories.Notification;
+using SmartSports.DAL.Repositories.RoleRequest;
+using SmartSports.DAL.Repositories.Review;
+using SmartSports.DAL.Repositories.Lookup;
 
 namespace SmartSports.API.Extensions;
 
@@ -16,6 +68,7 @@ public static class ServiceExtensions
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' is not configured.");
+
         services.AddSingleton<IDbConnectionFactory>(_ =>
             new DbConnectionFactory(connectionString));
         services.AddSingleton<MigrationRunner>();
@@ -66,16 +119,19 @@ public static class ServiceExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var allowedOrigins = configuration["Cors:AllowedOrigins"];
+        var configuredOrigins = configuration["Cors:AllowedOrigins"];
+        var allowedOrigins = string.IsNullOrWhiteSpace(configuredOrigins)
+            ? new[] { "http://localhost:5173" }
+            : configuredOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         services.AddCors(options =>
         {
             options.AddPolicy("SmartSportsCorsPolicy", policy =>
             {
                 policy
-                    .WithOrigins(string.IsNullOrEmpty(allowedOrigins) ? "http://localhost:5173" : allowedOrigins)
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
+                    .WithOrigins(allowedOrigins)
+                    .WithHeaders("Content-Type", "Authorization", "X-Requested-With")
+                    .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                     .AllowCredentials();
             });
         });
@@ -85,16 +141,11 @@ public static class ServiceExtensions
 
     public static IServiceCollection AddJwtAuthentication(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        SymmetricSecurityKey signingKey)
     {
-        var secret = configuration["Jwt:Secret"];
         var issuer = configuration["Jwt:Issuer"];
         var audience = configuration["Jwt:Audience"];
-
-        if (string.IsNullOrWhiteSpace(secret))
-            throw new InvalidOperationException("JWT Secret is not configured.");
-
-        var key = Encoding.UTF8.GetBytes(secret);
 
         services
             .AddAuthentication(options =>
@@ -112,7 +163,7 @@ public static class ServiceExtensions
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = issuer,
                     ValidAudience = audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    IssuerSigningKey = signingKey,
                     ClockSkew = TimeSpan.Zero
                 };
 
@@ -130,6 +181,26 @@ public static class ServiceExtensions
                         }
 
                         return Task.CompletedTask;
+                    },
+
+                    OnTokenValidated = async context =>
+                    {
+                        var sub = context.Principal?.FindFirst(
+                            System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                        if (!int.TryParse(sub, out var userId))
+                        {
+                            context.Fail("Invalid token subject.");
+                            return;
+                        }
+
+                        var repo = context.HttpContext.RequestServices
+                            .GetRequiredService<IUserRepository>();
+                        var user = await repo.GetByIdAsync(userId);
+
+                        // GetByIdAsync filters deleted_at IS NULL, so null covers soft-deleted too.
+                        if (user is null || user.IsBanned)
+                            context.Fail("Account is banned or deleted.");
                     }
                 };
             });
@@ -137,9 +208,226 @@ public static class ServiceExtensions
         return services;
     }
 
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddRoleBasedAuthorization(this IServiceCollection services)
     {
-        // Services and repositories will be registered here
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("PlayerOnly",         p => p.RequireRole("Player"));
+            options.AddPolicy("PitchOwnerOnly",     p => p.RequireRole("PitchOwner"));
+            options.AddPolicy("AdminOnly",          p => p.RequireRole("Admin"));
+            options.AddPolicy("PlayerOrPitchOwner", p => p.RequireRole("Player", "PitchOwner"));
+        });
+        return services;
+    }
+
+    public static IServiceCollection AddApplicationServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        // Resend email client — use typed client on the interface so the managed HttpClient pipeline applies.
+        services.AddOptions();
+        services.Configure<ResendClientOptions>(options =>
+        {
+            options.ApiToken = configuration["Resend:ApiKey"]
+                ?? throw new InvalidOperationException("Resend:ApiKey is not configured.");
+        });
+        services.AddHttpClient<IResend, ResendClient>();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+        services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
+        services.AddScoped<IEmailService, ResendEmailService>();
+        services.AddSingleton<ITwilioService, TwilioVerifyService>();
+        services.AddScoped<IPhoneProofService, PhoneProofService>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IBookingService, BookingService>();
+        services.AddHostedService<ExpiredTokenCleanupService>();
+
+        // Schedule
+        services.AddScoped<IPitchScheduleRepository, PitchScheduleRepository>();
+        services.AddScoped<IPitchScheduleService, PitchScheduleService>();
+
+        // Availability
+        services.AddScoped<IAvailabilityRepository, AvailabilityRepository>();
+        services.AddScoped<IAvailabilityService, AvailabilityService>();
+
+        // Booking
+        services.AddScoped<IPitchRepository, PitchRepository>();
+        services.AddScoped<IBookingRepository, BookingRepository>();
+
+        // Match (SPDBTCP-245)
+        services.AddScoped<IMatchRepository, MatchRepository>();
+        services.AddScoped<IMatchParticipantRepository, MatchParticipantRepository>();
+        services.AddScoped<IMatchService, MatchService>();
+
+        // Pitch
+        services.AddScoped<IReviewRepository, ReviewRepository>();
+        services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<IPitchService, PitchService>();
+        services.AddScoped<IPitchImageService, PitchImageService>();
+        services.AddScoped<IFavoritePitchRepository, FavoritePitchRepository>();
+        services.AddScoped<IFavoriteService, FavoriteService>();
+        services.AddSingleton<IImageKitAuthService, ImageKitAuthService>();
+        services.AddScoped<IAdminPitchService, AdminPitchService>();
+
+        // Role requests
+        services.AddScoped<IRoleRequestRepository, RoleRequestRepository>();
+        services.AddScoped<IRoleRequestService, RoleRequestService>();
+        services.AddScoped<IAdminRoleRequestService, AdminRoleRequestService>();
+
+        // Admin user management
+        services.AddScoped<IAdminUserService, AdminUserService>();
+
+        // Invitations / Notifications (SPDBTCP-76)
+        // IMatchRepository is already registered above in the Match (SPDBTCP-245) block.
+        services.AddScoped<IInvitationRepository, InvitationRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IInvitationService, InvitationService>();
+
+        // Lookups
+        services.AddScoped<ILookupRepository, LookupRepository>();
+        services.AddScoped<ILookupService, LookupService>();
+        services.AddScoped<ISportTypeRepository, SportTypeRepository>();
+        services.AddScoped<ISportTypeService, SportTypeService>();
+        services.AddScoped<ICityRepository, CityRepository>();
+        services.AddScoped<ICityService, CityService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddAuthRateLimiting(this IServiceCollection services)
+    {
+        services.AddRateLimiter(options =>
+        {
+            static string IpPartition(HttpContext ctx) =>
+                ctx.Connection.RemoteIpAddress is not null
+                    ? $"ip:{ctx.Connection.RemoteIpAddress}"
+                    : $"connection:{ctx.Connection.Id}";
+
+            options.AddPolicy("auth", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            options.AddPolicy("availability", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 30,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            // Static lookup data (cities, sport types) rarely changes. 60 req/min
+            // is generous for legitimate use but prevents scraping loops.
+            options.AddPolicy("lookups", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 60,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            // SPDBTCP-76 — Caps the invite-by-username endpoint per IP. Each invite
+            // writes an invitations row plus a notifications row for the invitee, so an
+            // uncapped Player JWT could flood another user's inbox. 10/min is generous
+            // for a real owner clicking the button and tight for a script.
+            options.AddPolicy("invitations", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            // Caps the favorite-toggle endpoint per IP. It's a cheap authenticated
+            // write, but uncapped a single JWT could churn rows; 60/min is generous
+            // for a real player tapping hearts and tight for a script.
+            options.AddPolicy("favorites", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 60,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            // Caps the ImageKit signing endpoint per IP so a single source
+            // can't pound the upload quota or host arbitrary content via our keys.
+            options.AddPolicy("imagekit-auth", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: IpPartition(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 30,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        });
+
+        return services;
+    }
+
+    // Sets RemoteIpAddress from X-Forwarded-For so the rate limiter partitions
+    // by client, not by proxy. Exactly one proxy (App Service's front end) sits
+    // in front, so only the last entry is trusted; entries left of it are
+    // client-written and spoofable.
+    public static IServiceCollection AddForwardedHeadersConfiguration(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.ForwardLimit = 1;
+
+            // The default trusts only localhost, which would ignore App Service's
+            // front end. Nothing else can reach the app, so trust whoever connects.
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+
+            var section = configuration.GetSection("ForwardedHeaders");
+            var knownNetworks = section.GetSection("KnownNetworks").Get<string[]>() ?? Array.Empty<string>();
+            var knownProxies  = section.GetSection("KnownProxies").Get<string[]>()  ?? Array.Empty<string>();
+
+            foreach (var cidr in knownNetworks)
+            {
+                var parts = cidr.Split('/');
+                options.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(
+                    IPAddress.Parse(parts[0]),
+                    int.Parse(parts[1])));
+            }
+
+            foreach (var ip in knownProxies)
+                options.KnownProxies.Add(IPAddress.Parse(ip));
+        });
+
         return services;
     }
 }
